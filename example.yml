@@ -1,0 +1,35 @@
+inputs:
+    - Stdin:
+        codec: json
+        type: stdin1
+
+filters:
+    - Add:
+        fields:
+            '[p][name][first]': liujia
+    #- Grok:
+        #src: message
+        #match:
+            #- '^\[%{HTTPDATE:logtime}\] %{HOST:domain} %{IPORHOST:hostname} %{IP:serverAddr} %{WORD:requestMethod} %{DATA:requestUri} %{NUMBER:serverPort} (-|%{USER:remoteUser}) %{IP:remoteAddr} (-|(?<forwarded>[0-9.]+(, [0-9.]+)*)) %{NOTSPACE:serverProtocol} ("-"|%{QS:UA}) ("-"|%{QS:cookie}) ("-"|%{QS:referer}) %{NUMBER:statusCode} %{DATA:rest}$'
+        #remove_fields: ['message']
+    #- Date:
+        #timezone: 'Asia/Shanghai'
+        #src: logtime
+        #locale: en
+        #formats:
+            #- 'dd/MMM/YYYY:HH:mm:ss Z'
+        #remove_fields: ["logtime"]
+    #- Drop:
+        #if:
+            #- '<#if statusCode?? && statusCode=="200">true</#if>'
+            #- '<#if @timestamp??>true</#if>'
+            #- '<#assign x=@timestamp.getMillis() / 1000 % 10><#if x!=0>true</#if>'
+            #- '<#if requestUri?? && requestUri!="/frt-resource-mixture-ws/api/bjjson/xSearch">true</#if>'
+    #- Grok:
+        #src: rest
+        #match:
+            #- '^%{NUMBER:requestLength} %{NUMBER:bodyBytesSent} %{NUMBER:request_time} (-|%{NUMBER:upstream_responseTime}) (-|%{NOTSPACE:upstreamAddr}) (-|%{NUMBER:upstreamStatus}) %{NOTSPACE:proxy_host} %{NOTSPACE:policy_name}\s+%{NOTSPACE:via} %{NOTSPACE:http_cat_meta}$'
+        #remove_fields: ['rest']
+
+outputs:
+    - Stdout: {}
