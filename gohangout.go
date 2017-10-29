@@ -30,13 +30,15 @@ func getOutputs(config map[string]interface{}) []Output {
 		outputs := outputValue.([]interface{})
 		for _, outputValue := range outputs {
 			output := outputValue.(map[interface{}]interface{})
-			glog.Info(output)
 			for k, v := range output {
 				outputType := k.(string)
-				glog.Info(outputType)
+				glog.Infof("output type:%s", outputType)
 				outputConfig := v.(map[interface{}]interface{})
-				glog.Info(outputConfig)
+				glog.Infof("output config:%q", outputConfig)
 				outputPlugin := getOutput(outputType)
+				if outputPlugin == nil {
+					glog.Fatalf("could build output plugin from type (%s)", outputType)
+				}
 				rst = append(rst, outputPlugin)
 			}
 		}
@@ -52,13 +54,15 @@ func getFilters(config map[string]interface{}) []Filter {
 		filters := filterValue.([]interface{})
 		for _, filterValue := range filters {
 			filter := filterValue.(map[interface{}]interface{})
-			glog.Info(filter)
 			for k, v := range filter {
 				filterType := k.(string)
-				glog.Info(filterType)
+				glog.Infof("filter type:%s", filterType)
 				filterConfig := v.(map[interface{}]interface{})
-				glog.Info(filterConfig)
+				glog.Infof("filter config:%q", filterConfig)
 				filterPlugin := getFilter(filterType, filterConfig)
+				if filterPlugin == nil {
+					glog.Fatalf("could build filter plugin from type (%s)", filterType)
+				}
 				rst = append(rst, filterPlugin)
 			}
 		}
@@ -95,7 +99,7 @@ func main() {
 				inputConfig := v.(map[interface{}]interface{})
 				glog.Info(inputConfig)
 
-				inputPlugin := getInput(inputType)
+				inputPlugin := getInput(inputType, inputConfig)
 				//inputPlugin.config = inputPlugin
 				box := InputBox{
 					input:   inputPlugin,

@@ -12,7 +12,7 @@ func (box *InputBox) prepare(event map[string]interface{}) map[string]interface{
 }
 
 func (box *InputBox) beat() {
-	box.input.init(box.config)
+	//box.input.init(box.config)
 
 	for {
 		event := box.input.readOneEvent()

@@ -13,9 +13,11 @@ type StdinInput struct {
 	reader *bufio.Reader
 }
 
-func (inputPlugin *StdinInput) init(config map[interface{}]interface{}) {
-	inputPlugin.config = config
-	inputPlugin.reader = bufio.NewReader(os.Stdin)
+func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
+	return &StdinInput{
+		config: config,
+		reader: bufio.NewReader(os.Stdin),
+	}
 }
 
 func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {

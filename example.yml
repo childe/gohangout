@@ -7,11 +7,11 @@ filters:
     - Add:
         fields:
             '[p][name][first]': liujia
-    #- Grok:
-        #src: message
-        #match:
-            #- '^\[%{HTTPDATE:logtime}\] %{HOST:domain} %{IPORHOST:hostname} %{IP:serverAddr} %{WORD:requestMethod} %{DATA:requestUri} %{NUMBER:serverPort} (-|%{USER:remoteUser}) %{IP:remoteAddr} (-|(?<forwarded>[0-9.]+(, [0-9.]+)*)) %{NOTSPACE:serverProtocol} ("-"|%{QS:UA}) ("-"|%{QS:cookie}) ("-"|%{QS:referer}) %{NUMBER:statusCode} %{DATA:rest}$'
-        #remove_fields: ['message']
+    - Grok:
+        src: message
+        match:
+            - '^(?P<user>\w+) (?P<status>\d+)$'
+        remove_fields: ['message']
     #- Date:
         #timezone: 'Asia/Shanghai'
         #src: logtime
