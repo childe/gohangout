@@ -17,6 +17,9 @@ func (grok *Grok) grok(input string) map[string]string {
 		rst := make(map[string]string)
 		for _, substrings := range grok.p.FindAllStringSubmatch(input, -1) {
 			for i, substring := range substrings {
+				if i == 0 {
+					continue
+				}
 				rst[grok.subexpNames[i]] = substring
 			}
 		}
