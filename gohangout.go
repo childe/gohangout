@@ -35,7 +35,7 @@ func getOutputs(config map[string]interface{}) []Output {
 				glog.Infof("output type:%s", outputType)
 				outputConfig := v.(map[interface{}]interface{})
 				glog.Infof("output config:%q", outputConfig)
-				outputPlugin := getOutput(outputType)
+				outputPlugin := getOutput(outputType, outputConfig)
 				if outputPlugin == nil {
 					glog.Fatalf("could build output plugin from type (%s)", outputType)
 				}
