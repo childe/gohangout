@@ -3,9 +3,8 @@ package main
 import "reflect"
 
 type MultiLevelFieldSetter struct {
-	preFields    []string
-	lastField    string
-	fieldsLength int
+	preFields []string
+	lastField string
 }
 
 func NewMultiLevelFieldSetter(fields []string) *MultiLevelFieldSetter {
@@ -15,12 +14,10 @@ func NewMultiLevelFieldSetter(fields []string) *MultiLevelFieldSetter {
 		preFields[i] = fields[i]
 	}
 
-	r := &MultiLevelFieldSetter{
-		preFields:    preFields,
-		fieldsLength: fieldsLength,
-		lastField:    fields[fieldsLength-1],
+	return &MultiLevelFieldSetter{
+		preFields: preFields,
+		lastField: fields[fieldsLength-1],
 	}
-	return r
 }
 
 func (fs *MultiLevelFieldSetter) SetField(event map[string]interface{}, value interface{}, field string, overwrite bool) map[string]interface{} {
