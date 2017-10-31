@@ -29,10 +29,7 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 }
 func (plugin *AddFilter) process(event map[string]interface{}) map[string]interface{} {
 	for fs, v := range plugin.fields {
-		glog.Infof("%v", fs)
-		glog.Infof("%v", v)
 		event = fs.SetField(event, v, "", plugin.overwrite)
-		glog.Infof("%v", event)
 	}
 	return event
 }
