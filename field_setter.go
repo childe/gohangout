@@ -7,10 +7,10 @@ type FieldSetter interface {
 }
 
 func NewFieldSetter(template string) FieldSetter {
-	fields := make([]string, 0)
 	matchp, _ := regexp.Compile(`(\[.*?\])+`)
 	findp, _ := regexp.Compile(`(\[(.*?)\])`)
 	if matchp.Match([]byte(template)) {
+		fields := make([]string, 0)
 		for _, v := range findp.FindAllStringSubmatch(template, -1) {
 			fields = append(fields, v[2])
 		}
