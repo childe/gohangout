@@ -34,7 +34,7 @@ func getOutputs(config map[string]interface{}) []Output {
 				outputType := k.(string)
 				glog.Infof("output type:%s", outputType)
 				outputConfig := v.(map[interface{}]interface{})
-				glog.Infof("output config:%q", outputConfig)
+				glog.Infof("output config:%v", outputConfig)
 				outputPlugin := getOutput(outputType, outputConfig)
 				if outputPlugin == nil {
 					glog.Fatalf("could build output plugin from type (%s)", outputType)
@@ -58,7 +58,7 @@ func getFilters(config map[string]interface{}) []Filter {
 				filterType := k.(string)
 				glog.Infof("filter type:%s", filterType)
 				filterConfig := v.(map[interface{}]interface{})
-				glog.Infof("filter config:%q", filterConfig)
+				glog.Infof("filter config:%v", filterConfig)
 				filterPlugin := getFilter(filterType, filterConfig)
 				if filterPlugin == nil {
 					glog.Fatalf("could build filter plugin from type (%s)", filterType)
