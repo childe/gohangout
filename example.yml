@@ -33,3 +33,15 @@ filters:
 
 outputs:
     - Stdout: {}
+    - Elasticsearch:
+        hosts:
+            - http://127.0.0.1:9200
+            #- 127.0.0.1:9201
+        index: 'test'
+        index_type: "logs"
+        bulk_actions: 2
+        bulk_size: 20
+        flush_interval: 60
+        concurrent_requests: 0
+        sniff: false
+        compress: true

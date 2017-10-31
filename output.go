@@ -12,6 +12,8 @@ func getOutput(outputType string, config map[interface{}]interface{}) Output {
 		//b := pt.Interface().(Output)
 		//return b
 		return NewStdoutOutput(config)
+	case "Elasticsearch":
+		return NewElasticsearchOutput(config)
 	}
 	return nil
 }
