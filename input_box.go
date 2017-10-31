@@ -13,15 +13,20 @@ func (box *InputBox) prepare(event map[string]interface{}) map[string]interface{
 
 func (box *InputBox) beat() {
 	//box.input.init(box.config)
+	var (
+		event   map[string]interface{}
+		success bool
+	)
 
 	for {
-		event := box.input.readOneEvent()
+		event = box.input.readOneEvent()
 		if typeValue, ok := box.config["type"]; ok {
 			event["type"] = typeValue
 		}
 		if box.filters != nil {
 			for _, filterPlugin := range box.filters {
-				event = filterPlugin.process(event)
+				event, success = filterPlugin.process(event)
+				filterPlugin.postProcess(event, success)
 			}
 		}
 		for _, outputPlugin := range box.outputs {

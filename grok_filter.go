@@ -41,6 +41,8 @@ func NewGrok(match string) *Grok {
 }
 
 type GrokFilter struct {
+	BaseFilter
+
 	config    map[interface{}]interface{}
 	overwrite bool
 	groks     []*Grok
@@ -59,9 +61,10 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	}
 
 	filter := &GrokFilter{
-		config:    config,
-		overwrite: true,
-		groks:     groks,
+		BaseFilter: BaseFilter{config},
+		config:     config,
+		overwrite:  true,
+		groks:      groks,
 	}
 	if overwrite, ok := config["overwrite"]; ok {
 		filter.overwrite = overwrite.(bool)
@@ -76,15 +79,17 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	return filter
 }
 
-func (plugin *GrokFilter) process(event map[string]interface{}) map[string]interface{} {
+func (plugin *GrokFilter) process(event map[string]interface{}) (map[string]interface{}, bool) {
 	var input string
 	if inputValue, ok := event[plugin.src]; !ok {
 		glog.V(5).Infof("(%s) not in event", plugin.src)
-		return event
+		return event, true
 	} else {
 		input = inputValue.(string)
 		glog.V(10).Infof("input: (%s)", input)
 	}
+
+	success := false
 	for _, grok := range plugin.groks {
 		rst := grok.grok(input)
 		if rst == nil {
@@ -94,6 +99,7 @@ func (plugin *GrokFilter) process(event map[string]interface{}) map[string]inter
 		for field, value := range rst {
 			event[field] = value
 		}
+		success = true
 	}
-	return event
+	return event, success
 }

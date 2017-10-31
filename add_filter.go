@@ -3,6 +3,8 @@ package main
 import "github.com/golang/glog"
 
 type AddFilter struct {
+	BaseFilter
+
 	config    map[interface{}]interface{}
 	fields    map[FieldSetter]interface{}
 	overwrite bool
@@ -10,8 +12,9 @@ type AddFilter struct {
 
 func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	plugin := &AddFilter{
-		config: config,
-		fields: make(map[FieldSetter]interface{}),
+		BaseFilter: BaseFilter{config},
+		config:     config,
+		fields:     make(map[FieldSetter]interface{}),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {
@@ -27,9 +30,10 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	}
 	return plugin
 }
-func (plugin *AddFilter) process(event map[string]interface{}) map[string]interface{} {
+
+func (plugin *AddFilter) process(event map[string]interface{}) (map[string]interface{}, bool) {
 	for fs, v := range plugin.fields {
 		event = fs.SetField(event, v, "", plugin.overwrite)
 	}
-	return event
+	return event, true
 }
