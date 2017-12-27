@@ -13,7 +13,7 @@ func getInput(inputType string, config map[interface{}]interface{}) Input {
 		//return b
 		return NewStdinInput(config)
 	case "Kafka":
-		return nil
+		return NewKafkaInput(config)
 	}
 	return nil
 }
