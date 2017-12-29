@@ -1,12 +1,21 @@
 inputs:
-    - Stdin:
+    #- Stdin:
+        #codec: json
+        #type: stdin1
+    - Kafka:
+        topic:
+            fx.cat.log.booking: 1
         codec: json
-        type: stdin1
+        consumer_settings:
+            bootstrap.servers: "10.2.74.6:9092"
+            key.deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
+            value.deserializer: com.ctrip.ops.sysdev.serialization.DALDeserializer
+            group.id: hangout.test
 
 filters:
-    - Add:
-        fields:
-            '[p][name][first]': liujia
+    #- Add:
+        #fields:
+            #'[p][name][first]': liujia
     - Grok:
         src: message
         match:
@@ -32,14 +41,14 @@ filters:
         #remove_fields: ['rest']
 
 outputs:
-    - Stdout: {}
+    #- Stdout: {}
     - Elasticsearch:
         hosts:
             - http://127.0.0.1:9200
             #- 127.0.0.1:9201
         index: 'test'
         index_type: "logs"
-        bulk_actions: 2
+        bulk_actions: 5000
         bulk_size: 20
         flush_interval: 60
         concurrent_requests: 0
