@@ -81,7 +81,7 @@ func main() {
 
 	config, err := parseConfig(options.config)
 	if err != nil {
-		glog.Fatal(err)
+		glog.Fatalf("could not parse config", err)
 	}
 	//glog.Infof("%v", config)
 
