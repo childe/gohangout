@@ -7,7 +7,8 @@ type ValueRender interface {
 }
 
 func getValueRender(template string) ValueRender {
-	matchp, _ := regexp.Compile(`(\[.*?\])+`)
+	matchGoTemp, _ := regexp.Compile(`{{.*}}`)
+	matchp, _ := regexp.Compile(`^(\[.*?\])+$`)
 	findp, _ := regexp.Compile(`(\[(.*?)\])`)
 	if matchp.Match([]byte(template)) {
 		fields := make([]string, 0)
@@ -16,6 +17,9 @@ func getValueRender(template string) ValueRender {
 		}
 		return NewMultiLevelValueRender(fields)
 	} else {
+		if matchGoTemp.Match([]byte(template)) {
+			return NewTemplateValueRender(template)
+		}
 		return NewLiteralValueRender(template)
 	}
 	return nil
