@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -10,23 +13,39 @@ import (
 type YamlParser struct{}
 
 func (yp *YamlParser) parse(filepath string) (map[string]interface{}, error) {
+	var (
+		buffer []byte
+		err    error
+	)
+	if strings.HasPrefix(filepath, "http://") || strings.HasPrefix(filepath, "https://") {
+		resp, err := http.Get(filepath)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		buffer, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		configFile, err := os.Open(filepath)
+		if err != nil {
+			return nil, err
+		}
+		fi, _ := configFile.Stat()
+
+		if fi.Size() == 0 {
+			return nil, fmt.Errorf("config file (%s) is empty", filepath)
+		}
+
+		buffer := make([]byte, fi.Size())
+		_, err = configFile.Read(buffer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	config := make(map[string]interface{})
-	configFile, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to open config file (%s): %s\n", filepath, err)
-	}
-	fi, _ := configFile.Stat()
-
-	if fi.Size() == 0 {
-		return nil, fmt.Errorf("config file (%s) is empty", filepath)
-	}
-
-	buffer := make([]byte, fi.Size())
-	_, err = configFile.Read(buffer)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read config file (%s): %s\n", filepath, err)
-	}
-
 	err = yaml.Unmarshal(buffer, &config)
 	if err != nil {
 		return nil, err
