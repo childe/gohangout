@@ -38,7 +38,7 @@ func (yp *YamlParser) parse(filepath string) (map[string]interface{}, error) {
 			return nil, fmt.Errorf("config file (%s) is empty", filepath)
 		}
 
-		buffer := make([]byte, fi.Size())
+		buffer = make([]byte, fi.Size())
 		_, err = configFile.Read(buffer)
 		if err != nil {
 			return nil, err
