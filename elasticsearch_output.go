@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
@@ -303,9 +304,9 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 type ElasticsearchOutput struct {
 	config map[interface{}]interface{}
 
-	index      ValueRender
-	index_type ValueRender
-	id         ValueRender
+	index      value_render.ValueRender
+	index_type value_render.ValueRender
+	id         value_render.ValueRender
 
 	bulkProcessor BulkProcessor
 }
@@ -316,19 +317,19 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	}
 
 	if indexValue, ok := config["index"]; ok {
-		rst.index = getValueRender(indexValue.(string))
+		rst.index = value_render.GetValueRender(indexValue.(string))
 	} else {
 		glog.Fatal("index must be set in elasticsearch output")
 	}
 
 	if indextypeValue, ok := config["index_type"]; ok {
-		rst.index_type = getValueRender(indextypeValue.(string))
+		rst.index_type = value_render.GetValueRender(indextypeValue.(string))
 	} else {
-		rst.index_type = getValueRender(DEFAULT_INDEX_TYPE)
+		rst.index_type = value_render.GetValueRender(DEFAULT_INDEX_TYPE)
 	}
 
 	if idValue, ok := config["id"]; ok {
-		rst.id = getValueRender(idValue.(string))
+		rst.id = value_render.GetValueRender(idValue.(string))
 	} else {
 		rst.id = nil
 	}
@@ -366,15 +367,15 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 
 func (p *ElasticsearchOutput) emit(event map[string]interface{}) {
 	var (
-		index      string = p.index.render(event).(string)
-		index_type string = p.index_type.render(event).(string)
+		index      string = p.index.Render(event).(string)
+		index_type string = p.index_type.Render(event).(string)
 		op         string = "index"
 		id         string
 	)
 	if p.id == nil {
 		id = ""
 	} else {
-		id = p.id.render(event).(string)
+		id = p.id.Render(event).(string)
 	}
 	p.bulkProcessor.add(&Action{op, index, index_type, id, event})
 }
