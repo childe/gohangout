@@ -20,14 +20,23 @@ func (box *InputBox) beat() {
 
 	for {
 		event = box.input.readOneEvent()
+		if event == nil {
+			continue
+		}
 		if typeValue, ok := box.config["type"]; ok {
 			event["type"] = typeValue
 		}
 		if box.filters != nil {
 			for _, filterPlugin := range box.filters {
 				event, success = filterPlugin.process(event)
+				if event == nil {
+					break
+				}
 				filterPlugin.postProcess(event, success)
 			}
+		}
+		if event == nil {
+			continue
 		}
 		for _, outputPlugin := range box.outputs {
 			outputPlugin.emit(event)
