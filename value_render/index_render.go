@@ -1,6 +1,9 @@
 package value_render
 
+// used for ES indexname template
+
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -11,6 +14,13 @@ func dateFormat(t interface{}, format string) (string, error) {
 	if reflect.TypeOf(t).String() == "time.Time" {
 		t1 := t.(time.Time)
 		return t1.Format(format), nil
+	}
+	if reflect.TypeOf(t).String() == "json.Number" {
+		t1, err := t.(json.Number).Int64()
+		if err != nil {
+			return format, err
+		}
+		return time.Unix(t1/1000, t1%1000*1000000).Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.Int {
 		t1 := int64(t.(int))
@@ -40,8 +50,8 @@ func NewIndexRender(t string) *IndexRender {
 	r, _ := regexp.Compile(`%{\+.*?}`)
 	loc := r.FindStringIndex(t)
 	return &IndexRender{
-		dateFormat:  t[loc[0]+2 : loc[1]-1],
-		valueFormat: t[:loc[0]] + "%s" + t[loc[1]+1:],
+		dateFormat:  t[loc[0]+3 : loc[1]-1],
+		valueFormat: t[:loc[0]] + "%s" + t[loc[1]:],
 	}
 }
 
