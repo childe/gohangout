@@ -1,25 +1,25 @@
 package main
 
 import (
-	"time"
-
+	"github.com/childe/gohangout/codec"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
 )
 
 type KafkaInput struct {
-	config map[interface{}]interface{}
-	//consumers []*healer.GroupConsumer
+	config   map[interface{}]interface{}
 	messages chan *healer.FullMessage
 
 	deserializer Deserializer
+	decoder      codec.Decoder
 }
 
 func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	var (
-		brokers string
-		groupID string
-		topics  map[interface{}]interface{}
+		brokers   string
+		groupID   string
+		codertype string = "plain"
+		topics    map[interface{}]interface{}
 	)
 
 	if v, ok := config["consumer_settings"]; !ok {
@@ -34,13 +34,16 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	} else {
 		topics = v.(map[interface{}]interface{})
 	}
+	if v, ok := config["codec"]; ok {
+		codertype = v.(string)
+	}
 
 	kafkaInput := &KafkaInput{
-		config: config,
-		//consumers: make([]*healer.GroupConsumer, 0),
+		config:   config,
 		messages: make(chan *healer.FullMessage, 100),
 
 		deserializer: NewHermesDeserializer(),
+		decoder:      codec.NewDecoder(codertype),
 	}
 	for topic, threadCount := range topics {
 
@@ -55,8 +58,6 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 				glog.Fatalf("could not init GroupConsumer:%s", err)
 			}
 
-			//kafkaInput.consumers = append(kafkaInput.consumers, c)
-
 			_, err = c.Consume(true, kafkaInput.messages)
 			if err != nil {
 				glog.Fatalf("could not get messages channel:%s", err)
@@ -69,9 +70,10 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 
 func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
 	message := <-inputPlugin.messages
-	rst := make(map[string]interface{})
-	//rst["message"] = string(message.Message.Value)
-	rst["message"] = inputPlugin.deserializer.deserialize("", message.Message.Value)
-	rst["@timestamp"] = time.Now()
-	return rst
+
+	if message.Error != nil {
+		return nil
+	}
+	s := inputPlugin.deserializer.deserialize("", message.Message.Value)
+	return inputPlugin.decoder.Decode(s)
 }
