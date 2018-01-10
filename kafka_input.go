@@ -10,8 +10,7 @@ type KafkaInput struct {
 	config   map[interface{}]interface{}
 	messages chan *healer.FullMessage
 
-	deserializer Deserializer
-	decoder      codec.Decoder
+	decoder codec.Decoder
 }
 
 func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
@@ -42,8 +41,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		config:   config,
 		messages: make(chan *healer.FullMessage, 100),
 
-		deserializer: NewHermesDeserializer(),
-		decoder:      codec.NewDecoder(codertype),
+		decoder: codec.NewDecoder(codertype),
 	}
 	for topic, threadCount := range topics {
 
@@ -74,6 +72,6 @@ func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
 	if message.Error != nil {
 		return nil
 	}
-	s := inputPlugin.deserializer.deserialize("", message.Message.Value)
+	s := string(message.Message.Value)
 	return inputPlugin.decoder.Decode(s)
 }
