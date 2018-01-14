@@ -5,18 +5,25 @@ import (
 	"os"
 	"time"
 
+	"github.com/childe/gohangout/codec"
 	"github.com/golang/glog"
 )
 
 type StdinInput struct {
-	config map[interface{}]interface{}
-	reader *bufio.Reader
+	config  map[interface{}]interface{}
+	reader  *bufio.Reader
+	decoder codec.Decoder
 }
 
 func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
+	var codertype string = "plain"
+	if v, ok := config["codec"]; ok {
+		codertype = v.(string)
+	}
 	return &StdinInput{
-		config: config,
-		reader: bufio.NewReader(os.Stdin),
+		config:  config,
+		reader:  bufio.NewReader(os.Stdin),
+		decoder: codec.NewDecoder(codertype),
 	}
 }
 
