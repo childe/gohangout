@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"os"
-	"time"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/golang/glog"
@@ -37,8 +36,5 @@ func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {
 		glog.Errorf("readline got only prefix")
 		return nil
 	}
-	rst := make(map[string]interface{})
-	rst["message"] = string(text)
-	rst["@timestamp"] = time.Now()
-	return rst
+	return inputPlugin.decoder.Decode(string(text))
 }
