@@ -1,10 +1,13 @@
 package codec
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type JsonDecoder struct {
 }

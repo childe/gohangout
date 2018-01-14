@@ -7,8 +7,10 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
+	"github.com/json-iterator/go"
 )
 
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var options = &struct {
 	config    string
 	pprof     bool
