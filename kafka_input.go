@@ -49,6 +49,8 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		for i := 0; i < threadCount.(int); i++ {
 
 			consumer_settings["topic"] = topic
+			consumer_settings["brokers"] = brokers
+			consumer_settings["groupID"] = groupID
 			c, err := healer.NewGroupConsumer(consumer_settings)
 			if err != nil {
 				glog.Fatalf("could not init GroupConsumer:%s", err)
