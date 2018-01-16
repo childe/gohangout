@@ -21,12 +21,13 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		topics    map[interface{}]interface{}
 	)
 
+	consumer_settings := make(map[string]interface{})
 	if v, ok := config["consumer_settings"]; !ok {
 		glog.Fatal("kafka input must have consumer_settings")
 	} else {
-		value := v.(map[interface{}]interface{})
-		brokers = value["bootstrap.servers"].(string)
-		groupID = value["group.id"].(string)
+		consumer_settings := v.(map[interface{}]interface{})
+		brokers = consumer_settings["bootstrap.servers"].(string)
+		groupID = consumer_settings["group.id"].(string)
 	}
 	if v, ok := config["topic"]; !ok {
 		glog.Fatal("kafka input must have topics")
@@ -47,11 +48,8 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 
 		for i := 0; i < threadCount.(int); i++ {
 
-			config := make(map[string]interface{})
-			config["brokers"] = brokers
-			config["topic"] = topic
-			config["groupID"] = groupID
-			c, err := healer.NewGroupConsumer(config)
+			consumer_settings["topic"] = topic
+			c, err := healer.NewGroupConsumer(consumer_settings)
 			if err != nil {
 				glog.Fatalf("could not init GroupConsumer:%s", err)
 			}
