@@ -76,9 +76,9 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	if srcValue, ok := config["src"]; ok {
 		gf.src = srcValue.(string)
 	} else {
-		gf.src = "[message]"
+		gf.src = "message"
 	}
-	gf.vr = value_render.GetValueRender(gf.src)
+	gf.vr = value_render.GetValueRender2(gf.src)
 
 	return gf
 }
