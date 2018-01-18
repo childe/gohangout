@@ -1,4 +1,4 @@
-package main
+package filter
 
 import (
 	"regexp"
@@ -79,7 +79,7 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	return filter
 }
 
-func (plugin *GrokFilter) process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *GrokFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	var input string
 	if inputValue, ok := event[plugin.src]; !ok {
 		glog.V(5).Infof("(%s) not in event", plugin.src)

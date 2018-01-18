@@ -1,8 +1,10 @@
 package main
 
+import "github.com/childe/gohangout/filter"
+
 type InputBox struct {
 	input   Input
-	filters []Filter
+	filters []filter.Filter
 	outputs []Output
 	config  map[interface{}]interface{}
 }
@@ -28,11 +30,11 @@ func (box *InputBox) beat() {
 		}
 		if box.filters != nil {
 			for _, filterPlugin := range box.filters {
-				event, success = filterPlugin.process(event)
+				event, success = filterPlugin.Process(event)
 				if event == nil {
 					break
 				}
-				filterPlugin.postProcess(event, success)
+				filterPlugin.PostProcess(event, success)
 			}
 		}
 		if event == nil {

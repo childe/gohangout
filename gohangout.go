@@ -6,6 +6,7 @@ import (
 	_ "net/http/pprof"
 	"sync"
 
+	"github.com/childe/gohangout/filter"
 	"github.com/golang/glog"
 	"github.com/json-iterator/go"
 )
@@ -50,18 +51,18 @@ func getOutputs(config map[string]interface{}) []Output {
 	}
 }
 
-func getFilters(config map[string]interface{}) []Filter {
+func getFilters(config map[string]interface{}) []filter.Filter {
 	if filterValue, ok := config["filters"]; ok {
-		rst := make([]Filter, 0)
+		rst := make([]filter.Filter, 0)
 		filters := filterValue.([]interface{})
 		for _, filterValue := range filters {
-			filter := filterValue.(map[interface{}]interface{})
-			for k, v := range filter {
+			filters := filterValue.(map[interface{}]interface{})
+			for k, v := range filters {
 				filterType := k.(string)
 				glog.Infof("filter type:%s", filterType)
 				filterConfig := v.(map[interface{}]interface{})
 				glog.Infof("filter config:%v", filterConfig)
-				filterPlugin := getFilter(filterType, filterConfig)
+				filterPlugin := filter.GetFilter(filterType, filterConfig)
 				if filterPlugin == nil {
 					glog.Fatalf("could build filter plugin from type (%s)", filterType)
 				}

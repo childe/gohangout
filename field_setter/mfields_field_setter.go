@@ -1,4 +1,4 @@
-package main
+package field_setter
 
 import "reflect"
 

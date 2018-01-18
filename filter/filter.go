@@ -1,13 +1,13 @@
-package main
+package filter
 
 import "reflect"
 
 type Filter interface {
-	process(map[string]interface{}) (map[string]interface{}, bool)
-	postProcess(map[string]interface{}, bool) map[string]interface{}
+	Process(map[string]interface{}) (map[string]interface{}, bool)
+	PostProcess(map[string]interface{}, bool) map[string]interface{}
 }
 
-func getFilter(filterType string, config map[interface{}]interface{}) Filter {
+func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 	switch filterType {
 	case "Add":
 		return NewAddFilter(config)
@@ -21,10 +21,10 @@ type BaseFilter struct {
 	config map[interface{}]interface{}
 }
 
-func (f *BaseFilter) process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
 }
-func (f *BaseFilter) postProcess(event map[string]interface{}, success bool) map[string]interface{} {
+func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
 		if remove_fields, ok := f.config["remove_fields"]; ok {
 			for _, field := range remove_fields.([]interface{}) {
