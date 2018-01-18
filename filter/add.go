@@ -9,9 +9,9 @@ import (
 type AddFilter struct {
 	BaseFilter
 
-	config map[interface{}]interface{}
-	fields map[field_setter.FieldSetter]value_render.ValueRender
-	//TODO??  overwrite bool
+	config    map[interface{}]interface{}
+	fields    map[field_setter.FieldSetter]value_render.ValueRender
+	overwrite bool
 }
 
 func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
@@ -19,6 +19,11 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 		BaseFilter: BaseFilter{config},
 		config:     config,
 		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
+		overwrite:  true,
+	}
+
+	if overwrite, ok := config["overwrite"]; ok {
+		plugin.overwrite = overwrite.(bool)
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {
