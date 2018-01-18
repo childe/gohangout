@@ -2,22 +2,23 @@ package filter
 
 import (
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
 type AddFilter struct {
 	BaseFilter
 
-	config    map[interface{}]interface{}
-	fields    map[field_setter.FieldSetter]interface{}
-	overwrite bool
+	config map[interface{}]interface{}
+	fields map[field_setter.FieldSetter]value_render.ValueRender
+	//TODO??  overwrite bool
 }
 
 func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	plugin := &AddFilter{
 		BaseFilter: BaseFilter{config},
 		config:     config,
-		fields:     make(map[field_setter.FieldSetter]interface{}),
+		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {
@@ -26,7 +27,7 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 			if fieldSetter == nil {
 				glog.Fatalf("could build field setter from %s", f.(string))
 			}
-			plugin.fields[fieldSetter] = v
+			plugin.fields[fieldSetter] = value_render.GetValueRender(v.(string))
 		}
 	} else {
 		glog.Fatal("fileds must be set in add filter plugin")
@@ -36,7 +37,7 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 
 func (plugin *AddFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	for fs, v := range plugin.fields {
-		event = fs.SetField(event, v, "", plugin.overwrite)
+		event = fs.SetField(event, v.Render(event), "", plugin.overwrite)
 	}
 	return event, true
 }
