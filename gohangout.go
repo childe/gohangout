@@ -86,7 +86,7 @@ func main() {
 	if err != nil {
 		glog.Fatalf("could not parse config:%s", err)
 	}
-	//glog.Infof("%v", config)
+	glog.Infof("%v", config)
 
 	if inputValue, ok := config["inputs"]; ok {
 		//glog.Info(inputValue)
