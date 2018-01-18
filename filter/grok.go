@@ -3,6 +3,7 @@ package filter
 import (
 	"regexp"
 
+	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
@@ -47,6 +48,7 @@ type GrokFilter struct {
 	overwrite bool
 	groks     []*Grok
 	src       string
+	vr        value_render.ValueRender
 }
 
 func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
@@ -60,37 +62,40 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 		glog.Fatal("match must be set in grok filter")
 	}
 
-	filter := &GrokFilter{
+	gf := &GrokFilter{
 		BaseFilter: BaseFilter{config},
 		config:     config,
-		overwrite:  true,
 		groks:      groks,
+		overwrite:  true,
 	}
+
 	if overwrite, ok := config["overwrite"]; ok {
-		filter.overwrite = overwrite.(bool)
+		gf.overwrite = overwrite.(bool)
 	}
 
 	if srcValue, ok := config["src"]; ok {
-		filter.src = srcValue.(string)
+		gf.src = srcValue.(string)
 	} else {
-		filter.src = "message"
+		gf.src = "[message]"
 	}
+	gf.vr = value_render.GetValueRender(gf.src)
 
-	return filter
+	return gf
 }
 
-func (plugin *GrokFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (gf *GrokFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	var input string
-	if inputValue, ok := event[plugin.src]; !ok {
-		glog.V(5).Infof("(%s) not in event", plugin.src)
+	inputI := gf.vr.Render(event)
+	if inputI == nil {
+		glog.V(5).Infof("(%s) not in event", gf.src)
 		return event, true
 	} else {
-		input = inputValue.(string)
-		glog.V(10).Infof("input: (%s)", input)
+		input = inputI.(string)
+		glog.V(100).Infof("input: (%s)", input)
 	}
 
 	success := false
-	for _, grok := range plugin.groks {
+	for _, grok := range gf.groks {
 		rst := grok.grok(input)
 		if rst == nil {
 			continue
@@ -100,6 +105,7 @@ func (plugin *GrokFilter) Process(event map[string]interface{}) (map[string]inte
 			event[field] = value
 		}
 		success = true
+		break
 	}
 	return event, success
 }
