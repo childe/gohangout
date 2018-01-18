@@ -11,9 +11,12 @@ inputs:
             group.id: hangout.test
 
 filters:
-    #- Add:
-        #fields:
-            #'[p][name][first]': liujia
+    - Add:
+        fields:
+            xxx: xxx
+            yyy: '[client]'
+            zzz: '[stored][message]'
+            '[a][b]': '[stored][message]'
     - Grok:
         src: message
         match:
