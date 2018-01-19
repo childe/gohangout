@@ -1,6 +1,10 @@
 package filter
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/golang/glog"
+)
 
 type Filter interface {
 	Process(map[string]interface{}) (map[string]interface{}, bool)
@@ -13,7 +17,10 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewAddFilter(config)
 	case "Grok":
 		return NewGrokFilter(config)
+	case "Date":
+		return NewDateFilter(config)
 	}
+	glog.Fatalf("could build %s filter plugin", filterType)
 	return nil
 }
 
