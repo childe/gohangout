@@ -162,13 +162,15 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 func (p *HTTPBulkProcessor) abstraceBulkResponseItemsByStatus(bulkResponse map[string]interface{}) ([]int, []int) {
 	glog.V(20).Infof("%v", bulkResponse)
 
-	errors := bulkResponse["errors"].(bool)
-	//glog.Infof("errors:%v", errors)
-
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 
-	if errors == false {
+	if bulkResponse["errors"] == nil {
+		glog.Infof("could NOT get errors in response:%v", bulkResponse)
+		return retry, noRetry
+	}
+
+	if bulkResponse["errors"].(bool) == false {
 		return retry, noRetry
 	}
 
