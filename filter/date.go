@@ -27,6 +27,7 @@ var MustStringTypeError = errors.New("timestamp field must be string")
 func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 	var (
 		rst time.Time
+		err error
 	)
 	if reflect.TypeOf(t).Kind() != reflect.String {
 		return rst, MustStringTypeError
@@ -34,7 +35,11 @@ func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 	if dp.location == nil {
 		return time.Parse(dp.format, t.(string))
 	}
-	return time.ParseInLocation(dp.format, t.(string), dp.location)
+	rst, err = time.ParseInLocation(dp.format, t.(string), dp.location)
+	if err != nil {
+		return rst, err
+	}
+	return rst.UTC(), nil
 }
 
 type UnixParser struct{}
@@ -158,7 +163,7 @@ func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	if locationI, ok := config["location"]; ok {
 		location, err = time.LoadLocation(locationI.(string))
 		if err != nil {
-			glog.Fatal("load location error:%s", err)
+			glog.Fatalf("load location error:%s", err)
 		}
 	} else {
 		location = nil
