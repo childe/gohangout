@@ -16,7 +16,7 @@ type AddFilter struct {
 
 func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	plugin := &AddFilter{
-		BaseFilter: BaseFilter{config},
+		BaseFilter: NewBaseFilter(config),
 		config:     config,
 		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
 		overwrite:  true,

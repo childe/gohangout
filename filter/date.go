@@ -132,7 +132,7 @@ type DateFilter struct {
 
 func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	plugin := &DateFilter{
-		BaseFilter:  BaseFilter{config},
+		BaseFilter:  NewBaseFilter(config),
 		config:      config,
 		overwrite:   true,
 		dateParsers: make([]DateParser, 0),

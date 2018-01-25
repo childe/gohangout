@@ -63,7 +63,7 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	}
 
 	gf := &GrokFilter{
-		BaseFilter: BaseFilter{config},
+		BaseFilter: NewBaseFilter(config),
 		config:     config,
 		groks:      groks,
 		overwrite:  true,

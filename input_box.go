@@ -30,6 +30,9 @@ func (box *InputBox) beat() {
 		}
 		if box.filters != nil {
 			for _, filterPlugin := range box.filters {
+				if filterPlugin.Pass(event) == false {
+					continue
+				}
 				event, success = filterPlugin.Process(event)
 				if event == nil {
 					break

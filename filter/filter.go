@@ -1,12 +1,16 @@
 package filter
 
 import (
+	"bytes"
 	"reflect"
+	"strconv"
+	"text/template"
 
 	"github.com/golang/glog"
 )
 
 type Filter interface {
+	Pass(map[string]interface{}) bool
 	Process(map[string]interface{}) (map[string]interface{}, bool)
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
 }
@@ -19,15 +23,55 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewGrokFilter(config)
 	case "Date":
 		return NewDateFilter(config)
+	case "Drop":
+		return NewDropFilter(config)
 	}
 	glog.Fatalf("could build %s filter plugin", filterType)
 	return nil
 }
 
 type BaseFilter struct {
-	config map[interface{}]interface{}
+	config       map[interface{}]interface{}
+	ifConditions []*template.Template
+	ifResult     string
 }
 
+func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
+	f := BaseFilter{
+		config: config,
+	}
+	if v, ok := config["if"]; ok {
+		f.ifConditions = make([]*template.Template, 0)
+		for i, c := range v.([]string) {
+			t, err := template.New(strconv.Itoa(i)).Parse(c)
+			if err != nil {
+				glog.Fatalf("could NOT build template from %s:%s", c, err)
+			}
+			f.ifConditions = append(f.ifConditions, t)
+		}
+	} else {
+		f.ifConditions = nil
+	}
+
+	if v, ok := config["ifResult"]; ok {
+		f.ifResult = v.(string)
+	} else {
+		f.ifResult = "y"
+	}
+	return f
+}
+
+func (f *BaseFilter) Pass(event map[string]interface{}) bool {
+	if f.ifConditions == nil {
+		return true
+	}
+	for _, c := range f.ifConditions {
+		b := bytes.NewBuffer(nil)
+		c.Execute(b, event)
+		return b.String() == f.ifResult
+	}
+	return true
+}
 func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
 }
