@@ -68,7 +68,9 @@ func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 	for _, c := range f.ifConditions {
 		b := bytes.NewBuffer(nil)
 		c.Execute(b, event)
-		return b.String() == f.ifResult
+		if b.String() != f.ifResult {
+			return false
+		}
 	}
 	return true
 }
