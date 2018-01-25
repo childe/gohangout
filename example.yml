@@ -1,10 +1,9 @@
 inputs:
     - Stdin:
         codec: json
-        type: stdin1
     - Kafka:
         topic:
-            fx.cat.log.booking: 1
+            test: 1
         codec: json
         consumer_settings:
             bootstrap.servers: "10.0.0.100:9092"
