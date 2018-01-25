@@ -34,6 +34,9 @@ filters:
             - 'UNIX'
             - 'UNIX_MS'
         remove_fields: ["logtime"]
+    - Drop:
+        if:
+            - '{{with and .name (eq .name "childe")}}y{{end}}'
 
 outputs:
     - Stdout: {}
