@@ -42,8 +42,8 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	}
 	if v, ok := config["if"]; ok {
 		f.ifConditions = make([]*template.Template, 0)
-		for i, c := range v.([]string) {
-			t, err := template.New(strconv.Itoa(i)).Parse(c)
+		for i, c := range v.([]interface{}) {
+			t, err := template.New(strconv.Itoa(i)).Parse(c.(string))
 			if err != nil {
 				glog.Fatalf("could NOT build template from %s:%s", c, err)
 			}
