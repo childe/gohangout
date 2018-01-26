@@ -376,7 +376,13 @@ func (p *ElasticsearchOutput) emit(event map[string]interface{}) {
 	if p.id == nil {
 		id = ""
 	} else {
-		id = p.id.Render(event).(string)
+		t := p.id.Render(event)
+		if t == nil {
+			id = ""
+			glog.V(20).Info(event)
+		} else {
+			id = t.(string)
+		}
 	}
 	p.bulkProcessor.add(&Action{op, index, index_type, id, event})
 }
