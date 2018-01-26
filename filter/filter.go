@@ -1,11 +1,9 @@
 package filter
 
 import (
-	"bytes"
 	"reflect"
-	"strconv"
-	"text/template"
 
+	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
@@ -32,7 +30,7 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 
 type BaseFilter struct {
 	config       map[interface{}]interface{}
-	ifConditions []*template.Template
+	ifConditions []value_render.ValueRender
 	ifResult     string
 }
 
@@ -41,12 +39,9 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 		config: config,
 	}
 	if v, ok := config["if"]; ok {
-		f.ifConditions = make([]*template.Template, 0)
-		for i, c := range v.([]interface{}) {
-			t, err := template.New(strconv.Itoa(i)).Parse(c.(string))
-			if err != nil {
-				glog.Fatalf("could NOT build template from %s:%s", c, err)
-			}
+		f.ifConditions = make([]value_render.ValueRender, 0)
+		for _, c := range v.([]interface{}) {
+			t := value_render.GetValueRender(c.(string))
 			f.ifConditions = append(f.ifConditions, t)
 		}
 	} else {
@@ -66,9 +61,8 @@ func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 		return true
 	}
 	for _, c := range f.ifConditions {
-		b := bytes.NewBuffer(nil)
-		c.Execute(b, event)
-		if b.String() != f.ifResult {
+		r := c.Render(event)
+		if r.(string) != f.ifResult {
 			return false
 		}
 	}
