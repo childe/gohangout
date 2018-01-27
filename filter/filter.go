@@ -62,7 +62,7 @@ func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 	}
 	for _, c := range f.ifConditions {
 		r := c.Render(event)
-		if r.(string) != f.ifResult {
+		if r == nil || r.(string) != f.ifResult {
 			return false
 		}
 	}
