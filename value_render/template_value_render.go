@@ -1,6 +1,7 @@
 package value_render
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -37,7 +38,6 @@ func init() {
 	funcMap["timestamp"] = func(event map[string]interface{}) int64 {
 		timestamp := event["@timestamp"]
 		if timestamp == nil {
-			//return time.Now().UnixNano() / 1000000
 			return 0
 		}
 		if reflect.TypeOf(timestamp).String() == "time.Time" {
@@ -58,7 +58,7 @@ func init() {
 		return a + b, nil
 	}
 
-	funcMap["plus"] = func(x, y interface{}) (int, error) {
+	funcMap["minus"] = func(x, y interface{}) (int, error) {
 		a, err := convertToInt(x)
 		if err != nil {
 			return 0, err
@@ -114,6 +114,11 @@ func NewTemplateValueRender(t string) *TemplateValueRender {
 	}
 }
 
+// always return string
 func (r *TemplateValueRender) Render(event map[string]interface{}) interface{} {
-	return nil
+	b := bytes.NewBuffer(nil)
+	if r.tmpl.Execute(b, event) != nil {
+		return nil
+	}
+	return string(b.Bytes())
 }
