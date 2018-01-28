@@ -46,6 +46,34 @@ func init() {
 		return 0
 	}
 
+	funcMap["before"] = func(event map[string]interface{}, s string) bool {
+		timestamp := event["@timestamp"]
+		if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
+			return false
+		}
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			glog.Error(err)
+			return false
+		}
+		dst := time.Now().Add(d)
+		return timestamp.(time.Time).Before(dst)
+	}
+
+	funcMap["after"] = func(event map[string]interface{}, s string) bool {
+		timestamp := event["@timestamp"]
+		if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
+			return false
+		}
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			glog.Error(err)
+			return false
+		}
+		dst := time.Now().Add(d)
+		return timestamp.(time.Time).After(dst)
+	}
+
 	funcMap["plus"] = func(x, y interface{}) (int, error) {
 		a, err := convertToInt(x)
 		if err != nil {
