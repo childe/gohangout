@@ -20,9 +20,11 @@ filters:
             '[a][b]': '[stored][message]'
     - Grok:
         src: message
+        pattern_paths:
+            - '/opt/gohangout/patterns'
         match:
             - '^(?P<user>\w+) (?P<status>\d+)$'
-            - '^%{USER:user} %{INT:status}$'
+            - '^%{USER:user} %{INT:status} %{INT:request_time}$'
         remove_fields: ['message']
     - Date:
         location: 'Asia/Shanghai'
@@ -47,7 +49,7 @@ outputs:
     - Elasticsearch:
         hosts:
             - http://127.0.0.1:9200
-        index: 'web-%{+2006-01-02}' // golang里面的渲染方式就是用数字, 而不是用YYMM.
+        index: 'web-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
         index_type: "logs"
         bulk_actions: 5000
         bulk_size: 20

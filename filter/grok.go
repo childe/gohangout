@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -12,13 +13,22 @@ import (
 	"github.com/golang/glog"
 )
 
-func getAllPatternsFromFile(filename string) map[string]string {
-	var patterns map[string]string = make(map[string]string)
-	f, err := os.Open(filename)
-	if err != nil {
-		glog.Fatal(err)
+func (grok *Grok) loadPattern(filename string) {
+	var r *bufio.Reader
+	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
+		resp, err := http.Get(filename)
+		if err != nil {
+			glog.Fatalf("load pattern error:%s", err)
+		}
+		defer resp.Body.Close()
+		r = bufio.NewReader(resp.Body)
+	} else {
+		f, err := os.Open(filename)
+		if err != nil {
+			glog.Fatalf("load pattern error:%s", err)
+		}
+		r = bufio.NewReader(f)
 	}
-	r := bufio.NewReader(f)
 	for {
 		line, isPrefix, err := r.ReadLine()
 		if err == io.EOF {
@@ -37,13 +47,18 @@ func getAllPatternsFromFile(filename string) map[string]string {
 		if len(ss) != 2 {
 			glog.Fatalf("splited `%s` length !=2", string(line))
 		}
-		patterns[ss[0]] = ss[1]
+		grok.patterns[ss[0]] = ss[1]
 	}
-	return patterns
 }
 
-func replaceFunc(s string) string {
-	patterns := getAllPatternsFromFile("patterns")
+func (grok *Grok) loadPatterns() {
+	for _, filename := range grok.patternPaths {
+		grok.loadPattern(filename)
+	}
+	glog.V(10).Infof("patterns:%s", grok.patterns)
+}
+
+func (grok *Grok) replaceFunc(s string) string {
 	p, err := regexp.Compile(`%{(\w+?)(?::(\w+?))?}`)
 	if err != nil {
 		glog.Fatal(err)
@@ -52,7 +67,7 @@ func replaceFunc(s string) string {
 	if len(rst) != 1 {
 		glog.Fatal("!=1")
 	}
-	if pattern, ok := patterns[rst[0][1]]; ok {
+	if pattern, ok := grok.patterns[rst[0][1]]; ok {
 		if rst[0][2] == "" {
 			return fmt.Sprintf("(%s)", pattern)
 		} else {
@@ -64,14 +79,14 @@ func replaceFunc(s string) string {
 	}
 }
 
-func translateMatchPattern(s string) string {
+func (grok *Grok) translateMatchPattern(s string) string {
 	p, err := regexp.Compile(`%{\w+?(:\w+?)?}`)
 	if err != nil {
 		glog.Fatal(err)
 	}
 	var r string = ""
 	for {
-		r = p.ReplaceAllStringFunc(s, replaceFunc)
+		r = p.ReplaceAllStringFunc(s, grok.replaceFunc)
 		if r == s {
 			return r
 		}
@@ -92,9 +107,7 @@ func (grok *Grok) grok(input string) map[string]string {
 	glog.V(5).Infof("grok `%s` match", grok.p)
 	rst := make(map[string]string)
 	for _, substrings := range grok.p.FindAllStringSubmatch(input, -1) {
-		glog.Info(substrings)
 		for i, substring := range substrings {
-			glog.Info(substring)
 			if grok.subexpNames[i] == "" {
 				continue
 			}
@@ -104,19 +117,23 @@ func (grok *Grok) grok(input string) map[string]string {
 	return rst
 }
 
-func NewGrok(match string) *Grok {
-	//finalPattern := translateMatchPattern(match)
-	//glog.Infof("final pattern:%s", finalPattern)
-	p, err := regexp.Compile(match)
-	glog.Info(p.SubexpNames())
-	glog.Info(len(p.SubexpNames()))
+func NewGrok(match string, patternPaths []string) *Grok {
+	grok := &Grok{
+		patternPaths: patternPaths,
+		patterns:     make(map[string]string),
+	}
+	grok.loadPatterns()
+
+	finalPattern := grok.translateMatchPattern(match)
+	glog.Infof("final pattern:%s", finalPattern)
+	p, err := regexp.Compile(finalPattern)
 	if err != nil {
 		glog.Fatalf("could not build Grok:%s", err)
 	}
-	return &Grok{
-		p:           p,
-		subexpNames: p.SubexpNames(),
-	}
+	grok.p = p
+	grok.subexpNames = p.SubexpNames()
+
+	return grok
 }
 
 type GrokFilter struct {
@@ -130,11 +147,17 @@ type GrokFilter struct {
 }
 
 func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
+	var patternPaths []string = make([]string, 0)
+	if i, ok := config["pattern_paths"]; ok {
+		for _, p := range i.([]interface{}) {
+			patternPaths = append(patternPaths, p.(string))
+		}
+	}
 	groks := make([]*Grok, 0)
 	if matchValue, ok := config["match"]; ok {
 		match := matchValue.([]interface{})
 		for _, mValue := range match {
-			groks = append(groks, NewGrok(mValue.(string)))
+			groks = append(groks, NewGrok(mValue.(string), patternPaths))
 		}
 	} else {
 		glog.Fatal("match must be set in grok filter")
