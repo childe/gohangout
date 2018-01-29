@@ -1,37 +1,115 @@
 package filter
 
 import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
 	"regexp"
+	"strings"
 
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
+func getAllPatternsFromFile(filename string) map[string]string {
+	var patterns map[string]string = make(map[string]string)
+	f, err := os.Open(filename)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	r := bufio.NewReader(f)
+	for {
+		line, isPrefix, err := r.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			glog.Fatalf("read pattenrs error:%s", err)
+		}
+		if isPrefix == true {
+			glog.Fatal("readline prefix")
+		}
+		if len(line) == 0 || line[0] == '#' {
+			continue
+		}
+		ss := strings.SplitN(string(line), " ", 2)
+		if len(ss) != 2 {
+			glog.Fatalf("splited `%s` length !=2", string(line))
+		}
+		patterns[ss[0]] = ss[1]
+	}
+	return patterns
+}
+
+func replaceFunc(s string) string {
+	patterns := getAllPatternsFromFile("patterns")
+	p, err := regexp.Compile(`%{(\w+?)(?::(\w+?))?}`)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	rst := p.FindAllStringSubmatch(s, -1)
+	if len(rst) != 1 {
+		glog.Fatal("!=1")
+	}
+	if pattern, ok := patterns[rst[0][1]]; ok {
+		if rst[0][2] == "" {
+			return fmt.Sprintf("(%s)", pattern)
+		} else {
+			return fmt.Sprintf("(?P<%s>%s)", rst[0][2], pattern)
+		}
+	} else {
+		glog.Fatalf("`%s` could not be found", rst[0][1])
+		return ""
+	}
+}
+
+func translateMatchPattern(s string) string {
+	p, err := regexp.Compile(`%{\w+?(:\w+?)?}`)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	var r string = ""
+	for {
+		r = p.ReplaceAllStringFunc(s, replaceFunc)
+		if r == s {
+			return r
+		}
+		s = r
+	}
+	return r
+}
+
 type Grok struct {
 	p           *regexp.Regexp
 	subexpNames []string
+
+	patterns     map[string]string
+	patternPaths []string
 }
 
 func (grok *Grok) grok(input string) map[string]string {
-	if grok.p.MatchString(input) {
-		glog.V(5).Infof("grok `%s` match", grok.p)
-		rst := make(map[string]string)
-		for _, substrings := range grok.p.FindAllStringSubmatch(input, -1) {
-			for i, substring := range substrings {
-				if i == 0 {
-					continue
-				}
-				rst[grok.subexpNames[i]] = substring
+	glog.V(5).Infof("grok `%s` match", grok.p)
+	rst := make(map[string]string)
+	for _, substrings := range grok.p.FindAllStringSubmatch(input, -1) {
+		glog.Info(substrings)
+		for i, substring := range substrings {
+			glog.Info(substring)
+			if grok.subexpNames[i] == "" {
+				continue
 			}
+			rst[grok.subexpNames[i]] = substring
 		}
-		return rst
 	}
-	glog.V(5).Infof("grok not `%s` match", grok.p)
-	return nil
+	return rst
 }
 
 func NewGrok(match string) *Grok {
+	//finalPattern := translateMatchPattern(match)
+	//glog.Infof("final pattern:%s", finalPattern)
 	p, err := regexp.Compile(match)
+	glog.Info(p.SubexpNames())
+	glog.Info(len(p.SubexpNames()))
 	if err != nil {
 		glog.Fatalf("could not build Grok:%s", err)
 	}
@@ -97,7 +175,7 @@ func (gf *GrokFilter) Process(event map[string]interface{}) (map[string]interfac
 	success := false
 	for _, grok := range gf.groks {
 		rst := grok.grok(input)
-		if rst == nil {
+		if len(rst) == 0 {
 			continue
 		}
 
