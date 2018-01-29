@@ -23,6 +23,8 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewDateFilter(config)
 	case "Drop":
 		return NewDropFilter(config)
+	case "Json":
+		return NewJsonFilter(config)
 	}
 	glog.Fatalf("could build %s filter plugin", filterType)
 	return nil
