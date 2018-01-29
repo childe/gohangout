@@ -22,12 +22,14 @@ filters:
         src: message
         match:
             - '^(?P<user>\w+) (?P<status>\d+)$'
+            - '^%{USER:user} %{INT:status}$'
         remove_fields: ['message']
     - Date:
         location: 'Asia/Shanghai'
         src: logtime
         formats:
             - 'RFC3339'
+            - '2006-01-02T15:04:05'
             - '2006-01-02T15:04:05Z07:00'
             - '2006-01-02T15:04:05Z0700'
             - '2006-01-02'
@@ -36,7 +38,9 @@ filters:
         remove_fields: ["logtime"]
     - Drop:
         if:
-            - '{{with and .name (eq .name "childe")}}y{{end}}'
+            - '{{if .name}}y{{end}}'
+            - '{{if eq .name "childe"}}y{{end}}'
+            - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
 
 outputs:
     - Stdout: {}
