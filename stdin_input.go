@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"os"
 
 	"github.com/childe/gohangout/codec"
@@ -27,14 +28,24 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 }
 
 func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {
-	text, isPrefix, err := inputPlugin.reader.ReadLine()
-	if err != nil {
-		glog.Errorf("readline error:%s", err)
-		return nil
-	}
-	if isPrefix {
-		glog.Errorf("readline got only prefix")
-		return nil
+	var text []byte = nil
+	for {
+		line, isPrefix, err := inputPlugin.reader.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				os.Exit(0)
+			}
+			glog.Errorf("readline error:%s", err)
+			return nil
+		}
+		if text == nil {
+			text = line
+		} else {
+			text = append(text, line...)
+		}
+		if !isPrefix {
+			break
+		}
 	}
 	return inputPlugin.decoder.Decode(string(text))
 }
