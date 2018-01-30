@@ -98,6 +98,7 @@ func (grok *Grok) translateMatchPattern(s string) string {
 type Grok struct {
 	p           *regexp.Regexp
 	subexpNames []string
+	ignoreBlank bool
 
 	patterns     map[string]string
 	patternPaths []string
@@ -111,16 +112,20 @@ func (grok *Grok) grok(input string) map[string]string {
 			if grok.subexpNames[i] == "" {
 				continue
 			}
+			if grok.ignoreBlank && substring == "" {
+				continue
+			}
 			rst[grok.subexpNames[i]] = substring
 		}
 	}
 	return rst
 }
 
-func NewGrok(match string, patternPaths []string) *Grok {
+func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 	grok := &Grok{
 		patternPaths: patternPaths,
 		patterns:     make(map[string]string),
+		ignoreBlank:  ignoreBlank,
 	}
 	grok.loadPatterns()
 
@@ -153,11 +158,15 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 			patternPaths = append(patternPaths, p.(string))
 		}
 	}
+	ignoreBlank := true
+	if i, ok := config["ignore_blank"]; ok {
+		ignoreBlank = i.(bool)
+	}
 	groks := make([]*Grok, 0)
 	if matchValue, ok := config["match"]; ok {
 		match := matchValue.([]interface{})
 		for _, mValue := range match {
-			groks = append(groks, NewGrok(mValue.(string), patternPaths))
+			groks = append(groks, NewGrok(mValue.(string), patternPaths, ignoreBlank))
 		}
 	} else {
 		glog.Fatal("match must be set in grok filter")
