@@ -1,19 +1,31 @@
-package main
+package input
 
-import "github.com/childe/gohangout/filter"
+import (
+	"github.com/childe/gohangout/filter"
+	"github.com/childe/gohangout/output"
+)
 
 type InputBox struct {
 	input   Input
 	filters []filter.Filter
-	outputs []Output
+	outputs []output.Output
 	config  map[interface{}]interface{}
+}
+
+func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, config map[interface{}]interface{}) InputBox {
+	return InputBox{
+		input:   input,
+		filters: filters,
+		outputs: outputs,
+		config:  config,
+	}
 }
 
 func (box *InputBox) prepare(event map[string]interface{}) map[string]interface{} {
 	return event
 }
 
-func (box *InputBox) beat() {
+func (box *InputBox) Beat() {
 	//box.input.init(box.config)
 	var (
 		event   map[string]interface{}
@@ -44,7 +56,7 @@ func (box *InputBox) beat() {
 			continue
 		}
 		for _, outputPlugin := range box.outputs {
-			outputPlugin.emit(event)
+			outputPlugin.Emit(event)
 		}
 	}
 }

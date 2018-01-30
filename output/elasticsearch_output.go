@@ -1,7 +1,8 @@
-package main
+package output
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -366,7 +367,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	return rst
 }
 
-func (p *ElasticsearchOutput) emit(event map[string]interface{}) {
+func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	var (
 		index      string = p.index.Render(event).(string)
 		index_type string = p.index_type.Render(event).(string)

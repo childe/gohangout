@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/childe/gohangout/filter"
+	"github.com/childe/gohangout/input"
+	"github.com/childe/gohangout/output"
 	"github.com/golang/glog"
 	"github.com/json-iterator/go"
 )
@@ -27,18 +29,18 @@ func init() {
 	flag.Parse()
 }
 
-func getOutputs(config map[string]interface{}) []Output {
+func getOutputs(config map[string]interface{}) []output.Output {
 	if outputValue, ok := config["outputs"]; ok {
-		rst := make([]Output, 0)
+		rst := make([]output.Output, 0)
 		outputs := outputValue.([]interface{})
 		for _, outputValue := range outputs {
-			output := outputValue.(map[interface{}]interface{})
-			for k, v := range output {
+			o := outputValue.(map[interface{}]interface{})
+			for k, v := range o {
 				outputType := k.(string)
 				glog.Infof("output type:%s", outputType)
 				outputConfig := v.(map[interface{}]interface{})
 				glog.Infof("output config:%v", outputConfig)
-				outputPlugin := getOutput(outputType, outputConfig)
+				outputPlugin := output.GetOutput(outputType, outputConfig)
 				if outputPlugin == nil {
 					glog.Fatalf("could build output plugin from type (%s)", outputType)
 				}
@@ -94,26 +96,21 @@ func main() {
 		inputs := inputValue.([]interface{})
 		wg.Add(len(inputs))
 		for _, inputValue := range inputs {
-			input := inputValue.(map[interface{}]interface{})
-			glog.Info(input)
-			for k, v := range input {
+			i := inputValue.(map[interface{}]interface{})
+			glog.Info(i)
+			for k, v := range i {
 				inputType := k.(string)
 				glog.Info(inputType)
 				inputConfig := v.(map[interface{}]interface{})
 				glog.Info(inputConfig)
 
-				inputPlugin := getInput(inputType, inputConfig)
+				inputPlugin := input.GetInput(inputType, inputConfig)
 				//inputPlugin.config = inputPlugin
-				box := InputBox{
-					input:   inputPlugin,
-					filters: getFilters(config),
-					outputs: getOutputs(config),
-					config:  inputConfig,
-				}
+				box := input.NewInputBox(inputPlugin, getFilters(config), getOutputs(config), inputConfig)
 
 				go func() {
 					defer wg.Done()
-					box.beat()
+					box.Beat()
 				}()
 			}
 		}

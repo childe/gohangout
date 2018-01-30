@@ -1,4 +1,4 @@
-package main
+package input
 
 import (
 	"github.com/childe/gohangout/codec"

@@ -1,6 +1,7 @@
-package main
+package output
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -14,7 +15,7 @@ func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
 	return &StdoutOutput{config}
 }
 
-func (outputPlugin *StdoutOutput) emit(event map[string]interface{}) {
+func (outputPlugin *StdoutOutput) Emit(event map[string]interface{}) {
 	buf, err := json.Marshal(event)
 	if err != nil {
 		glog.Errorf("marshal %v error:%s", event, err)

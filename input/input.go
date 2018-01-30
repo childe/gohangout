@@ -1,10 +1,10 @@
-package main
+package input
 
 type Input interface {
 	readOneEvent() map[string]interface{}
 }
 
-func getInput(inputType string, config map[interface{}]interface{}) Input {
+func GetInput(inputType string, config map[interface{}]interface{}) Input {
 	switch inputType {
 	case "Stdin":
 		//t := reflect.TypeOf(StdinInput{})

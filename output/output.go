@@ -1,10 +1,10 @@
-package main
+package output
 
 type Output interface {
-	emit(map[string]interface{})
+	Emit(map[string]interface{})
 }
 
-func getOutput(outputType string, config map[interface{}]interface{}) Output {
+func GetOutput(outputType string, config map[interface{}]interface{}) Output {
 	switch outputType {
 	case "Stdout":
 		return NewStdoutOutput(config)
