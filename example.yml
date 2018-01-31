@@ -45,7 +45,9 @@ filters:
             - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
 
 outputs:
-    - Stdout: {}
+    - Stdout:
+        if:
+            - '{{if .error}}y{{end}}'
     - Elasticsearch:
         hosts:
             - http://127.0.0.1:9200

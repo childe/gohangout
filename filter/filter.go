@@ -3,7 +3,7 @@ package filter
 import (
 	"reflect"
 
-	"github.com/childe/gohangout/value_render"
+	"github.com/childe/gohangout/condition_filter"
 	"github.com/golang/glog"
 )
 
@@ -31,45 +31,22 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 }
 
 type BaseFilter struct {
-	config       map[interface{}]interface{}
-	ifConditions []value_render.ValueRender
-	ifResult     string
+	config          map[interface{}]interface{}
+	conditionFilter *condition_filter.ConditionFilter
 }
 
 func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	f := BaseFilter{
-		config: config,
-	}
-	if v, ok := config["if"]; ok {
-		f.ifConditions = make([]value_render.ValueRender, 0)
-		for _, c := range v.([]interface{}) {
-			t := value_render.GetValueRender(c.(string))
-			f.ifConditions = append(f.ifConditions, t)
-		}
-	} else {
-		f.ifConditions = nil
-	}
-
-	if v, ok := config["ifResult"]; ok {
-		f.ifResult = v.(string)
-	} else {
-		f.ifResult = "y"
+		config:          config,
+		conditionFilter: condition_filter.NewConditionFilter(config),
 	}
 	return f
 }
 
 func (f *BaseFilter) Pass(event map[string]interface{}) bool {
-	if f.ifConditions == nil {
-		return true
-	}
-	for _, c := range f.ifConditions {
-		r := c.Render(event)
-		if r == nil || r.(string) != f.ifResult {
-			return false
-		}
-	}
-	return true
+	return f.conditionFilter.Pass(event)
 }
+
 func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
 }

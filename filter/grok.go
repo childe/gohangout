@@ -55,7 +55,7 @@ func (grok *Grok) loadPatterns() {
 	for _, filename := range grok.patternPaths {
 		grok.loadPattern(filename)
 	}
-	glog.V(10).Infof("patterns:%s", grok.patterns)
+	glog.V(5).Infof("patterns:%s", grok.patterns)
 }
 
 func (grok *Grok) replaceFunc(s string) string {
@@ -65,7 +65,7 @@ func (grok *Grok) replaceFunc(s string) string {
 	}
 	rst := p.FindAllStringSubmatch(s, -1)
 	if len(rst) != 1 {
-		glog.Fatal("!=1")
+		glog.Fatalf("sub match in `%s` != 1", s)
 	}
 	if pattern, ok := grok.patterns[rst[0][1]]; ok {
 		if rst[0][2] == "" {
@@ -105,7 +105,6 @@ type Grok struct {
 }
 
 func (grok *Grok) grok(input string) map[string]string {
-	glog.V(5).Infof("grok `%s` match", grok.p)
 	rst := make(map[string]string)
 	for _, substrings := range grok.p.FindAllStringSubmatch(input, -1) {
 		for i, substring := range substrings {

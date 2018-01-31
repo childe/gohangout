@@ -8,11 +8,15 @@ import (
 )
 
 type StdoutOutput struct {
+	BaseOutput
 	config map[interface{}]interface{}
 }
 
 func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
-	return &StdoutOutput{config}
+	return &StdoutOutput{
+		BaseOutput: NewBaseOutput(config),
+		config:     config,
+	}
 }
 
 func (outputPlugin *StdoutOutput) Emit(event map[string]interface{}) {

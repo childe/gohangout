@@ -56,7 +56,9 @@ func (box *InputBox) Beat() {
 			continue
 		}
 		for _, outputPlugin := range box.outputs {
-			outputPlugin.Emit(event)
+			if outputPlugin.Pass(event) {
+				outputPlugin.Emit(event)
+			}
 		}
 	}
 }

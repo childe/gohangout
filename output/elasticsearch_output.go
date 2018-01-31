@@ -304,6 +304,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 }
 
 type ElasticsearchOutput struct {
+	BaseOutput
 	config map[interface{}]interface{}
 
 	index      value_render.ValueRender
@@ -315,7 +316,8 @@ type ElasticsearchOutput struct {
 
 func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOutput {
 	rst := &ElasticsearchOutput{
-		config: config,
+		BaseOutput: NewBaseOutput(config),
+		config:     config,
 	}
 
 	if indexValue, ok := config["index"]; ok {
