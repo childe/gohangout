@@ -3,6 +3,12 @@ hash:=$(shell git rev-parse --short HEAD)
 gohangout:
 	go build -o build/gohangout
 
+hermes:
+	@echo $(hash)
+	mkdir -p build/
+	git checkout hermes
+
+	GOOS=linux GOARCH=amd64 go build -o build/gohangout-linux-x64-$(hash)
 all:
 	@echo $(hash)
 	mkdir -p build/
