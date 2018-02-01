@@ -230,7 +230,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 	err = json.Unmarshal(respBody, &responseI)
 
 	if err != nil {
-		glog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry`, err)
+		glog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
 		return true
 	}
 
