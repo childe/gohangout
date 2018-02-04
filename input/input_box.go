@@ -21,12 +21,7 @@ func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, 
 	}
 }
 
-func (box *InputBox) prepare(event map[string]interface{}) map[string]interface{} {
-	return event
-}
-
 func (box *InputBox) Beat() {
-	//box.input.init(box.config)
 	var (
 		event   map[string]interface{}
 		success bool
