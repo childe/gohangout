@@ -3,6 +3,7 @@ package input
 import (
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/output"
+	"github.com/golang-collections/collections/stack"
 )
 
 type InputBox struct {
@@ -27,6 +28,11 @@ func (box *InputBox) Beat() {
 		success bool
 	)
 
+	var (
+		sFrom *stack.Stack = stack.New()
+		sTo   *stack.Stack = stack.New()
+	)
+
 	for {
 		event = box.input.readOneEvent()
 		if event == nil {
@@ -35,24 +41,33 @@ func (box *InputBox) Beat() {
 		if typeValue, ok := box.config["type"]; ok {
 			event["type"] = typeValue
 		}
+		sFrom.Push(event)
+
 		if box.filters != nil {
 			for _, filterPlugin := range box.filters {
-				if filterPlugin.Pass(event) == false {
-					continue
+				for sFrom.Len() > 0 {
+					event = sFrom.Pop().(map[string]interface{})
+					if filterPlugin.Pass(event) == false {
+						sTo.Push(event)
+						continue
+					}
+					event, success = filterPlugin.Process(event)
+					if event == nil {
+						continue
+					}
+					event = filterPlugin.PostProcess(event, success)
+					sTo.Push(event)
 				}
-				event, success = filterPlugin.Process(event)
-				if event == nil {
-					break
-				}
-				filterPlugin.PostProcess(event, success)
+				sFrom, sTo = sTo, sFrom
 			}
 		}
-		if event == nil {
-			continue
-		}
-		for _, outputPlugin := range box.outputs {
-			if outputPlugin.Pass(event) {
-				outputPlugin.Emit(event)
+
+		for sFrom.Len() > 0 {
+			event = sFrom.Pop().(map[string]interface{})
+			for _, outputPlugin := range box.outputs {
+				if outputPlugin.Pass(event) {
+					outputPlugin.Emit(event)
+				}
 			}
 		}
 	}
