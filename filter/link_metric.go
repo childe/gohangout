@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"reflect"
 	"strings"
 	"time"
 
@@ -75,8 +76,13 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	var timestamp int64
 	if v, ok := event[plugin.timestamp]; ok {
+		if reflect.TypeOf(v).String() != "time.Time" {
+			glog.Errorf("timestamp must be time.Time, but it's %s", reflect.TypeOf(v).String())
+			return
+		}
 		timestamp = v.(time.Time).Unix()
 	} else {
+		glog.Errorf("not timestamp in event. %s", event)
 		return
 	}
 
@@ -94,12 +100,18 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		plugin.metric[timestamp] = set
 	}
 
+	var fieldValue string
 	for _, field := range plugin.fields {
-		if v, ok := set[field]; ok {
+		fieldValueI := event[field]
+		if fieldValueI == nil {
+			return
+		}
+		fieldValue = fieldValueI.(string)
+		if v, ok := set[fieldValue]; ok {
 			set = v.(map[string]interface{})
 		} else {
-			set[field] = make(map[string]interface{})
-			set = set[field].(map[string]interface{})
+			set[fieldValue] = make(map[string]interface{})
+			set = set[fieldValue].(map[string]interface{})
 		}
 	}
 
@@ -138,8 +150,9 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	if len(plugin.metricToEmit) == 0 {
 		return nil
 	}
+	glog.Info(plugin.metricToEmit)
 	for timestamp, sI := range plugin.metricToEmit {
-		s := sI.(map[interface{}]interface{})
+		s := sI.(map[string]interface{})
 		s["@timestamp"] = timestamp
 		sTo.Push(s)
 	}
