@@ -38,7 +38,8 @@ type BaseFilter struct {
 	config          map[interface{}]interface{}
 	conditionFilter *condition_filter.ConditionFilter
 
-	failTag string
+	failTag      string
+	removeFields []string
 }
 
 func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
@@ -50,6 +51,15 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 		f.failTag = v.(string)
 	} else {
 		f.failTag = ""
+	}
+
+	if remove_fields, ok := config["remove_fields"]; ok {
+		f.removeFields = make([]string, 0)
+		for _, field := range remove_fields.([]interface{}) {
+			f.removeFields = append(f.removeFields, field.(string))
+		}
+	} else {
+		f.removeFields = nil
 	}
 	return f
 }
@@ -66,9 +76,9 @@ func (f *BaseFilter) EmitExtraEvents(*stack.Stack) []map[string]interface{} {
 }
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
-		if remove_fields, ok := f.config["remove_fields"]; ok {
-			for _, field := range remove_fields.([]interface{}) {
-				delete(event, field.(string))
+		if f.removeFields != nil {
+			for _, field := range f.removeFields {
+				delete(event, field)
 			}
 		}
 	} else {
