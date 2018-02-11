@@ -62,7 +62,7 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	}
 
 	if reserveWindow, ok := config["reserveWindow"]; ok {
-		plugin.reserveWindow = int64(reserveWindow.(int)) * 1000
+		plugin.reserveWindow = int64(reserveWindow.(int))
 	} else {
 		glog.Fatal("reserveWindow must be set in linkmetric filter plugin")
 	}
