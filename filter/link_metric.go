@@ -122,12 +122,13 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		}
 	}
 
-	if count, ok := set[plugin.lastField]; ok {
-		fieldValueI := event[plugin.lastField]
-		if fieldValueI == nil {
-			return
-		}
-		fieldValue = fieldValueI.(string)
+	fieldValueI := event[plugin.lastField]
+	if fieldValueI == nil {
+		return
+	}
+	fieldValue = fieldValueI.(string)
+
+	if count, ok := set[fieldValue]; ok {
 		set[fieldValue] = 1 + count.(int)
 	} else {
 		set[fieldValue] = 1
@@ -173,6 +174,7 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	if len(plugin.metricToEmit) == 0 {
 		return nil
 	}
+	glog.Info(plugin.metricToEmit)
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
 		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
@@ -181,5 +183,6 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 			sTo.Push(event)
 		}
 	}
+	plugin.metricToEmit = make(map[int64]interface{})
 	return nil
 }
