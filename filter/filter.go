@@ -37,12 +37,19 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 type BaseFilter struct {
 	config          map[interface{}]interface{}
 	conditionFilter *condition_filter.ConditionFilter
+
+	failTag string
 }
 
 func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	f := BaseFilter{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
+	}
+	if v, ok := config["failTag"]; ok {
+		f.failTag = v.(string)
+	} else {
+		f.failTag = ""
 	}
 	return f
 }
@@ -65,17 +72,16 @@ func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map
 			}
 		}
 	} else {
-		if v, ok := f.config["failTag"]; ok {
-			failTag := v.(string)
+		if f.failTag != "" {
 			if tags, ok := event["tags"]; ok {
 				if reflect.TypeOf(tags).Kind() == reflect.String {
-					event["tags"] = []string{tags.(string), failTag}
+					event["tags"] = []string{tags.(string), f.failTag}
 				} else if reflect.TypeOf(tags).Kind() == reflect.Array {
-					event["tags"] = append(tags.([]interface{}), failTag)
+					event["tags"] = append(tags.([]interface{}), f.failTag)
 				} else {
 				}
 			} else {
-				event["tags"] = failTag
+				event["tags"] = f.failTag
 			}
 		}
 	}
