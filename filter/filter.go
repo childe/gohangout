@@ -4,6 +4,8 @@ import (
 	"reflect"
 
 	"github.com/childe/gohangout/condition_filter"
+	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/value_render"
 	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 )
@@ -40,6 +42,7 @@ type BaseFilter struct {
 
 	failTag      string
 	removeFields []string
+	addFields    map[field_setter.FieldSetter]value_render.ValueRender
 }
 
 func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
@@ -61,6 +64,19 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	} else {
 		f.removeFields = nil
 	}
+
+	if add_fields, ok := config["add_fields"]; ok {
+		f.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
+		for k, v := range add_fields.(map[interface{}]interface{}) {
+			fieldSetter := field_setter.NewFieldSetter(k.(string))
+			if fieldSetter == nil {
+				glog.Fatalf("could build field setter from %s", k.(string))
+			}
+			f.addFields[fieldSetter] = value_render.GetValueRender(v.(string))
+		}
+	} else {
+		f.addFields = nil
+	}
 	return f
 }
 
@@ -80,6 +96,9 @@ func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map
 			for _, field := range f.removeFields {
 				delete(event, field)
 			}
+		}
+		for fs, v := range f.addFields {
+			event = fs.SetField(event, v.Render(event), "", false)
 		}
 	} else {
 		if f.failTag != "" {
