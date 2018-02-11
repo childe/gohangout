@@ -174,7 +174,6 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	if len(plugin.metricToEmit) == 0 {
 		return nil
 	}
-	glog.Info(plugin.metricToEmit)
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
 		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
