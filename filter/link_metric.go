@@ -18,7 +18,10 @@ type LinkMetricFilter struct {
 	reserveWindow int64
 	overwrite     bool
 
-	fields []string
+	fields            []string
+	fieldsWithoutLast []string
+	lastField         string
+	fieldsLength      int
 
 	metric       map[int64]interface{}
 	metricToEmit map[int64]interface{}
@@ -39,6 +42,9 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 
 	if fieldsLink, ok := config["fieldsLink"]; ok {
 		plugin.fields = strings.Split(fieldsLink.(string), "->")
+		plugin.fieldsLength = len(plugin.fields)
+		plugin.fieldsWithoutLast = plugin.fields[:plugin.fieldsLength-1]
+		plugin.lastField = plugin.fields[plugin.fieldsLength-1]
 	} else {
 		glog.Fatal("fieldsLink must be set in linkmetric filter plugin")
 	}
@@ -101,7 +107,8 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 
 	var fieldValue string
-	for _, field := range plugin.fields {
+
+	for _, field := range plugin.fieldsWithoutLast {
 		fieldValueI := event[field]
 		if fieldValueI == nil {
 			return
@@ -115,45 +122,64 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		}
 	}
 
-	if count, ok := set["count"]; ok {
-		set["count"] = 1 + count.(int)
+	if count, ok := set[plugin.lastField]; ok {
+		fieldValueI := event[plugin.lastField]
+		if fieldValueI == nil {
+			return
+		}
+		fieldValue = fieldValueI.(string)
+		set[fieldValue] = 1 + count.(int)
 	} else {
-		set["count"] = 1
+		set[fieldValue] = 1
 	}
 }
 
 func (plugin *LinkMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	plugin.updateMetric(event)
-	return event, true
+	return event, false
+}
+
+func (plugin *LinkMetricFilter) metricToEvents(metrics map[string]interface{}, level int) []map[string]interface{} {
+	var (
+		fieldName string                   = plugin.fields[level]
+		events    []map[string]interface{} = make([]map[string]interface{}, 0)
+	)
+
+	if level == plugin.fieldsLength-1 {
+		for fieldValue, count := range metrics {
+			event := make(map[string]interface{})
+			event[fieldName] = fieldValue
+			event["count"] = count
+			events = append(events, event)
+		}
+		return events
+	}
+
+	for fieldValue, nextLevelMetrics := range metrics {
+		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[string]interface{}), level+1) {
+			event := make(map[string]interface{})
+			event[fieldName] = fieldValue
+			for k, v := range e {
+				event[k] = v
+			}
+			events = append(events, event)
+		}
+	}
+
+	return events
 }
 
 func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]interface{} {
-	/*
-	   if (metricToEmit.size() == 0) {
-	       return null;
-	   }
-	   List<Map<String, Object>> events = new ArrayList();
-
-	   this.metricToEmit.forEach((timestamp, s) -> {
-	       this.metricToEvents((Map) s, 0).forEach((Map<String, Object> e) -> {
-	           e.put(this.timestamp, timestamp);
-	           this.postProcess(e, true);
-	           events.add(e);
-	       });
-	   });
-
-	   this.metricToEmit.clear();
-	   this.lastEmitTime = System.currentTimeMillis();
-
-	   return events;
-	*/
 	if len(plugin.metricToEmit) == 0 {
 		return nil
 	}
-	for timestamp, sI := range plugin.metricToEmit {
-		s := sI.(map[string]interface{})
-		s["@timestamp"] = timestamp
-		sTo.Push(s)
+	var event map[string]interface{}
+	for timestamp, metrics := range plugin.metricToEmit {
+		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
+			event[plugin.timestamp] = timestamp
+			event = plugin.PostProcess(event, true)
+			sTo.Push(event)
+		}
 	}
 	return nil
 }
