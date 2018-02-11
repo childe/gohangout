@@ -77,12 +77,12 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	var timestamp int64
 	if v, ok := event[plugin.timestamp]; ok {
 		if reflect.TypeOf(v).String() != "time.Time" {
-			glog.Errorf("timestamp must be time.Time, but it's %s", reflect.TypeOf(v).String())
+			glog.V(10).Infof("timestamp must be time.Time, but it's %s", reflect.TypeOf(v).String())
 			return
 		}
 		timestamp = v.(time.Time).Unix()
 	} else {
-		glog.Errorf("not timestamp in event. %s", event)
+		glog.V(10).Infof("not timestamp in event. %s", event)
 		return
 	}
 
