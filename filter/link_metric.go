@@ -56,7 +56,7 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	}
 
 	if reserveWindow, ok := config["reserveWindow"]; ok {
-		plugin.reserveWindow = int64(reserveWindow.(int))
+		plugin.reserveWindow = int64(reserveWindow.(int)) * 1000
 	} else {
 		glog.Fatal("reserveWindow must be set in linkmetric filter plugin")
 	}
@@ -150,7 +150,6 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	if len(plugin.metricToEmit) == 0 {
 		return nil
 	}
-	glog.Info(plugin.metricToEmit)
 	for timestamp, sI := range plugin.metricToEmit {
 		s := sI.(map[string]interface{})
 		s["@timestamp"] = timestamp
