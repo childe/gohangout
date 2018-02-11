@@ -57,7 +57,7 @@ func (box *InputBox) Beat() {
 							sTo.Push(event)
 						}
 					}
-					events = filterPlugin.EmitExtraEvents()
+					events = filterPlugin.EmitExtraEvents(sTo)
 					if events != nil {
 						for _, event := range events {
 							sTo.Push(event)

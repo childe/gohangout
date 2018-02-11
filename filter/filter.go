@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/childe/gohangout/condition_filter"
+	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 )
 
@@ -11,7 +12,7 @@ type Filter interface {
 	Pass(map[string]interface{}) bool
 	Process(map[string]interface{}) (map[string]interface{}, bool)
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
-	EmitExtraEvents() []map[string]interface{}
+	EmitExtraEvents(*stack.Stack) []map[string]interface{}
 }
 
 func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
@@ -26,6 +27,8 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewDropFilter(config)
 	case "Json":
 		return NewJsonFilter(config)
+	case "LinkMetric":
+		return NewLinkMetricFilter(config)
 	}
 	glog.Fatalf("could build %s filter plugin", filterType)
 	return nil
@@ -51,7 +54,7 @@ func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
 }
-func (f *BaseFilter) EmitExtraEvents() []map[string]interface{} {
+func (f *BaseFilter) EmitExtraEvents(*stack.Stack) []map[string]interface{} {
 	return nil
 }
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
