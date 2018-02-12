@@ -96,6 +96,7 @@ type Action struct {
 	index      string
 	index_type string
 	id         string
+	routing    string
 	event      map[string]interface{}
 }
 
@@ -108,9 +109,9 @@ type BulkRequest struct {
 func (br *BulkRequest) add(action *Action) {
 	var meta []byte
 	if action.id != "" {
-		meta = []byte(fmt.Sprintf(`{"%s":{"_index":"%s","_type":"%s","_id":"%s"}}`, action.op, action.index, action.index_type, action.id))
+		meta = []byte(fmt.Sprintf(`{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}`, action.op, action.index, action.index_type, action.id, action.routing))
 	} else {
-		meta = []byte(fmt.Sprintf(`{"%s":{"_index":"%s","_type":"%s"}}`, action.op, action.index, action.index_type))
+		meta = []byte(fmt.Sprintf(`{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}`, action.op, action.index, action.index_type, action.routing))
 	}
 	buf, err := json.Marshal(action.event)
 	if err != nil {
@@ -310,6 +311,7 @@ type ElasticsearchOutput struct {
 	index      value_render.ValueRender
 	index_type value_render.ValueRender
 	id         value_render.ValueRender
+	routing    value_render.ValueRender
 
 	bulkProcessor BulkProcessor
 }
@@ -320,22 +322,28 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		config:     config,
 	}
 
-	if indexValue, ok := config["index"]; ok {
-		rst.index = value_render.GetValueRender(indexValue.(string))
+	if v, ok := config["index"]; ok {
+		rst.index = value_render.GetValueRender(v.(string))
 	} else {
 		glog.Fatal("index must be set in elasticsearch output")
 	}
 
-	if indextypeValue, ok := config["index_type"]; ok {
-		rst.index_type = value_render.GetValueRender(indextypeValue.(string))
+	if v, ok := config["index_type"]; ok {
+		rst.index_type = value_render.GetValueRender(v.(string))
 	} else {
 		rst.index_type = value_render.GetValueRender(DEFAULT_INDEX_TYPE)
 	}
 
-	if idValue, ok := config["id"]; ok {
-		rst.id = value_render.GetValueRender(idValue.(string))
+	if v, ok := config["id"]; ok {
+		rst.id = value_render.GetValueRender(v.(string))
 	} else {
 		rst.id = nil
+	}
+
+	if v, ok := config["routing"]; ok {
+		rst.routing = value_render.GetValueRender(v.(string))
+	} else {
+		rst.routing = nil
 	}
 
 	var bulk_size, bulk_actions, flush_interval int
@@ -375,6 +383,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		index_type string = p.index_type.Render(event).(string)
 		op         string = "index"
 		id         string
+		routing    string
 	)
 	if p.id == nil {
 		id = ""
@@ -382,10 +391,22 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		t := p.id.Render(event)
 		if t == nil {
 			id = ""
-			glog.V(20).Info(event)
+			glog.V(20).Infof("could not render id:%s", event)
 		} else {
 			id = t.(string)
 		}
 	}
-	p.bulkProcessor.add(&Action{op, index, index_type, id, event})
+
+	if p.routing == nil {
+		routing = ""
+	} else {
+		t := p.routing.Render(event)
+		if t == nil {
+			routing = ""
+			glog.V(20).Infof("could not render routing:%s", event)
+		} else {
+			routing = t.(string)
+		}
+	}
+	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
 }
