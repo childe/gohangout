@@ -76,7 +76,7 @@ func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 	} else {
 		glog.Fatal("source must be set in translate filter plugin")
 	}
-	plugin.sourceVR = value_render.GetValueRender(plugin.source)
+	plugin.sourceVR = value_render.GetValueRender2(plugin.source)
 
 	if target, ok := config["target"]; ok {
 		plugin.target = target.(string)
