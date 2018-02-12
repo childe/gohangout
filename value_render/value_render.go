@@ -15,7 +15,16 @@ func GetValueRender(template string) ValueRender {
 	matchESIndex, _ := regexp.Compile(`%{\+.*?}`) //%{+YYYY.MM.dd}
 
 	if matchp.Match([]byte(template)) {
-		return NewMultiLevelValueRender(template)
+		findp, _ := regexp.Compile(`(\[(.*?)\])`)
+		fields := make([]string, 0)
+		for _, v := range findp.FindAllStringSubmatch(template, -1) {
+			fields = append(fields, v[2])
+		}
+
+		if len(fields) == 1 {
+			return NewOneLevelValueRender(fields[0])
+		}
+		return NewMultiLevelValueRender(fields)
 	}
 	if matchGoTemp.Match([]byte(template)) {
 		return NewTemplateValueRender(template)
@@ -34,7 +43,16 @@ func GetValueRender2(template string) ValueRender {
 	matchESIndex, _ := regexp.Compile(`%{\+.*?}`) //%{+YYYY.MM.dd}
 
 	if matchp.Match([]byte(template)) {
-		return NewMultiLevelValueRender(template)
+		findp, _ := regexp.Compile(`(\[(.*?)\])`)
+		fields := make([]string, 0)
+		for _, v := range findp.FindAllStringSubmatch(template, -1) {
+			fields = append(fields, v[2])
+		}
+
+		if len(fields) == 1 {
+			return NewOneLevelValueRender(fields[0])
+		}
+		return NewMultiLevelValueRender(fields)
 	}
 	if matchGoTemp.Match([]byte(template)) {
 		return NewTemplateValueRender(template)
