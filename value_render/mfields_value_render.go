@@ -1,22 +1,13 @@
 package value_render
 
-import (
-	"reflect"
-	"regexp"
-)
+import "reflect"
 
 type MultiLevelValueRender struct {
 	preFields []string
 	lastField string
 }
 
-func NewMultiLevelValueRender(template string) *MultiLevelValueRender {
-	findp, _ := regexp.Compile(`(\[(.*?)\])`)
-	fields := make([]string, 0)
-	for _, v := range findp.FindAllStringSubmatch(template, -1) {
-		fields = append(fields, v[2])
-	}
-
+func NewMultiLevelValueRender(fields []string) *MultiLevelValueRender {
 	fieldsLength := len(fields)
 	preFields := make([]string, fieldsLength-1)
 	for i := range preFields {
