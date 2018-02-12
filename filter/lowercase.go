@@ -29,7 +29,7 @@ func NewLowercaseFilter(config map[interface{}]interface{}) *LowercaseFilter {
 			if fieldSetter == nil {
 				glog.Fatalf("could build field setter from %s", field.(string))
 			}
-			plugin.fields[fieldSetter] = value_render.GetValueRender(field.(string))
+			plugin.fields[fieldSetter] = value_render.GetValueRender2(field.(string))
 		}
 	} else {
 		glog.Fatal("fileds must be set in remove filter plugin")
