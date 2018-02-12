@@ -110,6 +110,9 @@ func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 
 func (plugin *TranslateFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	o := plugin.sourceVR.Render(event)
+	if o == nil {
+		return event, false
+	}
 	if targetValue, ok := plugin.dict[o]; ok {
 		event[plugin.target] = targetValue
 		return event, true
