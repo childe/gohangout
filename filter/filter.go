@@ -29,6 +29,8 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewDropFilter(config)
 	case "Json":
 		return NewJsonFilter(config)
+	case "Translate":
+		return NewTranslateFilter(config)
 	case "LinkMetric":
 		return NewLinkMetricFilter(config)
 	}
