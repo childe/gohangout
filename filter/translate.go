@@ -90,6 +90,12 @@ func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 		glog.Fatal("dictionary_path must be set in translate filter plugin")
 	}
 
+	if refreshInterval, ok := config["refresh_interval"]; ok {
+		plugin.refreshInterval = refreshInterval.(int)
+	} else {
+		glog.Fatal("refresh_interval must be set in translate filter plugin")
+	}
+
 	err := plugin.parseDict()
 	if err != nil {
 		glog.Fatalf("could not parse %s:%s", plugin.dictionaryPath, err)
