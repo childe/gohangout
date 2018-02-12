@@ -8,7 +8,7 @@ type ValueRender interface {
 	Render(map[string]interface{}) interface{}
 }
 
-// GetValueRender2("message") return NewLiteralValueRender("message")
+// GetValueRender("message") return NewLiteralValueRender("message")
 func GetValueRender(template string) ValueRender {
 	matchp, _ := regexp.Compile(`^(\[.*?\])+$`)
 	matchGoTemp, _ := regexp.Compile(`{{.*}}`)
