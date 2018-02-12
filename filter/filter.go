@@ -21,6 +21,8 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 	switch filterType {
 	case "Add":
 		return NewAddFilter(config)
+	case "Rename":
+		return NewRenameFilter(config)
 	case "Grok":
 		return NewGrokFilter(config)
 	case "Date":
