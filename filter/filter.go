@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/childe/gohangout/condition_filter"
+	"github.com/childe/gohangout/field_deleter"
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang-collections/collections/stack"
@@ -21,6 +22,12 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 	switch filterType {
 	case "Add":
 		return NewAddFilter(config)
+	case "Remove":
+		return NewRemoveFilter(config)
+	case "Rename":
+		return NewRenameFilter(config)
+	case "Lowercase":
+		return NewLowercaseFilter(config)
 	case "Grok":
 		return NewGrokFilter(config)
 	case "Date":
@@ -43,7 +50,7 @@ type BaseFilter struct {
 	conditionFilter *condition_filter.ConditionFilter
 
 	failTag      string
-	removeFields []string
+	removeFields []field_deleter.FieldDeleter
 	addFields    map[field_setter.FieldSetter]value_render.ValueRender
 }
 
@@ -59,9 +66,9 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	}
 
 	if remove_fields, ok := config["remove_fields"]; ok {
-		f.removeFields = make([]string, 0)
+		f.removeFields = make([]field_deleter.FieldDeleter, 0)
 		for _, field := range remove_fields.([]interface{}) {
-			f.removeFields = append(f.removeFields, field.(string))
+			f.removeFields = append(f.removeFields, field_deleter.NewFieldDeleter(field.(string)))
 		}
 	} else {
 		f.removeFields = nil
@@ -95,8 +102,8 @@ func (f *BaseFilter) EmitExtraEvents(*stack.Stack) []map[string]interface{} {
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
 		if f.removeFields != nil {
-			for _, field := range f.removeFields {
-				delete(event, field)
+			for _, d := range f.removeFields {
+				d.Delete(event)
 			}
 		}
 		for fs, v := range f.addFields {

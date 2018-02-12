@@ -76,7 +76,7 @@ func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 	} else {
 		glog.Fatal("source must be set in translate filter plugin")
 	}
-	plugin.sourceVR = value_render.GetValueRender(plugin.source)
+	plugin.sourceVR = value_render.GetValueRender2(plugin.source)
 
 	if target, ok := config["target"]; ok {
 		plugin.target = target.(string)
@@ -88,6 +88,12 @@ func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 		plugin.dictionaryPath = dictionaryPath.(string)
 	} else {
 		glog.Fatal("dictionary_path must be set in translate filter plugin")
+	}
+
+	if refreshInterval, ok := config["refresh_interval"]; ok {
+		plugin.refreshInterval = refreshInterval.(int)
+	} else {
+		glog.Fatal("refresh_interval must be set in translate filter plugin")
 	}
 
 	err := plugin.parseDict()
