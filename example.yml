@@ -38,6 +38,11 @@ filters:
             - 'UNIX'
             - 'UNIX_MS'
         remove_fields: ["logtime"]
+    - Translate:
+        source: user
+        target: nick
+        refresh_interval: 3600
+        dictionary_path: http://corp.com/dict/user.yml
     - Drop:
         if:
             - '{{if .name}}y{{end}}'
