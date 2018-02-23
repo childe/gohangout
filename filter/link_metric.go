@@ -177,7 +177,7 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
 		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
-			event[plugin.timestamp] = timestamp
+			event[plugin.timestamp] = time.Unix(timestamp, 0)
 			event = plugin.PostProcess(event, true)
 			sTo.Push(event)
 		}

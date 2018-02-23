@@ -196,11 +196,9 @@ func (gf *GrokFilter) Process(event map[string]interface{}) (map[string]interfac
 	var input string
 	inputI := gf.vr.Render(event)
 	if inputI == nil {
-		glog.V(5).Infof("(%s) not in event", gf.src)
 		return event, false
 	} else {
 		input = inputI.(string)
-		glog.V(100).Infof("input: (%s)", input)
 	}
 
 	success := false
