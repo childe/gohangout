@@ -218,14 +218,18 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 		return false
 	}
 
-	defer resp.Body.Close()
-
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf(`read bulk response error:"%s". will NOT retry`, err)
 		return true
 	}
 	glog.V(20).Infof("%s", respBody)
+
+	err = resp.Body.Close()
+	if err != nil {
+		glog.Errorf("close response body error:%s", err)
+		return true
+	}
 
 	var responseI interface{}
 	err = json.Unmarshal(respBody, &responseI)
