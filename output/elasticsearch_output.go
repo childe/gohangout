@@ -18,6 +18,8 @@ const (
 	DEFAULT_BULK_ACTIONS   = 5000
 	DEFAULT_INDEX_TYPE     = "logs"
 	DEFAULT_FLUSH_INTERVAL = 30
+	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
+	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
 )
 
 type HostSelector interface {
@@ -103,17 +105,14 @@ type Action struct {
 type BulkRequest struct {
 	actions  []*Action
 	bulk_buf []byte
-
-	metaFormatWithID    string
-	metaFormatWithoutID string
 }
 
 func (br *BulkRequest) add(action *Action) {
 	var meta []byte
 	if action.id != "" {
-		meta = []byte(fmt.Sprintf(br.metaFormatWithID, action.op, action.index, action.index_type, action.id, action.routing))
+		meta = []byte(fmt.Sprintf(META_FORMAT_WITH_ID, action.op, action.index, action.index_type, action.id, action.routing))
 	} else {
-		meta = []byte(fmt.Sprintf(br.metaFormatWithoutID, action.op, action.index, action.index_type, action.routing))
+		meta = []byte(fmt.Sprintf(META_FORMAT_WITHOUT_ID, action.op, action.index, action.index_type, action.routing))
 	}
 	buf, err := json.Marshal(action.event)
 	if err != nil {
@@ -258,10 +257,7 @@ func (p *HTTPBulkProcessor) bulk() {
 	glog.Infof("bulk %d docs with execution_id %d", p.bulkRequest.actionCount(), p.execution_id)
 
 	bulkRequest := p.bulkRequest
-	p.bulkRequest = &BulkRequest{
-		metaFormatWithID:    `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n",
-		metaFormatWithoutID: `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n",
-	}
+	p.bulkRequest = &BulkRequest{}
 
 	p.mux.Unlock()
 
