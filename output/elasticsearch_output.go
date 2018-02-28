@@ -101,17 +101,19 @@ type Action struct {
 }
 
 type BulkRequest struct {
-	actions   []*Action
-	bulk_buf  [][]byte
-	bulk_size int
+	actions  []*Action
+	bulk_buf []byte
+
+	metaFormatWithID    string
+	metaFormatWithoutID string
 }
 
 func (br *BulkRequest) add(action *Action) {
 	var meta []byte
 	if action.id != "" {
-		meta = []byte(fmt.Sprintf(`{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}`, action.op, action.index, action.index_type, action.id, action.routing))
+		meta = []byte(fmt.Sprintf(br.metaFormatWithID, action.op, action.index, action.index_type, action.id, action.routing))
 	} else {
-		meta = []byte(fmt.Sprintf(`{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}`, action.op, action.index, action.index_type, action.routing))
+		meta = []byte(fmt.Sprintf(br.metaFormatWithoutID, action.op, action.index, action.index_type, action.routing))
 	}
 	buf, err := json.Marshal(action.event)
 	if err != nil {
@@ -119,16 +121,15 @@ func (br *BulkRequest) add(action *Action) {
 		return
 	}
 
-	br.bulk_buf = append(br.bulk_buf, meta)
-	br.bulk_buf = append(br.bulk_buf, buf)
-
-	br.bulk_size += len(buf) + len(meta)
+	br.bulk_buf = append(br.bulk_buf, meta...)
+	br.bulk_buf = append(br.bulk_buf, buf...)
+	br.bulk_buf = append(br.bulk_buf, '\n')
 
 	br.actions = append(br.actions, action)
 }
 
-func (br *BulkRequest) byteSize() int {
-	return br.bulk_size
+func (br *BulkRequest) bufSizeByte() int {
+	return len(br.bulk_buf)
 }
 func (br *BulkRequest) actionCount() int {
 	return len(br.actions)
@@ -154,7 +155,7 @@ type HTTPBulkProcessor struct {
 func (p *HTTPBulkProcessor) add(action *Action) {
 	p.bulkRequest.add(action)
 
-	if p.bulkRequest.byteSize() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
+	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
 		p.bulk()
 	}
 }
@@ -199,19 +200,14 @@ func (p *HTTPBulkProcessor) abstraceBulkResponseItemsByStatus(bulkResponse map[s
 }
 
 func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
+	glog.V(20).Infof("%s", br.bulk_buf)
 
-	bulk_buf := make([]byte, 0)
-	for _, buf := range br.bulk_buf {
-		bulk_buf = append(bulk_buf, buf...)
-		bulk_buf = append(bulk_buf, byte('\n'))
-	}
-
-	glog.V(20).Infof("%s", bulk_buf)
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bulk_buf))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(br.bulk_buf))
 	req.Header.Set("Content-Type", "application/x-ndjson")
 
 	resp, err := p.client.Do(req)
+
+	br.bulk_buf = nil
 
 	if err != nil {
 		glog.Infof("could not bulk with %s:%s", url, err)
@@ -262,7 +258,10 @@ func (p *HTTPBulkProcessor) bulk() {
 	glog.Infof("bulk %d docs with execution_id %d", p.bulkRequest.actionCount(), p.execution_id)
 
 	bulkRequest := p.bulkRequest
-	p.bulkRequest = &BulkRequest{}
+	p.bulkRequest = &BulkRequest{
+		metaFormatWithID:    `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n",
+		metaFormatWithoutID: `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n",
+	}
 
 	p.mux.Unlock()
 
