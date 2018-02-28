@@ -218,6 +218,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 		glog.Errorf(`read bulk response error:"%s". will NOT retry`, err)
 		return true
 	}
+	glog.V(5).Infof("get response[%d]", len(respBody))
 	glog.V(20).Infof("%s", respBody)
 
 	err = resp.Body.Close()
