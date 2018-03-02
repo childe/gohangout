@@ -388,6 +388,9 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	} else {
 		concurrent = DEFAULT_CONCURRENT
 	}
+	if concurrent < 0 {
+		glog.Fatal("concurrent must >= 0")
+	}
 
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
