@@ -2,12 +2,15 @@ package output
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
@@ -18,6 +21,7 @@ const (
 	DEFAULT_BULK_ACTIONS   = 5000
 	DEFAULT_INDEX_TYPE     = "logs"
 	DEFAULT_FLUSH_INTERVAL = 30
+	DEFAULT_CONCURRENT     = 0
 	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
 	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
 )
@@ -136,7 +140,7 @@ func (br *BulkRequest) actionCount() int {
 
 type BulkProcessor interface {
 	add(*Action)
-	bulk()
+	bulk(*BulkRequest, int)
 	//flush()
 }
 
@@ -144,18 +148,60 @@ type HTTPBulkProcessor struct {
 	bulk_size      int
 	bulk_actions   int
 	flush_interval int
+	concurrent     int
 	execution_id   int
 	client         *http.Client
 	hostSelector   HostSelector
 	bulkRequest    *BulkRequest
 	mux            sync.Mutex
+
+	semaphore *semaphore.Weighted
+}
+
+func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int) *HTTPBulkProcessor {
+	bulkProcessor := &HTTPBulkProcessor{
+		bulk_size:      bulk_size,
+		bulk_actions:   bulk_actions,
+		flush_interval: flush_interval,
+		client:         &http.Client{},
+		bulkRequest:    &BulkRequest{},
+		hostSelector:   NewRRHostSelector(hosts, 3),
+		concurrent:     concurrent,
+	}
+	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent + 1))
+
+	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
+	go func() {
+		for range ticker.C {
+			bulkProcessor.semaphore.Acquire(context.TODO(), 1)
+			bulkProcessor.mux.Lock()
+			if bulkProcessor.bulkRequest.actionCount() == 0 {
+				bulkProcessor.mux.Unlock()
+				bulkProcessor.semaphore.Release(1)
+				return
+			}
+			bulkRequest := bulkProcessor.bulkRequest
+			bulkProcessor.bulkRequest = &BulkRequest{}
+			bulkProcessor.execution_id++
+			bulkProcessor.bulk(bulkRequest, bulkProcessor.execution_id)
+			bulkProcessor.mux.Unlock()
+		}
+	}()
+
+	return bulkProcessor
 }
 
 func (p *HTTPBulkProcessor) add(action *Action) {
 	p.bulkRequest.add(action)
 
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
-		p.bulk()
+		p.semaphore.Acquire(context.TODO(), 1)
+		p.mux.Lock()
+		bulkRequest := p.bulkRequest
+		p.bulkRequest = &BulkRequest{}
+		p.execution_id++
+		go p.bulk(bulkRequest, p.execution_id)
+		p.mux.Unlock()
 	}
 }
 
@@ -246,21 +292,14 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 	return true
 }
 
-func (p *HTTPBulkProcessor) bulk() {
-	p.mux.Lock()
+func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
+	defer p.semaphore.Release(1)
 
-	if p.bulkRequest.actionCount() == 0 {
-		p.mux.Unlock()
+	if bulkRequest.actionCount() == 0 {
 		return
 	}
 
-	p.execution_id += 1
-	glog.Infof("bulk %d docs with execution_id %d", p.bulkRequest.actionCount(), p.execution_id)
-
-	bulkRequest := p.bulkRequest
-	p.bulkRequest = &BulkRequest{}
-
-	p.mux.Unlock()
+	glog.Infof("bulk %d docs with execution_id %d", bulkRequest.actionCount(), execution_id)
 
 	for {
 		host := p.hostSelector.selectOneHost()
@@ -277,31 +316,12 @@ func (p *HTTPBulkProcessor) bulk() {
 		success := p.tryOneBulk(url, bulkRequest)
 
 		if success {
-			glog.Infof("bulk done with execution_id %d", p.execution_id)
+			glog.Infof("bulk done with execution_id %d", execution_id)
 			p.hostSelector.addWeight(host)
 			return
 		}
 		p.hostSelector.reduceWeight(host)
 	}
-}
-
-func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval int) *HTTPBulkProcessor {
-	bulkProcessor := &HTTPBulkProcessor{
-		bulk_size:      bulk_size,
-		bulk_actions:   bulk_actions,
-		flush_interval: flush_interval,
-		client:         &http.Client{},
-		bulkRequest:    &BulkRequest{},
-		hostSelector:   NewRRHostSelector(hosts, 3),
-	}
-	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
-	go func() {
-		for range ticker.C {
-			bulkProcessor.bulk()
-		}
-	}()
-
-	return bulkProcessor
 }
 
 type ElasticsearchOutput struct {
@@ -346,7 +366,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		rst.routing = nil
 	}
 
-	var bulk_size, bulk_actions, flush_interval int
+	var bulk_size, bulk_actions, flush_interval, concurrent int
 	if v, ok := config["bulk_size"]; ok {
 		bulk_size = v.(int) * 1024 * 1024
 	} else {
@@ -363,6 +383,14 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	} else {
 		flush_interval = DEFAULT_FLUSH_INTERVAL
 	}
+	if v, ok := config["concurrent"]; ok {
+		concurrent = v.(int)
+	} else {
+		concurrent = DEFAULT_CONCURRENT
+	}
+	if concurrent < 0 {
+		glog.Fatal("concurrent must >= 0")
+	}
 
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
@@ -373,7 +401,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		glog.Fatal("hosts must be set in elasticsearch output")
 	}
 
-	rst.bulkProcessor = NewHTTPBulkProcessor(hosts, bulk_size, bulk_actions, flush_interval)
+	rst.bulkProcessor = NewHTTPBulkProcessor(hosts, bulk_size, bulk_actions, flush_interval, concurrent)
 	return rst
 }
 
