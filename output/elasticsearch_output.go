@@ -2,12 +2,15 @@ package output
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
@@ -151,13 +154,39 @@ type HTTPBulkProcessor struct {
 	hostSelector   HostSelector
 	bulkRequest    *BulkRequest
 	mux            sync.Mutex
+
+	semaphore *semaphore.Weighted
+}
+
+func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int) *HTTPBulkProcessor {
+	bulkProcessor := &HTTPBulkProcessor{
+		bulk_size:      bulk_size,
+		bulk_actions:   bulk_actions,
+		flush_interval: flush_interval,
+		client:         &http.Client{},
+		bulkRequest:    &BulkRequest{},
+		hostSelector:   NewRRHostSelector(hosts, 3),
+		concurrent:     concurrent,
+	}
+	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent + 1))
+
+	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
+	go func() {
+		for range ticker.C {
+			bulkProcessor.semaphore.Acquire(context.TODO(), 1)
+			bulkProcessor.bulk()
+		}
+	}()
+
+	return bulkProcessor
 }
 
 func (p *HTTPBulkProcessor) add(action *Action) {
 	p.bulkRequest.add(action)
 
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
-		p.bulk()
+		p.semaphore.Acquire(context.TODO(), 1)
+		go p.bulk()
 	}
 }
 
@@ -249,6 +278,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 }
 
 func (p *HTTPBulkProcessor) bulk() {
+	defer p.semaphore.Release(1)
 	p.mux.Lock()
 
 	if p.bulkRequest.actionCount() == 0 {
@@ -256,6 +286,7 @@ func (p *HTTPBulkProcessor) bulk() {
 		return
 	}
 
+	// TODO concurrent bulk thread log error execution_id
 	p.execution_id += 1
 	glog.Infof("bulk %d docs with execution_id %d", p.bulkRequest.actionCount(), p.execution_id)
 
@@ -285,26 +316,6 @@ func (p *HTTPBulkProcessor) bulk() {
 		}
 		p.hostSelector.reduceWeight(host)
 	}
-}
-
-func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int) *HTTPBulkProcessor {
-	bulkProcessor := &HTTPBulkProcessor{
-		bulk_size:      bulk_size,
-		bulk_actions:   bulk_actions,
-		flush_interval: flush_interval,
-		client:         &http.Client{},
-		bulkRequest:    &BulkRequest{},
-		hostSelector:   NewRRHostSelector(hosts, 3),
-		concurrent:     concurrent,
-	}
-	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
-	go func() {
-		for range ticker.C {
-			bulkProcessor.bulk()
-		}
-	}()
-
-	return bulkProcessor
 }
 
 type ElasticsearchOutput struct {
