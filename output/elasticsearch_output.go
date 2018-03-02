@@ -140,7 +140,7 @@ func (br *BulkRequest) actionCount() int {
 
 type BulkProcessor interface {
 	add(*Action)
-	bulk()
+	bulk(*BulkRequest, int)
 	//flush()
 }
 
@@ -174,7 +174,17 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 	go func() {
 		for range ticker.C {
 			bulkProcessor.semaphore.Acquire(context.TODO(), 1)
-			bulkProcessor.bulk()
+			bulkProcessor.mux.Lock()
+			if bulkProcessor.bulkRequest.actionCount() == 0 {
+				bulkProcessor.mux.Unlock()
+				bulkProcessor.semaphore.Release(1)
+				return
+			}
+			bulkRequest := bulkProcessor.bulkRequest
+			bulkProcessor.bulkRequest = &BulkRequest{}
+			bulkProcessor.execution_id++
+			bulkProcessor.bulk(bulkRequest, bulkProcessor.execution_id)
+			bulkProcessor.mux.Unlock()
 		}
 	}()
 
@@ -186,7 +196,12 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
 		p.semaphore.Acquire(context.TODO(), 1)
-		go p.bulk()
+		p.mux.Lock()
+		bulkRequest := p.bulkRequest
+		p.bulkRequest = &BulkRequest{}
+		p.execution_id++
+		go p.bulk(bulkRequest, p.execution_id)
+		p.mux.Unlock()
 	}
 }
 
@@ -277,23 +292,14 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 	return true
 }
 
-func (p *HTTPBulkProcessor) bulk() {
+func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
 	defer p.semaphore.Release(1)
-	p.mux.Lock()
 
-	if p.bulkRequest.actionCount() == 0 {
-		p.mux.Unlock()
+	if bulkRequest.actionCount() == 0 {
 		return
 	}
 
-	// TODO concurrent bulk thread log error execution_id
-	p.execution_id += 1
-	glog.Infof("bulk %d docs with execution_id %d", p.bulkRequest.actionCount(), p.execution_id)
-
-	bulkRequest := p.bulkRequest
-	p.bulkRequest = &BulkRequest{}
-
-	p.mux.Unlock()
+	glog.Infof("bulk %d docs with execution_id %d", bulkRequest.actionCount(), execution_id)
 
 	for {
 		host := p.hostSelector.selectOneHost()
@@ -310,7 +316,7 @@ func (p *HTTPBulkProcessor) bulk() {
 		success := p.tryOneBulk(url, bulkRequest)
 
 		if success {
-			glog.Infof("bulk done with execution_id %d", p.execution_id)
+			glog.Infof("bulk done with execution_id %d", execution_id)
 			p.hostSelector.addWeight(host)
 			return
 		}
