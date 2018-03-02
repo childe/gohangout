@@ -18,6 +18,7 @@ const (
 	DEFAULT_BULK_ACTIONS   = 5000
 	DEFAULT_INDEX_TYPE     = "logs"
 	DEFAULT_FLUSH_INTERVAL = 30
+	DEFAULT_CONCURRENT     = 0
 	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
 	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
 )
@@ -144,6 +145,7 @@ type HTTPBulkProcessor struct {
 	bulk_size      int
 	bulk_actions   int
 	flush_interval int
+	concurrent     int
 	execution_id   int
 	client         *http.Client
 	hostSelector   HostSelector
@@ -285,7 +287,7 @@ func (p *HTTPBulkProcessor) bulk() {
 	}
 }
 
-func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval int) *HTTPBulkProcessor {
+func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int) *HTTPBulkProcessor {
 	bulkProcessor := &HTTPBulkProcessor{
 		bulk_size:      bulk_size,
 		bulk_actions:   bulk_actions,
@@ -293,6 +295,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 		client:         &http.Client{},
 		bulkRequest:    &BulkRequest{},
 		hostSelector:   NewRRHostSelector(hosts, 3),
+		concurrent:     concurrent,
 	}
 	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
 	go func() {
@@ -346,7 +349,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		rst.routing = nil
 	}
 
-	var bulk_size, bulk_actions, flush_interval int
+	var bulk_size, bulk_actions, flush_interval, concurrent int
 	if v, ok := config["bulk_size"]; ok {
 		bulk_size = v.(int) * 1024 * 1024
 	} else {
@@ -363,6 +366,11 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	} else {
 		flush_interval = DEFAULT_FLUSH_INTERVAL
 	}
+	if v, ok := config["concurrent"]; ok {
+		concurrent = v.(int)
+	} else {
+		concurrent = DEFAULT_CONCURRENT
+	}
 
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
@@ -373,7 +381,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		glog.Fatal("hosts must be set in elasticsearch output")
 	}
 
-	rst.bulkProcessor = NewHTTPBulkProcessor(hosts, bulk_size, bulk_actions, flush_interval)
+	rst.bulkProcessor = NewHTTPBulkProcessor(hosts, bulk_size, bulk_actions, flush_interval, concurrent)
 	return rst
 }
 
