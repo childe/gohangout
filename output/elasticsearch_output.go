@@ -205,8 +205,7 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 	}
 }
 
-//filter status if filterErrorType is nil
-// else filter error type
+// TODO custom errro code?
 func (p *HTTPBulkProcessor) abstraceBulkResponseItemsByStatus(bulkResponse map[string]interface{}) ([]int, []int) {
 	glog.V(20).Infof("%v", bulkResponse)
 
@@ -244,8 +243,12 @@ func (p *HTTPBulkProcessor) abstraceBulkResponseItemsByStatus(bulkResponse map[s
 	return retry, noRetry
 }
 
-func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
+func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int, []int) {
+	glog.V(5).Infof("request size:%d", len(br.bulk_buf))
 	glog.V(20).Infof("%s", br.bulk_buf)
+
+	var shouldRetry = make([]int, 0)
+	var noRetry = make([]int, 0)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(br.bulk_buf))
 	req.Header.Set("Content-Type", "application/x-ndjson")
@@ -256,13 +259,13 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 
 	if err != nil {
 		glog.Infof("could not bulk with %s:%s", url, err)
-		return false
+		return false, shouldRetry, noRetry
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf(`read bulk response error:"%s". will NOT retry`, err)
-		return true
+		return true, shouldRetry, noRetry
 	}
 	glog.V(5).Infof("get response[%d]", len(respBody))
 	glog.V(20).Infof("%s", respBody)
@@ -270,7 +273,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 	err = resp.Body.Close()
 	if err != nil {
 		glog.Errorf("close response body error:%s", err)
-		return true
+		return true, shouldRetry, noRetry
 	}
 
 	var responseI interface{}
@@ -278,22 +281,15 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) bool {
 
 	if err != nil {
 		glog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
-		return true
+		return true, shouldRetry, noRetry
 	}
 
 	bulkResponse := responseI.(map[string]interface{})
-	shouldRetry, noRetry := p.abstraceBulkResponseItemsByStatus(bulkResponse)
-	if len(shouldRetry) > 0 || len(noRetry) > 0 {
-		glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
-	}
-	for _, i := range shouldRetry {
-		p.add(br.actions[i])
-	}
-	return true
+	shouldRetry, noRetry = p.abstraceBulkResponseItemsByStatus(bulkResponse)
+	return true, shouldRetry, noRetry
 }
 
 func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
-	defer p.semaphore.Release(1)
 
 	if bulkRequest.actionCount() == 0 {
 		return
@@ -313,7 +309,15 @@ func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
 		glog.Infof("try to bulk with host (%s)", host)
 
 		url := host + "/_bulk"
-		success := p.tryOneBulk(url, bulkRequest)
+		success, shouldRetry, noRetry := p.tryOneBulk(url, bulkRequest)
+		p.semaphore.Release(1)
+
+		if len(shouldRetry) > 0 || len(noRetry) > 0 {
+			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
+		}
+		for _, i := range shouldRetry {
+			p.add(bulkRequest.actions[i])
+		}
 
 		if success {
 			glog.Infof("bulk done with execution_id %d", execution_id)
