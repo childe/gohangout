@@ -183,8 +183,9 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 			bulkRequest := bulkProcessor.bulkRequest
 			bulkProcessor.bulkRequest = &BulkRequest{}
 			bulkProcessor.execution_id++
-			bulkProcessor.bulk(bulkRequest, bulkProcessor.execution_id)
+			execution_id := bulkProcessor.execution_id
 			bulkProcessor.mux.Unlock()
+			bulkProcessor.bulk(bulkRequest, execution_id)
 		}
 	}()
 
@@ -200,8 +201,9 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 		bulkRequest := p.bulkRequest
 		p.bulkRequest = &BulkRequest{}
 		p.execution_id++
-		go p.bulk(bulkRequest, p.execution_id)
+		execution_id := p.execution_id
 		p.mux.Unlock()
+		go p.bulk(bulkRequest, execution_id)
 	}
 }
 
@@ -290,17 +292,18 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 }
 
 func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
-
+	defer p.semaphore.Release(1)
 	if bulkRequest.actionCount() == 0 {
 		return
 	}
+	p.innerBulk(bulkRequest, execution_id)
+}
 
+func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int) {
 	glog.Infof("bulk %d docs with execution_id %d", bulkRequest.actionCount(), execution_id)
-
 	for {
 		host := p.hostSelector.selectOneHost()
 		if host == "" {
-			//glog.Info("no available host, wait for next ticker")
 			glog.Info("no available host, wait for 30s")
 			time.Sleep(30 * time.Second)
 			continue
@@ -310,21 +313,32 @@ func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
 
 		url := host + "/_bulk"
 		success, shouldRetry, noRetry := p.tryOneBulk(url, bulkRequest)
-		p.semaphore.Release(1)
+		if success {
+			glog.Infof("bulk done with execution_id %d", execution_id)
+			p.hostSelector.addWeight(host)
+		} else {
+			glog.Errorf("bulk failed using %s", url)
+			p.hostSelector.reduceWeight(host)
+			continue
+		}
 
 		if len(shouldRetry) > 0 || len(noRetry) > 0 {
 			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
 		}
-		for _, i := range shouldRetry {
-			p.add(bulkRequest.actions[i])
+
+		if len(shouldRetry) > 0 {
+			newBulkRequest := &BulkRequest{}
+			for _, i := range shouldRetry {
+				newBulkRequest.add(bulkRequest.actions[i])
+			}
+			p.mux.Lock()
+			p.execution_id++
+			execution_id := p.execution_id
+			p.mux.Unlock()
+			p.innerBulk(newBulkRequest, execution_id)
 		}
 
-		if success {
-			glog.Infof("bulk done with execution_id %d", execution_id)
-			p.hostSelector.addWeight(host)
-			return
-		}
-		p.hostSelector.reduceWeight(host)
+		return // only success will go to here
 	}
 }
 
