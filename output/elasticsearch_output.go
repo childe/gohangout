@@ -205,7 +205,7 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 	}
 }
 
-// TODO custom errro code?
+// TODO custom status code?
 func (p *HTTPBulkProcessor) abstraceBulkResponseItemsByStatus(bulkResponse map[string]interface{}) ([]int, []int) {
 	glog.V(20).Infof("%v", bulkResponse)
 
