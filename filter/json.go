@@ -45,7 +45,7 @@ func (plugin *JsonFilter) Process(event map[string]interface{}) (map[string]inte
 		if reflect.TypeOf(s).Kind() != reflect.String {
 			return event, false
 		}
-		o := make(map[string]interface{})
+		var o interface{} = nil
 		d := json.NewDecoder(strings.NewReader(s.(string)))
 		d.UseNumber()
 		err := d.Decode(&o)
@@ -54,12 +54,16 @@ func (plugin *JsonFilter) Process(event map[string]interface{}) (map[string]inte
 		}
 
 		if plugin.target == "" {
+			if reflect.TypeOf(o).Kind() != reflect.Map {
+				glog.Errorf("%s is not map. must set target", plugin.field)
+				return event, false
+			}
 			if plugin.overwrite {
-				for k, v := range o {
+				for k, v := range o.(map[string]interface{}) {
 					event[k] = v
 				}
 			} else {
-				for k, v := range o {
+				for k, v := range o.(map[string]interface{}) {
 					if _, ok := event[k]; !ok {
 						event[k] = v
 					}
