@@ -195,6 +195,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 func (p *HTTPBulkProcessor) add(action *Action) {
 	p.bulkRequest.add(action)
 
+	// TODO bulkRequest passed to bulk may be empty, but execution_id has ++
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
 		p.semaphore.Acquire(context.TODO(), 1)
 		p.mux.Lock()
