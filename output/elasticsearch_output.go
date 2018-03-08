@@ -21,7 +21,7 @@ const (
 	DEFAULT_BULK_ACTIONS   = 5000
 	DEFAULT_INDEX_TYPE     = "logs"
 	DEFAULT_FLUSH_INTERVAL = 30
-	DEFAULT_CONCURRENT     = 0
+	DEFAULT_CONCURRENT     = 1
 	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
 	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
 )
@@ -168,7 +168,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 		hostSelector:   NewRRHostSelector(hosts, 3),
 		concurrent:     concurrent,
 	}
-	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent + 1))
+	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent))
 
 	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
 	go func() {
@@ -407,8 +407,8 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	} else {
 		concurrent = DEFAULT_CONCURRENT
 	}
-	if concurrent < 0 {
-		glog.Fatal("concurrent must >= 0")
+	if concurrent <= 0 {
+		glog.Fatal("concurrent must > 0")
 	}
 
 	var hosts []string
