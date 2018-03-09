@@ -182,7 +182,6 @@ func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 func (plugin *DateFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	inputI := plugin.srcVR.Render(event)
 	if inputI == nil {
-		glog.V(5).Infof("(%s) not in event", plugin.src)
 		return event, false
 	}
 
