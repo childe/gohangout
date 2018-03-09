@@ -178,7 +178,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 			if bulkProcessor.bulkRequest.actionCount() == 0 {
 				bulkProcessor.mux.Unlock()
 				bulkProcessor.semaphore.Release(1)
-				return
+				continue
 			}
 			bulkRequest := bulkProcessor.bulkRequest
 			bulkProcessor.bulkRequest = &BulkRequest{}
