@@ -13,36 +13,12 @@ import (
 	"github.com/golang/glog"
 )
 
-type HermesDecoder struct {
+type HermesDecoder2 struct {
 	MAGIC      []byte
 	CRC_LENGTH int
 }
 
-func getCodecType(header []byte) string {
-	offset := 0
-
-	firstByte := int8(header[offset])
-	if firstByte != -1 {
-		length := int(binary.BigEndian.Uint32(header[offset:]))
-		offset += 4
-		offset += length
-	} else {
-		offset += 1
-	}
-	offset += 8 // skip bornTime
-	offset += 4 // skip remaining retries
-
-	firstByte = int8(header[offset])
-	if firstByte != -1 {
-		length := int(binary.BigEndian.Uint32(header[offset:]))
-		offset += 4
-		return string(header[offset : offset+length])
-	}
-
-	return ""
-}
-
-func (hd *HermesDecoder) Decode(s string) map[string]interface{} {
+func (hd *HermesDecoder2) Decode(s string) map[string]interface{} {
 	value := []byte(s)
 	offset := 0
 	offset += 4
@@ -91,11 +67,19 @@ func (hd *HermesDecoder) Decode(s string) map[string]interface{} {
 
 	rst := make(map[string]interface{})
 	rst["@timestamp"] = time.Now().UnixNano() / 1000000
-	d := json.NewDecoder(bytes.NewReader(value))
-	d.UseNumber()
-	err := d.Decode(&rst)
+
+	// value is created by json.dumps(json.dumps(JosnEvent)). OMG
+	var ss string
+	err := json.Unmarshal(value, &ss)
 	if err != nil {
 		rst["message"] = s
+	} else {
+		d := json.NewDecoder(strings.NewReader(ss))
+		d.UseNumber()
+		err := d.Decode(&rst)
+		if err != nil {
+			rst["message"] = s
+		}
 	}
 	return rst
 }

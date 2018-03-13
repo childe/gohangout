@@ -13,6 +13,12 @@ func NewDecoder(t string) Decoder {
 	if t == "plain" {
 		return &PlainDecoder{}
 	}
+	if t == "hermes2" {
+		return &HermesDecoder2{
+			MAGIC:      []byte("hems"),
+			CRC_LENGTH: 8,
+		}
+	}
 	if t == "hermes" {
 		return &HermesDecoder{
 			MAGIC:      []byte("hems"),
