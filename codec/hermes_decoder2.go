@@ -72,13 +72,13 @@ func (hd *HermesDecoder2) Decode(s string) map[string]interface{} {
 	var ss string
 	err := json.Unmarshal(value, &ss)
 	if err != nil {
-		rst["message"] = s
+		rst["message"] = string(value)
 	} else {
 		d := json.NewDecoder(strings.NewReader(ss))
 		d.UseNumber()
 		err := d.Decode(&rst)
 		if err != nil {
-			rst["message"] = s
+			rst["message"] = string(value)
 		}
 	}
 	return rst

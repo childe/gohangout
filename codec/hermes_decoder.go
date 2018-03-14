@@ -95,7 +95,7 @@ func (hd *HermesDecoder) Decode(s string) map[string]interface{} {
 	d.UseNumber()
 	err := d.Decode(&rst)
 	if err != nil {
-		rst["message"] = s
+		rst["message"] = string(value)
 	}
 	return rst
 }
