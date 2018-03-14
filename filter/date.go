@@ -20,6 +20,7 @@ type DateParser interface {
 type FormatParser struct {
 	format   string
 	location *time.Location
+	addYear  bool
 }
 
 var MustStringTypeError = errors.New("timestamp field must be string")
@@ -32,10 +33,16 @@ func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 	if reflect.TypeOf(t).Kind() != reflect.String {
 		return rst, MustStringTypeError
 	}
-	if dp.location == nil {
-		return time.Parse(dp.format, t.(string))
+	var value string
+	if dp.addYear {
+		value = fmt.Sprintf("%d%s", time.Now().Year(), t.(string))
+	} else {
+		value = t.(string)
 	}
-	rst, err = time.ParseInLocation(dp.format, t.(string), dp.location)
+	if dp.location == nil {
+		return time.Parse(dp.format, value)
+	}
+	rst, err = time.ParseInLocation(dp.format, value, dp.location)
 	if err != nil {
 		return rst, err
 	}
@@ -105,7 +112,7 @@ func (p *UnixMSParser) Parse(t interface{}) (time.Time, error) {
 	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 }
 
-func getDateParser(format string, l *time.Location) DateParser {
+func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 	if format == "UNIX" {
 		return &UnixParser{}
 	}
@@ -113,9 +120,9 @@ func getDateParser(format string, l *time.Location) DateParser {
 		return &UnixMSParser{}
 	}
 	if format == "RFC3339" {
-		return &FormatParser{time.RFC3339, l}
+		return &FormatParser{time.RFC3339, l, addYear}
 	}
-	return &FormatParser{format, l}
+	return &FormatParser{format, l, addYear}
 }
 
 type DateFilter struct {
@@ -158,6 +165,7 @@ func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 
 	var (
 		location *time.Location
+		addYear  bool = false
 		err      error
 	)
 	if locationI, ok := config["location"]; ok {
@@ -168,9 +176,12 @@ func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	} else {
 		location = nil
 	}
+	if addYearI, ok := config["add_year"]; ok {
+		addYear = addYearI.(bool)
+	}
 	if formats, ok := config["formats"]; ok {
 		for _, formatI := range formats.([]interface{}) {
-			plugin.dateParsers = append(plugin.dateParsers, getDateParser(formatI.(string), location))
+			plugin.dateParsers = append(plugin.dateParsers, getDateParser(formatI.(string), location, addYear))
 		}
 	} else {
 		glog.Fatal("formats must be set in date filter plugin")
