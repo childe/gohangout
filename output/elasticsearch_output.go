@@ -2,6 +2,7 @@ package output
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -250,11 +251,25 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 	glog.V(5).Infof("request size:%d", len(br.bulk_buf))
 	glog.V(20).Infof("%s", br.bulk_buf)
 
-	var shouldRetry = make([]int, 0)
-	var noRetry = make([]int, 0)
+	var (
+		shouldRetry = make([]int, 0)
+		noRetry     = make([]int, 0)
+		err         error
+	)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(br.bulk_buf))
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(br.bulk_buf); err != nil {
+		glog.Errorf("gzip bulk buf error: %s", err)
+		return false, shouldRetry, noRetry
+	}
+	if err = g.Close(); err != nil {
+		glog.Errorf("gzip bulk buf error: %s", err)
+		return false, shouldRetry, noRetry
+	}
+	req, err := http.NewRequest("POST", url, &buf)
 	req.Header.Set("Content-Type", "application/x-ndjson")
+	req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := p.client.Do(req)
 
