@@ -150,6 +150,7 @@ type HTTPBulkProcessor struct {
 	bulk_actions   int
 	flush_interval int
 	concurrent     int
+	compress       bool
 	execution_id   int
 	client         *http.Client
 	hostSelector   HostSelector
@@ -159,7 +160,7 @@ type HTTPBulkProcessor struct {
 	semaphore *semaphore.Weighted
 }
 
-func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int) *HTTPBulkProcessor {
+func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int, compress bool) *HTTPBulkProcessor {
 	bulkProcessor := &HTTPBulkProcessor{
 		bulk_size:      bulk_size,
 		bulk_actions:   bulk_actions,
@@ -168,6 +169,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 		bulkRequest:    &BulkRequest{},
 		hostSelector:   NewRRHostSelector(hosts, 3),
 		concurrent:     concurrent,
+		compress:       compress,
 	}
 	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent))
 
@@ -255,21 +257,27 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 		shouldRetry = make([]int, 0)
 		noRetry     = make([]int, 0)
 		err         error
+		req         *http.Request
 	)
 
-	var buf bytes.Buffer
-	g := gzip.NewWriter(&buf)
-	if _, err = g.Write(br.bulk_buf); err != nil {
-		glog.Errorf("gzip bulk buf error: %s", err)
-		return false, shouldRetry, noRetry
+	if p.compress {
+		var buf bytes.Buffer
+		g := gzip.NewWriter(&buf)
+		if _, err = g.Write(br.bulk_buf); err != nil {
+			glog.Errorf("gzip bulk buf error: %s", err)
+			return false, shouldRetry, noRetry
+		}
+		if err = g.Close(); err != nil {
+			glog.Errorf("gzip bulk buf error: %s", err)
+			return false, shouldRetry, noRetry
+		}
+		req, err = http.NewRequest("POST", url, &buf)
+		req.Header.Set("Content-Type", "application/x-ndjson")
+		req.Header.Set("Content-Encoding", "gzip")
+	} else {
+		req, err = http.NewRequest("POST", url, bytes.NewBuffer(br.bulk_buf))
+		req.Header.Set("Content-Type", "application/x-ndjson")
 	}
-	if err = g.Close(); err != nil {
-		glog.Errorf("gzip bulk buf error: %s", err)
-		return false, shouldRetry, noRetry
-	}
-	req, err := http.NewRequest("POST", url, &buf)
-	req.Header.Set("Content-Type", "application/x-ndjson")
-	req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := p.client.Do(req)
 
@@ -400,7 +408,10 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		rst.routing = nil
 	}
 
-	var bulk_size, bulk_actions, flush_interval, concurrent int
+	var (
+		bulk_size, bulk_actions, flush_interval, concurrent int
+		compress                                            bool
+	)
 	if v, ok := config["bulk_size"]; ok {
 		bulk_size = v.(int) * 1024 * 1024
 	} else {
@@ -425,6 +436,11 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	if concurrent <= 0 {
 		glog.Fatal("concurrent must > 0")
 	}
+	if v, ok := config["compress"]; ok {
+		compress = v.(bool)
+	} else {
+		compress = true
+	}
 
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
@@ -435,7 +451,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		glog.Fatal("hosts must be set in elasticsearch output")
 	}
 
-	rst.bulkProcessor = NewHTTPBulkProcessor(hosts, bulk_size, bulk_actions, flush_interval, concurrent)
+	rst.bulkProcessor = NewHTTPBulkProcessor(hosts, bulk_size, bulk_actions, flush_interval, concurrent, compress)
 	return rst
 }
 
