@@ -1,6 +1,6 @@
 package codec
 
-import "github.com/golang/glog"
+import "github.com/childe/glog"
 
 type Decoder interface {
 	Decode(string) map[string]interface{}

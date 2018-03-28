@@ -3,7 +3,7 @@ package filter
 import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 type AddFilter struct {

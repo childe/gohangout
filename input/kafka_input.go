@@ -1,9 +1,9 @@
 package input
 
 import (
+	"github.com/childe/glog"
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/healer"
-	"github.com/golang/glog"
 )
 
 type KafkaInput struct {
@@ -42,12 +42,15 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 
 		decoder: codec.NewDecoder(codertype),
 	}
+
+	consumerConfig, err := healer.GetConsumerConfig(consumer_settings)
+	if err != nil {
+		glog.Fatalf("error in consumer settings: %s", err)
+	}
 	for topic, threadCount := range topics {
 
 		for i := 0; i < threadCount.(int); i++ {
-
-			consumer_settings["topic"] = topic
-			c, err := healer.NewGroupConsumer(consumer_settings)
+			c, err := healer.NewGroupConsumer(topic.(string), consumerConfig)
 			if err != nil {
 				glog.Fatalf("could not init GroupConsumer:%s", err)
 			}

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/childe/gohangout/codec"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 type StdinInput struct {

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 func (grok *Grok) loadPattern(filename string) {
@@ -115,6 +115,7 @@ func (grok *Grok) grok(input string) map[string]string {
 				continue
 			}
 			rst[grok.subexpNames[i]] = substring
+			return rst
 		}
 	}
 	return rst

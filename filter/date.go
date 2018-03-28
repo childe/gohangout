@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 type DateParser interface {
@@ -65,7 +66,12 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 	if reflect.TypeOf(t).Kind() == reflect.String {
 		t1, err := strconv.Atoi(t.(string))
 		if err != nil {
-			return rst, err
+			f, err := strconv.ParseFloat(t.(string), 64)
+			if err != nil {
+				return rst, err
+			}
+			t1 := math.Floor(f)
+			return time.Unix(int64(t1), int64(1000000000*(f-t1))), nil
 		}
 		return time.Unix(int64(t1), 0), nil
 	}
