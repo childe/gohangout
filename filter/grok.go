@@ -106,17 +106,14 @@ type Grok struct {
 
 func (grok *Grok) grok(input string) map[string]string {
 	rst := make(map[string]string)
-	for _, substrings := range grok.p.FindAllStringSubmatch(input, -1) {
-		for i, substring := range substrings {
-			if grok.subexpNames[i] == "" {
-				continue
-			}
-			if grok.ignoreBlank && substring == "" {
-				continue
-			}
-			rst[grok.subexpNames[i]] = substring
+	for i, substring := range grok.p.FindStringSubmatch(input) {
+		if grok.subexpNames[i] == "" {
+			continue
 		}
-		return rst
+		if grok.ignoreBlank && substring == "" {
+			continue
+		}
+		rst[grok.subexpNames[i]] = substring
 	}
 	return rst
 }
