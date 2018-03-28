@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/childe/gohangout/value_render"
 	"github.com/childe/glog"
+	"github.com/childe/gohangout/value_render"
 )
 
 func (grok *Grok) loadPattern(filename string) {
@@ -115,8 +115,8 @@ func (grok *Grok) grok(input string) map[string]string {
 				continue
 			}
 			rst[grok.subexpNames[i]] = substring
-			// TODO return?
 		}
+		return rst
 	}
 	return rst
 }
