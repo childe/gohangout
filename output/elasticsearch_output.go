@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 const (

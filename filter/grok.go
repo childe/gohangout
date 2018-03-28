@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 func (grok *Grok) loadPattern(filename string) {

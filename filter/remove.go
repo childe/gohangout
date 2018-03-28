@@ -2,7 +2,7 @@ package filter
 
 import (
 	"github.com/childe/gohangout/field_deleter"
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 type RemoveFilter struct {
