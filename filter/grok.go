@@ -115,7 +115,7 @@ func (grok *Grok) grok(input string) map[string]string {
 				continue
 			}
 			rst[grok.subexpNames[i]] = substring
-			return rst
+			// TODO return?
 		}
 	}
 	return rst
