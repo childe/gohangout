@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/childe/glog"
 )
 
 type HermesDecoder2 struct {
