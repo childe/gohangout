@@ -1,7 +1,7 @@
 package input
 
 import (
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/healer"
 )

@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 	"github.com/childe/gohangout/value_render"
 )
 

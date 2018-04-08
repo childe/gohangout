@@ -8,7 +8,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type TemplateValueRender struct {

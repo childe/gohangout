@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-collections/collections/stack"
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type LinkMetricFilter struct {

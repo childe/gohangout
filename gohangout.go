@@ -9,7 +9,7 @@ import (
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/output"
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 	"github.com/json-iterator/go"
 )
 
