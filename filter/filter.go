@@ -8,7 +8,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang-collections/collections/stack"
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type Filter interface {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type StdoutOutput struct {

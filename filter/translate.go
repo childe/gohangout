@@ -10,7 +10,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/childe/gohangout/value_render"
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type TranslateFilter struct {

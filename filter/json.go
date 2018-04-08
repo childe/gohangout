@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type JsonFilter struct {

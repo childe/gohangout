@@ -11,7 +11,7 @@ import (
 
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
-	"github.com/childe/glog"
+	"github.com/golang/glog"
 )
 
 type DateParser interface {

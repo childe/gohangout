@@ -1,6 +1,6 @@
 package filter
 
-import "github.com/childe/glog"
+import "github.com/golang/glog"
 
 type RenameFilter struct {
 	BaseFilter
