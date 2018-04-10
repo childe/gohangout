@@ -362,6 +362,10 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int
 			p.innerBulk(newBulkRequest, execution_id)
 		}
 
+		if len(noRetry) > 0 {
+			glog.Infof("one failed doc that need no retry: %v", bulkRequest.actions[noRetry[0]])
+		}
+
 		return // only success will go to here
 	}
 }

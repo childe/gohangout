@@ -28,8 +28,9 @@ type LinkMetricFilter struct {
 }
 
 func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
+	baseFilter := NewBaseFilter(config)
 	plugin := &LinkMetricFilter{
-		BaseFilter:   NewBaseFilter(config),
+		BaseFilter:   baseFilter,
 		config:       config,
 		overwrite:    true,
 		metric:       make(map[int64]interface{}),
@@ -184,4 +185,7 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	}
 	plugin.metricToEmit = make(map[int64]interface{})
 	return nil
+}
+func (f *LinkMetricFilter) IfSimple() bool {
+	return false
 }
