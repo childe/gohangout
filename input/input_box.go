@@ -39,7 +39,46 @@ func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, 
 	return box
 }
 
-func (box *InputBox) Beat() {
+func (box *InputBox) beatSimple() {
+	var (
+		event   map[string]interface{}
+		success bool
+	)
+
+	for {
+		event = box.input.readOneEvent()
+		if event == nil {
+			continue
+		}
+		if typeValue, ok := box.config["type"]; ok {
+			event["type"] = typeValue
+		}
+
+		if box.filters != nil {
+			for _, filterPlugin := range box.filters {
+				if filterPlugin.Pass(event) == false {
+					continue
+				}
+				event, success = filterPlugin.Process(event)
+				if event == nil {
+					break
+				} else {
+					event = filterPlugin.PostProcess(event, success)
+				}
+			}
+		}
+		if event == nil {
+			continue
+		}
+
+		for _, outputPlugin := range box.outputs {
+			if outputPlugin.Pass(event) {
+				outputPlugin.Emit(event)
+			}
+		}
+	}
+}
+func (box *InputBox) beatNotSimple() {
 	var (
 		event   map[string]interface{}
 		events  []map[string]interface{}
@@ -93,5 +132,13 @@ func (box *InputBox) Beat() {
 				}
 			}
 		}
+	}
+}
+
+func (box *InputBox) Beat() {
+	if box.simple {
+		box.beatSimple()
+	} else {
+		box.beatNotSimple()
 	}
 }
