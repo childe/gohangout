@@ -4,6 +4,7 @@ import (
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/output"
 	"github.com/golang-collections/collections/stack"
+	"github.com/golang/glog"
 )
 
 type InputBox struct {
@@ -11,15 +12,31 @@ type InputBox struct {
 	filters []filter.Filter
 	outputs []output.Output
 	config  map[interface{}]interface{}
+
+	simple bool
 }
 
 func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, config map[interface{}]interface{}) InputBox {
-	return InputBox{
+	box := InputBox{
 		input:   input,
 		filters: filters,
 		outputs: outputs,
 		config:  config,
+		simple:  true,
 	}
+	for _, f := range filters {
+		if f.IfSimple() == false {
+			box.simple = false
+			break
+		}
+	}
+	if box.simple {
+		glog.Info("box is simple")
+	} else {
+		glog.Info("box is not simple")
+	}
+
+	return box
 }
 
 func (box *InputBox) Beat() {
