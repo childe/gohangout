@@ -12,7 +12,7 @@ import (
 
 func dateFormat(t interface{}, format string) (string, error) {
 	if reflect.TypeOf(t).String() == "time.Time" {
-		t1 := t.(time.Time)
+		t1 := t.(time.Time).UTC()
 		return t1.Format(format), nil
 	}
 	if reflect.TypeOf(t).String() == "json.Number" {
@@ -35,8 +35,7 @@ func dateFormat(t interface{}, format string) (string, error) {
 		if e != nil {
 			return format, e
 		}
-		//fmt.Println(t1)
-		return t1.Format(format), nil
+		return t1.UTC().Format(format), nil
 	}
 	return format, fmt.Errorf("could not tell the type timestamp field belongs to")
 }
