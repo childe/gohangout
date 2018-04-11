@@ -186,6 +186,3 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 	plugin.metricToEmit = make(map[int64]interface{})
 	return nil
 }
-func (f *LinkMetricFilter) IfSimple() bool {
-	return false
-}
