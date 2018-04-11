@@ -4,7 +4,6 @@ import (
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/output"
 	"github.com/golang-collections/collections/stack"
-	"github.com/golang/glog"
 )
 
 type InputBox struct {
@@ -12,73 +11,18 @@ type InputBox struct {
 	filters []filter.Filter
 	outputs []output.Output
 	config  map[interface{}]interface{}
-
-	simple bool
 }
 
 func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, config map[interface{}]interface{}) InputBox {
-	box := InputBox{
+	return InputBox{
 		input:   input,
 		filters: filters,
 		outputs: outputs,
 		config:  config,
-		simple:  true,
-	}
-	for _, f := range filters {
-		if f.IfSimple() == false {
-			box.simple = false
-			break
-		}
-	}
-	if box.simple {
-		glog.Info("box is simple")
-	} else {
-		glog.Info("box is not simple")
-	}
-
-	return box
-}
-
-func (box *InputBox) beatSimple() {
-	var (
-		event   map[string]interface{}
-		success bool
-	)
-
-	for {
-		event = box.input.readOneEvent()
-		if event == nil {
-			continue
-		}
-		if typeValue, ok := box.config["type"]; ok {
-			event["type"] = typeValue
-		}
-
-		if box.filters != nil {
-			for _, filterPlugin := range box.filters {
-				if filterPlugin.Pass(event) == false {
-					continue
-				}
-				event, success = filterPlugin.Process(event)
-				if event == nil {
-					break
-				} else {
-					event = filterPlugin.PostProcess(event, success)
-				}
-			}
-		}
-		if event == nil {
-			continue
-		}
-
-		for _, outputPlugin := range box.outputs {
-			if outputPlugin.Pass(event) {
-				outputPlugin.Emit(event)
-			}
-		}
 	}
 }
-func (box *InputBox) beatNotSimple() {
+
+func (box *InputBox) Beat() {
 	var (
 		event   map[string]interface{}
 		events  []map[string]interface{}
@@ -132,13 +76,5 @@ func (box *InputBox) beatNotSimple() {
 				}
 			}
 		}
-	}
-}
-
-func (box *InputBox) Beat() {
-	if box.simple {
-		box.beatSimple()
-	} else {
-		box.beatNotSimple()
 	}
 }
