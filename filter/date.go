@@ -31,7 +31,7 @@ func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 		rst time.Time
 		err error
 	)
-	if reflect.TypeOf(t).Kind() != reflect.String {
+	if reflect.TypeOf(t).String() != "string" {
 		return rst, MustStringTypeError
 	}
 	var value string
