@@ -350,6 +350,15 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int
 			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
 		}
 
+		if len(noRetry) > 0 {
+			b, err := json.Marshal(bulkRequest.actions[noRetry[0]])
+			if err != nil {
+				glog.Infof("one failed doc that need no retry: %v", bulkRequest.actions[noRetry[0]])
+			} else {
+				glog.Infof("one failed doc that need no retry: %s", b)
+			}
+		}
+
 		if len(shouldRetry) > 0 {
 			newBulkRequest := &BulkRequest{}
 			for _, i := range shouldRetry {
@@ -360,10 +369,6 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int
 			execution_id := p.execution_id
 			p.mux.Unlock()
 			p.innerBulk(newBulkRequest, execution_id)
-		}
-
-		if len(noRetry) > 0 {
-			glog.Infof("one failed doc that need no retry: %v", bulkRequest.actions[noRetry[0]])
 		}
 
 		return // only success will go to here
