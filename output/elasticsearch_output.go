@@ -287,6 +287,12 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 		glog.Infof("could not bulk with %s:%s", url, err)
 		return false, shouldRetry, noRetry
 	}
+	switch resp.StatusCode {
+	case 502:
+		return false, shouldRetry, noRetry
+	case 401:
+		return false, shouldRetry, noRetry
+	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
