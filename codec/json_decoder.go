@@ -19,7 +19,10 @@ func (jd *JsonDecoder) Decode(s string) map[string]interface{} {
 	d.UseNumber()
 	err := d.Decode(&rst)
 	if err != nil {
-		rst["message"] = s
+		return map[string]interface{}{
+			"@timestamp": time.Now(),
+			"message":    s,
+		}
 	}
 	return rst
 }
