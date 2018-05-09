@@ -58,14 +58,20 @@ func NewRRHostSelector(hosts []string, weight int) *RRHostSelector {
 }
 
 func (s *RRHostSelector) selectOneHost() string {
+	// reset weight and return "" if all hosts are down
+	var hasAtLeastOneUp bool = false
 	for i := 0; i < s.hostsCount; i++ {
-		s.index = (s.index + 1) % s.hostsCount
-		if s.weight[s.index] > 0 {
-			return s.hosts[s.index]
+		if s.weight[i] > 0 {
+			hasAtLeastOneUp = true
 		}
 	}
-	s.resetWeight(1)
-	return ""
+	if !hasAtLeastOneUp {
+		s.resetWeight(s.initWeight)
+		return ""
+	}
+
+	s.index = (s.index + 1) % s.hostsCount
+	return s.hosts[s.index]
 }
 
 func (s *RRHostSelector) resetWeight(weight int) {
