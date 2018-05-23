@@ -148,7 +148,7 @@ func (br *BulkRequest) actionCount() int {
 type BulkProcessor interface {
 	add(*Action)
 	bulk(*BulkRequest, int)
-	flush()
+	awityclose(time.Duration)
 }
 
 type HTTPBulkProcessor struct {
@@ -162,6 +162,7 @@ type HTTPBulkProcessor struct {
 	hostSelector   HostSelector
 	bulkRequest    *BulkRequest
 	mux            sync.Mutex
+	wg             sync.WaitGroup
 
 	semaphore *semaphore.Weighted
 }
@@ -217,8 +218,9 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 	}
 }
 
-// TODO
-func (p *HTTPBulkProcessor) flush() {
+// TODO: timeout implement
+func (p *HTTPBulkProcessor) awityclose(timeout time.Duration) {
+	defer p.wg.Wait()
 	p.mux.Lock()
 	if len(p.bulkRequest.actions) == 0 {
 		return
@@ -232,7 +234,9 @@ func (p *HTTPBulkProcessor) flush() {
 }
 
 func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
+	defer p.wg.Done()
 	defer p.semaphore.Release(1)
+	p.wg.Add(1)
 	if bulkRequest.actionCount() == 0 {
 		return
 	}
@@ -524,5 +528,5 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
 }
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
-	outputPlugin.bulkProcessor.flush()
+	outputPlugin.bulkProcessor.awityclose(30 * time.Second)
 }
