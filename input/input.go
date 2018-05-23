@@ -2,6 +2,7 @@ package input
 
 type Input interface {
 	readOneEvent() map[string]interface{}
+	Shutdown()
 }
 
 func GetInput(inputType string, config map[interface{}]interface{}) Input {

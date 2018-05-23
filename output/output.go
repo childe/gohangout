@@ -5,6 +5,7 @@ import "github.com/childe/gohangout/condition_filter"
 type Output interface {
 	Emit(map[string]interface{})
 	Pass(map[string]interface{}) bool
+	Shutdown()
 }
 
 func GetOutput(outputType string, config map[interface{}]interface{}) Output {

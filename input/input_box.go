@@ -4,6 +4,7 @@ import (
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/output"
 	"github.com/golang-collections/collections/stack"
+	"github.com/golang/glog"
 )
 
 type InputBox struct {
@@ -76,5 +77,14 @@ func (box *InputBox) Beat() {
 				}
 			}
 		}
+	}
+}
+
+func (box *InputBox) Shutdown() {
+	glog.Infof("try to shutdown input %T", box.input)
+	box.input.Shutdown()
+	for _, o := range box.outputs {
+		glog.Infof("try to shutdown output %T", o)
+		o.Shutdown()
 	}
 }
