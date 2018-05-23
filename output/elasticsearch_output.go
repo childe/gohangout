@@ -219,6 +219,16 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 
 // TODO
 func (p *HTTPBulkProcessor) flush() {
+	p.mux.Lock()
+	if len(p.bulkRequest.actions) == 0 {
+		return
+	}
+	bulkRequest := p.bulkRequest
+	p.bulkRequest = &BulkRequest{}
+	p.execution_id++
+	execution_id := p.execution_id
+	p.mux.Unlock()
+	p.innerBulk(bulkRequest, execution_id)
 }
 
 func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
@@ -514,5 +524,5 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
 }
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
-	//outputPlugin.bulkProcessor.AwaitClose(time.Second * 30)
+	outputPlugin.bulkProcessor.flush()
 }
