@@ -148,7 +148,7 @@ func (br *BulkRequest) actionCount() int {
 type BulkProcessor interface {
 	add(*Action)
 	bulk(*BulkRequest, int)
-	awityclose(time.Duration)
+	awaityclose(time.Duration)
 }
 
 type HTTPBulkProcessor struct {
@@ -219,8 +219,19 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 }
 
 // TODO: timeout implement
-func (p *HTTPBulkProcessor) awityclose(timeout time.Duration) {
-	defer p.wg.Wait()
+func (p *HTTPBulkProcessor) awaityclose(timeout time.Duration) {
+	c := make(chan bool)
+	defer func() {
+		select {
+		case <-c:
+			glog.Info("all bulk job done. return")
+			return
+		case <-time.After(timeout):
+			glog.Info("await timeout. return")
+			return
+		}
+	}()
+
 	p.mux.Lock()
 	if len(p.bulkRequest.actions) == 0 {
 		return
@@ -230,7 +241,13 @@ func (p *HTTPBulkProcessor) awityclose(timeout time.Duration) {
 	p.execution_id++
 	execution_id := p.execution_id
 	p.mux.Unlock()
-	p.innerBulk(bulkRequest, execution_id)
+
+	go func() {
+		p.innerBulk(bulkRequest, execution_id)
+		p.wg.Wait()
+		c <- true
+	}()
+
 }
 
 func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
@@ -528,5 +545,5 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
 }
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
-	outputPlugin.bulkProcessor.awityclose(30 * time.Second)
+	outputPlugin.bulkProcessor.awaityclose(5 * time.Second)
 }
