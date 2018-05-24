@@ -233,6 +233,7 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 
 	p.mux.Lock()
 	if len(p.bulkRequest.actions) == 0 {
+		p.mux.Unlock()
 		return
 	}
 	bulkRequest := p.bulkRequest
