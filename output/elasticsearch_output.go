@@ -218,7 +218,6 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 	}
 }
 
-// TODO: timeout implement
 func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 	c := make(chan bool)
 	defer func() {
