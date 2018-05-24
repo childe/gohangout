@@ -1,6 +1,8 @@
 package input
 
 import (
+	"time"
+
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
@@ -80,6 +82,6 @@ func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
 
 func (inputPlugin *KafkaInput) Shutdown() {
 	for _, c := range inputPlugin.consumers {
-		c.Close()
+		c.AwaitClose(30 * time.Second)
 	}
 }
