@@ -148,7 +148,7 @@ func (br *BulkRequest) actionCount() int {
 type BulkProcessor interface {
 	add(*Action)
 	bulk(*BulkRequest, int)
-	awaityclose(time.Duration)
+	awaitclose(time.Duration)
 }
 
 type HTTPBulkProcessor struct {
@@ -219,7 +219,7 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 }
 
 // TODO: timeout implement
-func (p *HTTPBulkProcessor) awaityclose(timeout time.Duration) {
+func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 	c := make(chan bool)
 	defer func() {
 		select {
@@ -545,5 +545,5 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
 }
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
-	outputPlugin.bulkProcessor.awaityclose(5 * time.Second)
+	outputPlugin.bulkProcessor.awaitclose(5 * time.Second)
 }
