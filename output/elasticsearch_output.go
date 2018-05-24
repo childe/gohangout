@@ -148,7 +148,7 @@ func (br *BulkRequest) actionCount() int {
 type BulkProcessor interface {
 	add(*Action)
 	bulk(*BulkRequest, int)
-	//flush()
+	awaitclose(time.Duration)
 }
 
 type HTTPBulkProcessor struct {
@@ -162,6 +162,7 @@ type HTTPBulkProcessor struct {
 	hostSelector   HostSelector
 	bulkRequest    *BulkRequest
 	mux            sync.Mutex
+	wg             sync.WaitGroup
 
 	semaphore *semaphore.Weighted
 }
@@ -214,6 +215,100 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 		execution_id := p.execution_id
 		p.mux.Unlock()
 		go p.bulk(bulkRequest, execution_id)
+	}
+}
+
+func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
+	c := make(chan bool)
+	defer func() {
+		select {
+		case <-c:
+			glog.Info("all bulk job done. return")
+			return
+		case <-time.After(timeout):
+			glog.Info("await timeout. return")
+			return
+		}
+	}()
+
+	p.mux.Lock()
+	if len(p.bulkRequest.actions) == 0 {
+		p.mux.Unlock()
+		return
+	}
+	bulkRequest := p.bulkRequest
+	p.bulkRequest = &BulkRequest{}
+	p.execution_id++
+	execution_id := p.execution_id
+	p.mux.Unlock()
+
+	go func() {
+		p.innerBulk(bulkRequest, execution_id)
+		p.wg.Wait()
+		c <- true
+	}()
+
+}
+
+func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
+	defer p.wg.Done()
+	defer p.semaphore.Release(1)
+	p.wg.Add(1)
+	if bulkRequest.actionCount() == 0 {
+		return
+	}
+	p.innerBulk(bulkRequest, execution_id)
+}
+
+func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int) {
+	glog.Infof("bulk %d docs with execution_id %d", bulkRequest.actionCount(), execution_id)
+	for {
+		host := p.hostSelector.selectOneHost()
+		if host == "" {
+			glog.Info("no available host, wait for 30s")
+			time.Sleep(30 * time.Second)
+			continue
+		}
+
+		glog.Infof("try to bulk with host (%s)", host)
+
+		url := host + "/_bulk"
+		success, shouldRetry, noRetry := p.tryOneBulk(url, bulkRequest)
+		if success {
+			glog.Infof("bulk done with execution_id %d", execution_id)
+			p.hostSelector.addWeight(host)
+		} else {
+			glog.Errorf("bulk failed using %s", url)
+			p.hostSelector.reduceWeight(host)
+			continue
+		}
+
+		if len(shouldRetry) > 0 || len(noRetry) > 0 {
+			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
+		}
+
+		if len(noRetry) > 0 {
+			b, err := json.Marshal(bulkRequest.actions[noRetry[0]])
+			if err != nil {
+				glog.Infof("one failed doc that need no retry: %v", bulkRequest.actions[noRetry[0]])
+			} else {
+				glog.Infof("one failed doc that need no retry: %s", b)
+			}
+		}
+
+		if len(shouldRetry) > 0 {
+			newBulkRequest := &BulkRequest{}
+			for _, i := range shouldRetry {
+				newBulkRequest.add(bulkRequest.actions[i])
+			}
+			p.mux.Lock()
+			p.execution_id++
+			execution_id := p.execution_id
+			p.mux.Unlock()
+			p.innerBulk(newBulkRequest, execution_id)
+		}
+
+		return // only success will go to here
 	}
 }
 
@@ -325,66 +420,6 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 	bulkResponse := responseI.(map[string]interface{})
 	shouldRetry, noRetry = p.abstraceBulkResponseItemsByStatus(bulkResponse)
 	return true, shouldRetry, noRetry
-}
-
-func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
-	defer p.semaphore.Release(1)
-	if bulkRequest.actionCount() == 0 {
-		return
-	}
-	p.innerBulk(bulkRequest, execution_id)
-}
-
-func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int) {
-	glog.Infof("bulk %d docs with execution_id %d", bulkRequest.actionCount(), execution_id)
-	for {
-		host := p.hostSelector.selectOneHost()
-		if host == "" {
-			glog.Info("no available host, wait for 30s")
-			time.Sleep(30 * time.Second)
-			continue
-		}
-
-		glog.Infof("try to bulk with host (%s)", host)
-
-		url := host + "/_bulk"
-		success, shouldRetry, noRetry := p.tryOneBulk(url, bulkRequest)
-		if success {
-			glog.Infof("bulk done with execution_id %d", execution_id)
-			p.hostSelector.addWeight(host)
-		} else {
-			glog.Errorf("bulk failed using %s", url)
-			p.hostSelector.reduceWeight(host)
-			continue
-		}
-
-		if len(shouldRetry) > 0 || len(noRetry) > 0 {
-			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
-		}
-
-		if len(noRetry) > 0 {
-			b, err := json.Marshal(bulkRequest.actions[noRetry[0]])
-			if err != nil {
-				glog.Infof("one failed doc that need no retry: %v", bulkRequest.actions[noRetry[0]])
-			} else {
-				glog.Infof("one failed doc that need no retry: %s", b)
-			}
-		}
-
-		if len(shouldRetry) > 0 {
-			newBulkRequest := &BulkRequest{}
-			for _, i := range shouldRetry {
-				newBulkRequest.add(bulkRequest.actions[i])
-			}
-			p.mux.Lock()
-			p.execution_id++
-			execution_id := p.execution_id
-			p.mux.Unlock()
-			p.innerBulk(newBulkRequest, execution_id)
-		}
-
-		return // only success will go to here
-	}
 }
 
 type ElasticsearchOutput struct {
@@ -508,4 +543,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		}
 	}
 	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
+}
+func (outputPlugin *ElasticsearchOutput) Shutdown() {
+	outputPlugin.bulkProcessor.awaitclose(30 * time.Second)
 }

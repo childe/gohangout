@@ -41,7 +41,7 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 	case "LinkMetric":
 		return NewLinkMetricFilter(config)
 	}
-	glog.Fatalf("could build %s filter plugin", filterType)
+	glog.Fatalf("could not build %s filter plugin", filterType)
 	return nil
 }
 

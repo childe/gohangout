@@ -49,3 +49,5 @@ func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {
 	}
 	return inputPlugin.decoder.Decode(string(text))
 }
+
+func (inputPlugin *StdinInput) Shutdown() {}

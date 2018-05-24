@@ -4,6 +4,8 @@ import (
 	"flag"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
 	"sync"
 
 	"github.com/childe/gohangout/filter"
@@ -19,6 +21,7 @@ var options = &struct {
 	pprof     bool
 	pprofAddr string
 }{}
+var boxes []*input.InputBox
 
 func init() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
@@ -84,6 +87,19 @@ func main() {
 		}()
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for {
+			<-c
+			signal.Stop(c)
+			for _, box := range boxes {
+				box.Shutdown()
+			}
+			os.Exit(0)
+		}
+	}()
+
 	config, err := parseConfig(options.config)
 	if err != nil {
 		glog.Fatalf("could not parse config:%s", err)
@@ -95,7 +111,8 @@ func main() {
 		var wg sync.WaitGroup
 		inputs := inputValue.([]interface{})
 		wg.Add(len(inputs))
-		for _, inputValue := range inputs {
+		boxes = make([]*input.InputBox, len(inputs))
+		for input_idx, inputValue := range inputs {
 			i := inputValue.(map[interface{}]interface{})
 			glog.Info(i)
 			for k, v := range i {
@@ -105,8 +122,8 @@ func main() {
 				glog.Info(inputConfig)
 
 				inputPlugin := input.GetInput(inputType, inputConfig)
-				//inputPlugin.config = inputPlugin
 				box := input.NewInputBox(inputPlugin, getFilters(config), getOutputs(config), inputConfig)
+				boxes[input_idx] = &box
 
 				go func() {
 					defer wg.Done()

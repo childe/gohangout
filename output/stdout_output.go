@@ -26,3 +26,5 @@ func (outputPlugin *StdoutOutput) Emit(event map[string]interface{}) {
 	}
 	fmt.Println(string(buf))
 }
+
+func (outputPlugin *StdoutOutput) Shutdown() {}

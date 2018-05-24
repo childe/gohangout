@@ -1,9 +1,11 @@
 package input
 
 import (
-	"github.com/golang/glog"
+	"time"
+
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/healer"
+	"github.com/golang/glog"
 )
 
 type KafkaInput struct {
@@ -11,6 +13,8 @@ type KafkaInput struct {
 	messages chan *healer.FullMessage
 
 	decoder codec.Decoder
+
+	consumers []*healer.GroupConsumer
 }
 
 func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
@@ -54,6 +58,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 			if err != nil {
 				glog.Fatalf("could not init GroupConsumer:%s", err)
 			}
+			kafkaInput.consumers = append(kafkaInput.consumers, c)
 
 			_, err = c.Consume(true, kafkaInput.messages)
 			if err != nil {
@@ -73,4 +78,10 @@ func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
 	}
 	s := string(message.Message.Value)
 	return inputPlugin.decoder.Decode(s)
+}
+
+func (inputPlugin *KafkaInput) Shutdown() {
+	for _, c := range inputPlugin.consumers {
+		c.AwaitClose(30 * time.Second)
+	}
 }
