@@ -92,6 +92,7 @@ func main() {
 	go func() {
 		for {
 			<-c
+			signal.Stop(c)
 			for _, box := range boxes {
 				box.Shutdown()
 			}
