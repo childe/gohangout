@@ -545,5 +545,5 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
 }
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
-	outputPlugin.bulkProcessor.awaitclose(5 * time.Second)
+	outputPlugin.bulkProcessor.awaitclose(30 * time.Second)
 }
