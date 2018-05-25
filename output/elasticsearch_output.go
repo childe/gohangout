@@ -231,6 +231,13 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 		}
 	}()
 
+	defer func() {
+		go func() {
+			p.wg.Wait()
+			c <- true
+		}()
+	}()
+
 	p.mux.Lock()
 	if len(p.bulkRequest.actions) == 0 {
 		p.mux.Unlock()
@@ -244,10 +251,7 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 
 	go func() {
 		p.innerBulk(bulkRequest, execution_id)
-		p.wg.Wait()
-		c <- true
 	}()
-
 }
 
 func (p *HTTPBulkProcessor) bulk(bulkRequest *BulkRequest, execution_id int) {
