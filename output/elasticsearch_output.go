@@ -290,7 +290,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int
 		if len(noRetry) > 0 {
 			b, err := json.Marshal(bulkRequest.actions[noRetry[0]].event)
 			if err != nil {
-				glog.Infof("one failed doc that need no retry: %v", bulkRequest.actions[noRetry[0]].event)
+				glog.Infof("one failed doc that need no retry: %+v", bulkRequest.actions[noRetry[0]].event)
 			} else {
 				glog.Infof("one failed doc that need no retry: %s", b)
 			}
