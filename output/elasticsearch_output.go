@@ -25,6 +25,8 @@ const (
 	DEFAULT_CONCURRENT     = 1
 	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
 	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
+
+	MAX_BYTE_SIZE_APPLIED_IN_ADVANCE = 1024 * 1024 * 20
 )
 
 type HostSelector interface {
@@ -164,19 +166,31 @@ type HTTPBulkProcessor struct {
 	mux            sync.Mutex
 	wg             sync.WaitGroup
 
+	byte_size_applied_in_advance int
+
 	semaphore *semaphore.Weighted
 }
 
 func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int, compress bool) *HTTPBulkProcessor {
+	byte_size_applied_in_advance := bulk_size
+	if byte_size_applied_in_advance > MAX_BYTE_SIZE_APPLIED_IN_ADVANCE {
+		byte_size_applied_in_advance = MAX_BYTE_SIZE_APPLIED_IN_ADVANCE
+	}
+
 	bulkProcessor := &HTTPBulkProcessor{
 		bulk_size:      bulk_size,
 		bulk_actions:   bulk_actions,
 		flush_interval: flush_interval,
 		client:         &http.Client{},
-		bulkRequest:    &BulkRequest{},
 		hostSelector:   NewRRHostSelector(hosts, 3),
 		concurrent:     concurrent,
 		compress:       compress,
+
+		bulkRequest: &BulkRequest{
+			bulk_buf: make([]byte, byte_size_applied_in_advance)[:0],
+		},
+
+		byte_size_applied_in_advance: byte_size_applied_in_advance,
 	}
 	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent))
 
@@ -191,7 +205,9 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 				continue
 			}
 			bulkRequest := bulkProcessor.bulkRequest
-			bulkProcessor.bulkRequest = &BulkRequest{}
+			bulkProcessor.bulkRequest = &BulkRequest{
+				bulk_buf: make([]byte, byte_size_applied_in_advance)[:0],
+			}
 			bulkProcessor.execution_id++
 			execution_id := bulkProcessor.execution_id
 			bulkProcessor.mux.Unlock()
@@ -210,7 +226,9 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 		p.semaphore.Acquire(context.TODO(), 1)
 		p.mux.Lock()
 		bulkRequest := p.bulkRequest
-		p.bulkRequest = &BulkRequest{}
+		p.bulkRequest = &BulkRequest{
+			bulk_buf: make([]byte, p.byte_size_applied_in_advance)[:0],
+		}
 		p.execution_id++
 		execution_id := p.execution_id
 		p.mux.Unlock()
@@ -244,7 +262,9 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 		return
 	}
 	bulkRequest := p.bulkRequest
-	p.bulkRequest = &BulkRequest{}
+	p.bulkRequest = &BulkRequest{
+		bulk_buf: make([]byte, p.byte_size_applied_in_advance)[:0],
+	}
 	p.execution_id++
 	execution_id := p.execution_id
 	p.mux.Unlock()
