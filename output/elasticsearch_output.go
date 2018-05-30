@@ -26,7 +26,7 @@ const (
 	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
 	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
 
-	MAX_BYTE_SIZE_APPLIED_IN_ADVANCE = 1024 * 1024 * 20
+	MAX_BYTE_SIZE_APPLIED_IN_ADVANCE = 1024 * 1024 * 50
 )
 
 type HostSelector interface {
@@ -172,7 +172,7 @@ type HTTPBulkProcessor struct {
 }
 
 func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interval, concurrent int, compress bool) *HTTPBulkProcessor {
-	byte_size_applied_in_advance := bulk_size
+	byte_size_applied_in_advance := bulk_size + 1024*1024
 	if byte_size_applied_in_advance > MAX_BYTE_SIZE_APPLIED_IN_ADVANCE {
 		byte_size_applied_in_advance = MAX_BYTE_SIZE_APPLIED_IN_ADVANCE
 	}
