@@ -411,8 +411,6 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 
 	resp, err := p.client.Do(req)
 
-	br.bulk_buf = nil
-
 	if err != nil {
 		glog.Infof("could not bulk with %s:%s", url, err)
 		return false, shouldRetry, noRetry
