@@ -225,6 +225,11 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.actionCount() >= p.bulk_actions {
 		p.semaphore.Acquire(context.TODO(), 1)
 		p.mux.Lock()
+		if len(p.bulkRequest.actions) == 0 {
+			p.mux.Unlock()
+			p.semaphore.Release(1)
+			return
+		}
 		bulkRequest := p.bulkRequest
 		p.bulkRequest = &BulkRequest{
 			bulk_buf: make([]byte, p.byte_size_applied_in_advance)[:0],
