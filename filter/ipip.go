@@ -67,25 +67,25 @@ func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]inte
 		return event, false
 	}
 	if plugin.target == "" {
-		event["country"] = a[0]
-		event["province"] = a[1]
-		event["city"] = a[2]
+		event["country_name"] = a[0]
+		event["province_name"] = a[1]
+		event["city_name"] = a[2]
 		if len(a) >= 10 {
 			event["latitude"] = a[5]
 			event["longitude"] = a[6]
-			event["cityCode"] = a[9]
-			event["countryCode"] = a[11]
+			event["location"] = []string{a[6], a[5]}
+			event["country_code"] = a[11]
 		}
 	} else {
-		target := make(map[string]string)
-		target["country"] = a[0]
-		target["province"] = a[1]
-		target["city"] = a[2]
+		target := make(map[string]interface{})
+		target["country_name"] = a[0]
+		target["province_name"] = a[1]
+		target["city_name"] = a[2]
 		if len(a) >= 10 {
 			target["latitude"] = a[5]
 			target["longitude"] = a[6]
-			target["cityCode"] = a[9]
-			target["countryCode"] = a[11]
+			event["location"] = []string{a[6], a[5]}
+			target["country_code"] = a[11]
 		}
 		event[plugin.target] = target
 	}
