@@ -336,6 +336,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest, execution_id int
 			p.mux.Unlock()
 			p.innerBulk(newBulkRequest, execution_id)
 		}
+		bulkRequest.bulk_buf = nil
 
 		return // only success will go to here
 	}
