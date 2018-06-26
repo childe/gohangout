@@ -1,6 +1,8 @@
 package filter
 
 import (
+	"strconv"
+
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 	datx "github.com/ipipdotnet/datx-go"
@@ -22,7 +24,7 @@ func NewIPIPFilter(config map[interface{}]interface{}) *IPIPFilter {
 	plugin := &IPIPFilter{
 		BaseFilter: NewBaseFilter(config),
 		config:     config,
-		target:     "",
+		target:     "geoip",
 		overwrite:  true,
 	}
 
@@ -71,9 +73,9 @@ func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]inte
 		event["province_name"] = a[1]
 		event["city_name"] = a[2]
 		if len(a) >= 10 {
-			event["latitude"] = a[5]
-			event["longitude"] = a[6]
-			event["location"] = []string{a[6], a[5]}
+			event["latitude"], _ = strconv.ParseFloat(a[5], 10)
+			event["longitude"] = strconv.ParseFloat(a[6], 10)
+			event["location"] = []float{event["longitude"], event["latitude"]}
 			event["country_code"] = a[11]
 		}
 	} else {
@@ -82,9 +84,9 @@ func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]inte
 		target["province_name"] = a[1]
 		target["city_name"] = a[2]
 		if len(a) >= 10 {
-			target["latitude"] = a[5]
-			target["longitude"] = a[6]
-			target["location"] = []string{a[6], a[5]}
+			target["latitude"], _ = strconv.ParseFloat(a[5], 10)
+			target["longitude"] = strconv.ParseFloat(a[6], 10)
+			target["location"] = []float{target["longitude"], target["latitude"]}
 			target["country_code"] = a[11]
 		}
 		event[plugin.target] = target
