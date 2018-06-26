@@ -73,9 +73,11 @@ func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]inte
 		event["province_name"] = a[1]
 		event["city_name"] = a[2]
 		if len(a) >= 10 {
-			event["latitude"], _ = strconv.ParseFloat(a[5], 10)
-			event["longitude"] = strconv.ParseFloat(a[6], 10)
-			event["location"] = []float{event["longitude"], event["latitude"]}
+			latitude, _ := strconv.ParseFloat(a[5], 10)
+			longitude, _ := strconv.ParseFloat(a[6], 10)
+			event["latitude"] = latitude
+			event["longitude"] = longitude
+			event["location"] = []float64{longitude, latitude}
 			event["country_code"] = a[11]
 		}
 	} else {
@@ -84,9 +86,11 @@ func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]inte
 		target["province_name"] = a[1]
 		target["city_name"] = a[2]
 		if len(a) >= 10 {
-			target["latitude"], _ = strconv.ParseFloat(a[5], 10)
-			target["longitude"] = strconv.ParseFloat(a[6], 10)
-			target["location"] = []float{target["longitude"], target["latitude"]}
+			latitude, _ := strconv.ParseFloat(a[5], 10)
+			longitude, _ := strconv.ParseFloat(a[6], 10)
+			target["latitude"] = latitude
+			target["longitude"] = longitude
+			target["location"] = []float64{longitude, latitude}
 			target["country_code"] = a[11]
 		}
 		event[plugin.target] = target
