@@ -84,7 +84,7 @@ func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]inte
 		if len(a) >= 10 {
 			target["latitude"] = a[5]
 			target["longitude"] = a[6]
-			event["location"] = []string{a[6], a[5]}
+			target["location"] = []string{a[6], a[5]}
 			target["country_code"] = a[11]
 		}
 		event[plugin.target] = target
