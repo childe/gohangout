@@ -187,7 +187,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 		compress:       compress,
 
 		bulkRequest: &BulkRequest{
-			bulk_buf: make([]byte, byte_size_applied_in_advance)[:0],
+			bulk_buf: make([]byte, 0, byte_size_applied_in_advance),
 		},
 
 		byte_size_applied_in_advance: byte_size_applied_in_advance,
@@ -206,7 +206,7 @@ func NewHTTPBulkProcessor(hosts []string, bulk_size, bulk_actions, flush_interva
 			}
 			bulkRequest := bulkProcessor.bulkRequest
 			bulkProcessor.bulkRequest = &BulkRequest{
-				bulk_buf: make([]byte, byte_size_applied_in_advance)[:0],
+				bulk_buf: make([]byte, 0, byte_size_applied_in_advance),
 			}
 			bulkProcessor.execution_id++
 			execution_id := bulkProcessor.execution_id
@@ -232,7 +232,7 @@ func (p *HTTPBulkProcessor) add(action *Action) {
 		}
 		bulkRequest := p.bulkRequest
 		p.bulkRequest = &BulkRequest{
-			bulk_buf: make([]byte, p.byte_size_applied_in_advance)[:0],
+			bulk_buf: make([]byte, 0, p.byte_size_applied_in_advance),
 		}
 		p.execution_id++
 		execution_id := p.execution_id
@@ -268,7 +268,7 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 	}
 	bulkRequest := p.bulkRequest
 	p.bulkRequest = &BulkRequest{
-		bulk_buf: make([]byte, p.byte_size_applied_in_advance)[:0],
+		bulk_buf: make([]byte, 0, p.byte_size_applied_in_advance),
 	}
 	p.execution_id++
 	execution_id := p.execution_id
