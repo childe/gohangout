@@ -33,7 +33,7 @@ func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {
 		line, isPrefix, err := inputPlugin.reader.ReadLine()
 		if err != nil {
 			if err == io.EOF {
-				os.Exit(0)
+				return nil
 			}
 			glog.Errorf("readline error:%s", err)
 			return nil
