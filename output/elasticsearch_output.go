@@ -274,8 +274,10 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 	execution_id := p.execution_id
 	p.mux.Unlock()
 
+	p.wg.Add(1)
 	go func() {
 		p.innerBulk(bulkRequest, execution_id)
+		p.wg.Done()
 	}()
 }
 
