@@ -171,9 +171,9 @@ func (plugin *LinkMetricFilter) metricToEvents(metrics map[string]interface{}, l
 	return events
 }
 
-func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]interface{} {
+func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
 	if len(plugin.metricToEmit) == 0 {
-		return nil
+		return
 	}
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
@@ -184,5 +184,5 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) []map[string]i
 		}
 	}
 	plugin.metricToEmit = make(map[int64]interface{})
-	return nil
+	return
 }

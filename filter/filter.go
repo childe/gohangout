@@ -15,7 +15,7 @@ type Filter interface {
 	Pass(map[string]interface{}) bool
 	Process(map[string]interface{}) (map[string]interface{}, bool)
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
-	EmitExtraEvents(*stack.Stack) []map[string]interface{}
+	EmitExtraEvents(*stack.Stack)
 }
 
 func GetFilters(config map[string]interface{}) []Filter {
@@ -122,8 +122,8 @@ func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
 }
-func (f *BaseFilter) EmitExtraEvents(*stack.Stack) []map[string]interface{} {
-	return nil
+func (f *BaseFilter) EmitExtraEvents(*stack.Stack) {
+	return
 }
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {

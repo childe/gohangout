@@ -29,10 +29,9 @@ func (plugin *FiltersFilter) Process(event map[string]interface{}) (map[string]i
 	return nil, false
 }
 
-func (plugin *FiltersFilter) EmitExtraEvents(outputS *stack.Stack) []map[string]interface{} {
+func (plugin *FiltersFilter) EmitExtraEvents(outputS *stack.Stack) {
 	var (
 		event   map[string]interface{}
-		events  []map[string]interface{}
 		success bool
 
 		sFrom *stack.Stack = stack.New()
@@ -55,17 +54,12 @@ func (plugin *FiltersFilter) EmitExtraEvents(outputS *stack.Stack) []map[string]
 					sTo.Push(event)
 				}
 			}
-			events = filterPlugin.EmitExtraEvents(sTo)
-			if events != nil {
-				for _, event := range events {
-					sTo.Push(event)
-				}
-			}
+			filterPlugin.EmitExtraEvents(sTo)
 		}
 		sFrom, sTo = sTo, sFrom
 	}
 	for sFrom.Len() > 0 {
 		outputS.Push(sFrom.Pop())
 	}
-	return nil
+	return
 }

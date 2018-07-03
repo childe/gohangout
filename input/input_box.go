@@ -26,7 +26,6 @@ func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, 
 func (box *InputBox) Beat() {
 	var (
 		event   map[string]interface{}
-		events  []map[string]interface{}
 		success bool
 
 		sFrom *stack.Stack = stack.New()
@@ -58,12 +57,7 @@ func (box *InputBox) Beat() {
 							sTo.Push(event)
 						}
 					}
-					events = filterPlugin.EmitExtraEvents(sTo)
-					if events != nil {
-						for _, event := range events {
-							sTo.Push(event)
-						}
-					}
+					filterPlugin.EmitExtraEvents(sTo)
 				}
 				sFrom, sTo = sTo, sFrom
 			}
