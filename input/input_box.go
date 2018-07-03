@@ -36,6 +36,7 @@ func (box *InputBox) Beat() {
 	for {
 		event = box.input.readOneEvent()
 		if event == nil {
+			box.Shutdown()
 			return
 		}
 		if typeValue, ok := box.config["type"]; ok {
