@@ -18,6 +18,30 @@ type Filter interface {
 	EmitExtraEvents(*stack.Stack) []map[string]interface{}
 }
 
+func GetFilters(config map[string]interface{}) []Filter {
+	if filterValue, ok := config["filters"]; ok {
+		rst := make([]Filter, 0)
+		filters := filterValue.([]interface{})
+		for _, filterValue := range filters {
+			filters := filterValue.(map[interface{}]interface{})
+			for k, v := range filters {
+				filterType := k.(string)
+				glog.Infof("filter type:%s", filterType)
+				filterConfig := v.(map[interface{}]interface{})
+				glog.Infof("filter config:%v", filterConfig)
+				filterPlugin := GetFilter(filterType, filterConfig)
+				if filterPlugin == nil {
+					glog.Fatalf("could build filter plugin from type (%s)", filterType)
+				}
+				rst = append(rst, filterPlugin)
+			}
+		}
+		return rst
+	} else {
+		return nil
+	}
+}
+
 func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 	switch filterType {
 	case "Add":

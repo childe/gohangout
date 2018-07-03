@@ -57,30 +57,6 @@ func getOutputs(config map[string]interface{}) []output.Output {
 	}
 }
 
-func getFilters(config map[string]interface{}) []filter.Filter {
-	if filterValue, ok := config["filters"]; ok {
-		rst := make([]filter.Filter, 0)
-		filters := filterValue.([]interface{})
-		for _, filterValue := range filters {
-			filters := filterValue.(map[interface{}]interface{})
-			for k, v := range filters {
-				filterType := k.(string)
-				glog.Infof("filter type:%s", filterType)
-				filterConfig := v.(map[interface{}]interface{})
-				glog.Infof("filter config:%v", filterConfig)
-				filterPlugin := filter.GetFilter(filterType, filterConfig)
-				if filterPlugin == nil {
-					glog.Fatalf("could build filter plugin from type (%s)", filterType)
-				}
-				rst = append(rst, filterPlugin)
-			}
-		}
-		return rst
-	} else {
-		return nil
-	}
-}
-
 func main() {
 	if options.pprof {
 		go func() {
@@ -123,7 +99,7 @@ func main() {
 				glog.Info(inputConfig)
 
 				inputPlugin := input.GetInput(inputType, inputConfig)
-				box := input.NewInputBox(inputPlugin, getFilters(config), getOutputs(config), inputConfig)
+				box := input.NewInputBox(inputPlugin, filter.GetFilters(config), getOutputs(config), inputConfig)
 				boxes[input_idx] = &box
 
 				go func() {
