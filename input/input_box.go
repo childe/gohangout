@@ -12,6 +12,8 @@ type InputBox struct {
 	filters []filter.Filter
 	outputs []output.Output
 	config  map[interface{}]interface{}
+
+	stopped bool
 }
 
 func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, config map[interface{}]interface{}) InputBox {
@@ -20,6 +22,8 @@ func NewInputBox(input Input, filters []filter.Filter, outputs []output.Output, 
 		filters: filters,
 		outputs: outputs,
 		config:  config,
+
+		stopped: false,
 	}
 }
 
@@ -33,7 +37,7 @@ func (box *InputBox) Beat() {
 		sTo   *stack.Stack = stack.New()
 	)
 
-	for {
+	for box.stopped == false {
 		event = box.input.readOneEvent()
 		if event == nil {
 			box.Shutdown()
@@ -83,6 +87,7 @@ func (box *InputBox) Beat() {
 
 func (box *InputBox) Shutdown() {
 	glog.Infof("try to shutdown input %T", box.input)
+	box.stopped = true
 	box.input.Shutdown()
 	for _, o := range box.outputs {
 		glog.Infof("try to shutdown output %T", o)
