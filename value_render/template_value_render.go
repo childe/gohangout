@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"text/template"
 	"time"
 
@@ -34,6 +35,12 @@ func convertToInt(x interface{}) (int, error) {
 }
 
 func init() {
+	funcMap["compare"] = strings.Compare
+	funcMap["contains"] = strings.Contains
+	funcMap["containsAny"] = strings.ContainsAny
+	funcMap["hasprefix"] = strings.HasPrefix
+	funcMap["hassuffix"] = strings.HasSuffix
+
 	funcMap["now"] = func() int64 { return time.Now().UnixNano() / 1000000 }
 	funcMap["timestamp"] = func(event map[string]interface{}) int64 {
 		timestamp := event["@timestamp"]
