@@ -97,7 +97,7 @@ func main() {
 			for _, box := range boxes {
 				box.Shutdown()
 			}
-			os.Exit(0)
+			//os.Exit(0) // leave the program leave itself
 		}
 	}()
 
