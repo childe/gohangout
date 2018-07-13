@@ -15,7 +15,31 @@ type Filter interface {
 	Pass(map[string]interface{}) bool
 	Process(map[string]interface{}) (map[string]interface{}, bool)
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
-	EmitExtraEvents(*stack.Stack) []map[string]interface{}
+	EmitExtraEvents(*stack.Stack)
+}
+
+func GetFilters(config map[string]interface{}) []Filter {
+	if filterValue, ok := config["filters"]; ok {
+		rst := make([]Filter, 0)
+		filters := filterValue.([]interface{})
+		for _, filterValue := range filters {
+			filters := filterValue.(map[interface{}]interface{})
+			for k, v := range filters {
+				filterType := k.(string)
+				glog.Infof("filter type:%s", filterType)
+				filterConfig := v.(map[interface{}]interface{})
+				glog.Infof("filter config:%v", filterConfig)
+				filterPlugin := GetFilter(filterType, filterConfig)
+				if filterPlugin == nil {
+					glog.Fatalf("could build filter plugin from type (%s)", filterType)
+				}
+				rst = append(rst, filterPlugin)
+			}
+		}
+		return rst
+	} else {
+		return nil
+	}
 }
 
 func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
@@ -98,8 +122,8 @@ func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
 }
-func (f *BaseFilter) EmitExtraEvents(*stack.Stack) []map[string]interface{} {
-	return nil
+func (f *BaseFilter) EmitExtraEvents(*stack.Stack) {
+	return
 }
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
