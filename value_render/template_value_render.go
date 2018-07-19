@@ -40,6 +40,7 @@ func init() {
 	funcMap["containsAny"] = strings.ContainsAny
 	funcMap["hasprefix"] = strings.HasPrefix
 	funcMap["hassuffix"] = strings.HasSuffix
+	funcMap["replace"] = strings.Replace
 
 	funcMap["now"] = func() int64 { return time.Now().UnixNano() / 1000000 }
 	funcMap["timestamp"] = func(event map[string]interface{}) int64 {
