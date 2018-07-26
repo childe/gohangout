@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -44,10 +45,11 @@ type RRHostSelector struct {
 }
 
 func NewRRHostSelector(hosts []string, weight int) *RRHostSelector {
+	rand.Seed(time.Now().UnixNano())
 	hostsCount := len(hosts)
 	rst := &RRHostSelector{
 		hosts:      hosts,
-		index:      0,
+		index:      int(rand.Int31n(int32(hostsCount))),
 		hostsCount: hostsCount,
 		initWeight: weight,
 	}
