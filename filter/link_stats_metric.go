@@ -9,7 +9,7 @@ import (
 	"github.com/golang/glog"
 )
 
-type LinkStatMetricFilter struct {
+type LinkStatsMetricFilter struct {
 	BaseFilter
 
 	config        map[interface{}]interface{}
@@ -27,9 +27,9 @@ type LinkStatMetricFilter struct {
 	metricToEmit map[int64]interface{}
 }
 
-func NewLinkStatMetricFilter(config map[interface{}]interface{}) *LinkStatMetricFilter {
+func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetricFilter {
 	baseFilter := NewBaseFilter(config)
-	plugin := &LinkStatMetricFilter{
+	plugin := &LinkStatsMetricFilter{
 		BaseFilter:   baseFilter,
 		config:       config,
 		overwrite:    true,
@@ -80,7 +80,7 @@ func NewLinkStatMetricFilter(config map[interface{}]interface{}) *LinkStatMetric
 	return plugin
 }
 
-func (plugin *LinkStatMetricFilter) updateMetric(event map[string]interface{}) {
+func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	var value float32
 	fieldValueI := event[plugin.lastField]
 	if fieldValueI == nil {
@@ -142,12 +142,12 @@ func (plugin *LinkStatMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 }
 
-func (plugin *LinkStatMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *LinkStatsMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	plugin.updateMetric(event)
 	return event, false
 }
 
-func (plugin *LinkStatMetricFilter) metricToEvents(metrics map[string]interface{}, level int) []map[string]interface{} {
+func (plugin *LinkStatsMetricFilter) metricToEvents(metrics map[string]interface{}, level int) []map[string]interface{} {
 	var (
 		fieldName string                   = plugin.fields[level]
 		events    []map[string]interface{} = make([]map[string]interface{}, 0)
@@ -179,7 +179,7 @@ func (plugin *LinkStatMetricFilter) metricToEvents(metrics map[string]interface{
 	return events
 }
 
-func (plugin *LinkStatMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
+func (plugin *LinkStatsMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
 	if len(plugin.metricToEmit) == 0 {
 		return
 	}

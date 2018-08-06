@@ -68,8 +68,8 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewIPIPFilter(config)
 	case "LinkMetric":
 		return NewLinkMetricFilter(config)
-	case "LinkStatMetric":
-		return NewLinkStatMetricFilter(config)
+	case "LinkStatsMetric":
+		return NewLinkStatsMetricFilter(config)
 	case "Filters":
 		return NewFiltersFilter(config)
 	}
