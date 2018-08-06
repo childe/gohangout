@@ -70,7 +70,7 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 			if to == "float" {
 				converter = &FloatConverter{}
 			} else if to == "int" {
-				converter = &FloatConverter{}
+				converter = &IntConverter{}
 			} else if to == "bool" {
 				converter = &BoolConverter{}
 			} else {
@@ -78,7 +78,7 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 			}
 			plugin.fields[fieldSetter] = ConveterAndRender{
 				converter,
-				value_render.GetValueRender(f.(string)),
+				value_render.GetValueRender2(f.(string)),
 				remove_if_fail,
 				setto_if_fail,
 			}
@@ -96,6 +96,7 @@ func (plugin *ConvertFilter) Process(event map[string]interface{}) (map[string]i
 		if err == nil {
 			event = fs.SetField(event, v, "", true)
 		} else {
+			glog.V(10).Infof("convert error: %s", err)
 			if conveterAndRender.settoIfFail != nil {
 				event = fs.SetField(event, conveterAndRender.settoIfFail, "", true)
 			} else if conveterAndRender.removeIfFail {
