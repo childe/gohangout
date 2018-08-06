@@ -59,13 +59,23 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 				glog.Fatalf("could build field setter from %s", f.(string))
 			}
 
-			to := v["to"]
+			to := v["to"].(string)
 			remove_if_fail := v["remove_if_fail"].(bool)
 			setto_if_fail := v["setto_if_fail"]
 
+			var converter Converter
+			if to == "float" {
+				converter = &FloatConverter{}
+			} else if to == "int" {
+				converter = &FloatConverter{}
+			} else if to == "bool" {
+				converter = &BoolConverter{}
+			} else {
+				glog.Fatal("can only convert to int/float/bool")
+			}
 			plugin.fields[fieldSetter] = ConveterAndRender{
-				&FloatConverter{},
-				value_render.GetValueRender(to.(string)),
+				converter,
+				value_render.GetValueRender(f.(string)),
 				remove_if_fail,
 				setto_if_fail,
 			}
