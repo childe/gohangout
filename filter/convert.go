@@ -60,7 +60,10 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 			}
 
 			to := v["to"].(string)
-			remove_if_fail := v["remove_if_fail"].(bool)
+			remove_if_fail := false
+			if I, ok := v["remove_if_fail"]; ok {
+				remove_if_fail = I.(bool)
+			}
 			setto_if_fail := v["setto_if_fail"]
 
 			var converter Converter
