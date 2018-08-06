@@ -30,11 +30,30 @@ func TestConvertFilter(t *testing.T) {
 		t.Error("ConvertFilter fail")
 	}
 
-	t.Log(event["responseSize"].(int64) == 10)
-	if event["responseSize"].(int64) != 10 {
+	if event["responseSize"].(int) != 10 {
 		t.Error("responseSize should be 10")
 	}
 	if event["timeTaken"].(float64) != 0.01 {
 		t.Error("timeTaken should be 0.01")
+	}
+
+	event = map[string]interface{}{
+		"responseSize": "10.1",
+		"timeTaken":    "abcd",
+	}
+	t.Log(event)
+
+	event, ok = f.Process(event)
+	t.Log(event)
+
+	if ok == false {
+		t.Error("ConvertFilter fail")
+	}
+
+	if event["responseSize"].(int) != 0 {
+		t.Error("responseSize should be 0")
+	}
+	if event["timeTaken"] != nil {
+		t.Error("timeTaken should be nil")
 	}
 }
