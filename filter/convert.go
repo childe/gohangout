@@ -54,7 +54,7 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 
 	if fieldsValue, ok := config["fields"]; ok {
 		for f, vI := range fieldsValue.(map[interface{}]interface{}) {
-			v := vI.(map[string]interface{})
+			v := vI.(map[interface{}]interface{})
 			fieldSetter := field_setter.NewFieldSetter(f.(string))
 			if fieldSetter == nil {
 				glog.Fatalf("could build field setter from %s", f.(string))
