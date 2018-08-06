@@ -81,6 +81,11 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 }
 
 func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
+	fieldValueI := event[plugin.lastField]
+	if fieldValueI == nil {
+		return
+	}
+
 	var timestamp int64
 	if v, ok := event[plugin.timestamp]; ok {
 		if reflect.TypeOf(v).String() != "time.Time" {
@@ -123,10 +128,6 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		}
 	}
 
-	fieldValueI := event[plugin.lastField]
-	if fieldValueI == nil {
-		return
-	}
 	fieldValue = fieldValueI.(string)
 
 	if count, ok := set[fieldValue]; ok {
