@@ -98,10 +98,10 @@ func (plugin *ConvertFilter) Process(event map[string]interface{}) (map[string]i
 			event = fs.SetField(event, v, "", true)
 		} else {
 			glog.V(10).Infof("convert error: %s", err)
-			if conveterAndRender.settoIfFail != nil {
-				event = fs.SetField(event, conveterAndRender.settoIfFail, "", true)
-			} else if conveterAndRender.removeIfFail {
+			if conveterAndRender.removeIfFail {
 				event = fs.SetField(event, nil, "", true)
+			} else if conveterAndRender.settoIfFail != nil {
+				event = fs.SetField(event, conveterAndRender.settoIfFail, "", true)
 			}
 		}
 	}
