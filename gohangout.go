@@ -93,13 +93,16 @@ func main() {
 			i := inputValue.(map[interface{}]interface{})
 			glog.Info(i)
 			for k, v := range i {
+				filters := filter.GetFilters(config)
+				outputs := getOutputs(config)
+
 				inputType := k.(string)
 				glog.Info(inputType)
 				inputConfig := v.(map[interface{}]interface{})
 				glog.Info(inputConfig)
 
 				inputPlugin := input.GetInput(inputType, inputConfig)
-				box := input.NewInputBox(inputPlugin, filter.GetFilters(config), getOutputs(config), inputConfig)
+				box := input.NewInputBox(inputPlugin, filters, outputs, inputConfig)
 				boxes[input_idx] = &box
 
 				go func() {
