@@ -15,7 +15,8 @@ type Converter interface {
 type IntConverter struct{}
 
 func (c *IntConverter) convert(v string) (interface{}, error) {
-	return strconv.ParseInt(v, 0, 64)
+	i, err := strconv.ParseInt(v, 0, 32)
+	return (int)(i), err
 }
 
 type FloatConverter struct{}
