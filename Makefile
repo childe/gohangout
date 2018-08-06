@@ -1,5 +1,7 @@
 hash:=$(shell git rev-parse --short HEAD)
 
+.PHONY: gohangout test hermes all clean
+
 gohangout:
 	go build -o build/gohangout
 
