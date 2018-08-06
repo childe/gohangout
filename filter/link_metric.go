@@ -81,8 +81,8 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 }
 
 func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
-	fieldValueI := event[plugin.lastField]
-	if fieldValueI == nil {
+	lastFieldValueI := event[plugin.lastField]
+	if lastFieldValueI == nil {
 		return
 	}
 
@@ -128,7 +128,7 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		}
 	}
 
-	fieldValue = fieldValueI.(string)
+	fieldValue = lastFieldValueI.(string)
 
 	if count, ok := set[fieldValue]; ok {
 		set[fieldValue] = 1 + count.(int)
