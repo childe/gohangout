@@ -1,32 +1,74 @@
 package filter
 
 import (
+	"strconv"
+
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
+type Converter interface {
+	convert(v string) (interface{}, error)
+}
+
+type IntConverter struct{}
+
+func (c *IntConverter) convert(v string) (interface{}, error) {
+	return strconv.ParseInt(v, 0, 64)
+}
+
+type FloatConverter struct{}
+
+func (c *FloatConverter) convert(v string) (interface{}, error) {
+	return strconv.ParseFloat(v, 64)
+}
+
+type BoolConverter struct{}
+
+func (c *BoolConverter) convert(v string) (interface{}, error) {
+	return strconv.ParseBool(v)
+}
+
+type ConveterAndRender struct {
+	converter    Converter
+	valueRender  value_render.ValueRender
+	removeIfFail bool
+	settoIfFail  interface{}
+}
+
 type ConvertFilter struct {
 	BaseFilter
 
 	config map[interface{}]interface{}
-	fields map[field_setter.FieldSetter]value_render.ValueRender
+	fields map[field_setter.FieldSetter]ConveterAndRender
 }
 
 func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 	plugin := &ConvertFilter{
 		BaseFilter: NewBaseFilter(config),
 		config:     config,
-		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
+		fields:     make(map[field_setter.FieldSetter]ConveterAndRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {
-		for f, v := range fieldsValue.(map[interface{}]interface{}) {
+		for f, vI := range fieldsValue.(map[interface{}]interface{}) {
+			v := vI.(map[string]interface{})
 			fieldSetter := field_setter.NewFieldSetter(f.(string))
 			if fieldSetter == nil {
 				glog.Fatalf("could build field setter from %s", f.(string))
 			}
-			plugin.fields[fieldSetter] = value_render.GetValueRender(v.(string))
+
+			to := v["to"]
+			remove_if_fail := v["remove_if_fail"].(bool)
+			setto_if_fail := v["setto_if_fail"]
+
+			plugin.fields[fieldSetter] = ConveterAndRender{
+				&FloatConverter{},
+				value_render.GetValueRender(to.(string)),
+				remove_if_fail,
+				setto_if_fail,
+			}
 		}
 	} else {
 		glog.Fatal("fileds must be set in convert filter plugin")
@@ -35,8 +77,18 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 }
 
 func (plugin *ConvertFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
-	for fs, v := range plugin.fields {
-		event = fs.SetField(event, v.Render(event), "", plugin.overwrite)
+	for fs, conveterAndRender := range plugin.fields {
+		originanV := conveterAndRender.valueRender.Render(event)
+		v, err := conveterAndRender.converter.convert(originanV.(string))
+		if err == nil {
+			event = fs.SetField(event, v, "", true)
+		} else {
+			if conveterAndRender.settoIfFail != nil {
+				event = fs.SetField(event, conveterAndRender.settoIfFail, "", true)
+			} else if conveterAndRender.removeIfFail {
+				event = fs.SetField(event, nil, "", true)
+			}
+		}
 	}
 	return event, true
 }
