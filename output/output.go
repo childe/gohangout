@@ -14,6 +14,8 @@ func GetOutput(outputType string, config map[interface{}]interface{}) Output {
 		return NewStdoutOutput(config)
 	case "Elasticsearch":
 		return NewElasticsearchOutput(config)
+	case "Influxdb":
+		return NewInfluxdbOutput(config)
 	}
 	return nil
 }
