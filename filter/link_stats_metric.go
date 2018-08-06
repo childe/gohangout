@@ -81,12 +81,12 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 }
 
 func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
-	var value float32
+	var value float64
 	fieldValueI := event[plugin.lastField]
 	if fieldValueI == nil {
 		return
 	}
-	value = fieldValueI.(float32)
+	value = fieldValueI.(float64)
 
 	var timestamp int64
 	if v, ok := event[plugin.timestamp]; ok {
@@ -131,11 +131,11 @@ func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) 
 	}
 
 	if statsI, ok := set[plugin.lastField]; ok {
-		stats := statsI.(map[string]float32)
+		stats := statsI.(map[string]float64)
 		stats["count"] = 1 + stats["count"]
 		stats["sum"] = value + stats["sum"]
 	} else {
-		stats := make(map[string]float32)
+		stats := make(map[string]float64)
 		stats["count"] = 1
 		stats["sum"] = value
 		set[plugin.lastField] = stats
@@ -155,7 +155,7 @@ func (plugin *LinkStatsMetricFilter) metricToEvents(metrics map[string]interface
 
 	if level == plugin.fieldsLength-1 {
 		for fieldValue, statsI := range metrics {
-			stats := statsI.(map[string]float32)
+			stats := statsI.(map[string]float64)
 			event := map[string]interface{}{fieldName: fieldValue}
 			event["count"] = int(stats["count"])
 			event["sum"] = stats["sum"]
