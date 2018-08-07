@@ -120,7 +120,7 @@ type BulkProcessor interface {
 	awaitclose(time.Duration)
 }
 
-type GetRetryEventsFunc func(*http.Response) ([]int, []int)
+type GetRetryEventsFunc func(*http.Response, []byte) ([]int, []int)
 
 type HTTPBulkProcessor struct {
 	headers           map[string]string
@@ -357,7 +357,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 
 	defer resp.Body.Close()
 
-	shouldRetry, noRetry = p.getRetryEventsFunc(resp)
+	shouldRetry, noRetry = p.getRetryEventsFunc(resp, respBody)
 
 	return true, shouldRetry, noRetry
 }

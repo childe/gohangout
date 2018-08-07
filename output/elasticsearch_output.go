@@ -3,7 +3,6 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -114,15 +113,12 @@ type ElasticsearchOutput struct {
 	bulkProcessor BulkProcessor
 }
 
-func getRetryEvents(resp *http.Response) ([]int, []int) {
+func getRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-
 	var responseI interface{}
-	err = json.Unmarshal(respBody, &responseI)
-
+	err := json.Unmarshal(respBody, &responseI)
 	if err != nil {
 		glog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
 		return retry, noRetry
