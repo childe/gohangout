@@ -65,42 +65,6 @@ func (br *ESBulkRequest) readBuf() []byte {
 	return br.bulk_buf
 }
 
-func (p *HTTPBulkProcessor) abstraceBulkResponseItemsByStatus(bulkResponse map[string]interface{}) ([]int, []int) {
-	glog.V(20).Infof("%v", bulkResponse)
-
-	retry := make([]int, 0)
-	noRetry := make([]int, 0)
-
-	if bulkResponse["errors"] == nil {
-		glog.Infof("could NOT get errors in response:%v", bulkResponse)
-		return retry, noRetry
-	}
-
-	if bulkResponse["errors"].(bool) == false {
-		return retry, noRetry
-	}
-
-	hasLog := false
-	for i, item := range bulkResponse["items"].([]interface{}) {
-		index := item.(map[string]interface{})["index"].(map[string]interface{})
-
-		if errorValue, ok := index["error"]; ok {
-			if !hasLog {
-				glog.Infof("error :%v", errorValue)
-				hasLog = true
-			}
-
-			status := index["status"].(float64)
-			if status == 429 || status >= 500 && status < 600 {
-				retry = append(retry, i)
-			} else {
-				noRetry = append(noRetry, i)
-			}
-		}
-	}
-	return retry, noRetry
-}
-
 type ElasticsearchOutput struct {
 	BaseOutput
 	config map[interface{}]interface{}
