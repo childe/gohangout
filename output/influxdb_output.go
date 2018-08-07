@@ -169,7 +169,7 @@ func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 		glog.Fatal("hosts must be set in elasticsearch output")
 	}
 
-	var headers = map[string]string{"Content-Type": "application/x-ndjson"}
+	headers := make(map[string]string)
 	if v, ok := config["headers"]; ok {
 		for keyI, valueI := range v.(map[interface{}]interface{}) {
 			headers[keyI.(string)] = valueI.(string)
@@ -189,7 +189,7 @@ func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 		byte_size_applied_in_advance = MAX_BYTE_SIZE_APPLIED_IN_ADVANCE
 	}
 	var f = func() BulkRequest {
-		return &ESBulkRequest{
+		return &InfluxdbBulkRequest{
 			bulk_buf: make([]byte, 0, byte_size_applied_in_advance),
 		}
 	}
