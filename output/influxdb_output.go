@@ -1,7 +1,10 @@
 package output
 
 import (
+	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/childe/gohangout/value_render"
@@ -13,11 +16,49 @@ const ()
 type InAction struct {
 	measurement string
 	event       map[string]interface{}
+	tags        []string
+	fields      []string
+	timestamp   string
 }
 
 func (action *InAction) Encode() []byte {
-	bulk_buf := make([]byte, 0)
-	bulk_buf = append(bulk_buf, '\n')
+	bulk_buf := []byte(action.measurement)
+
+	//tag set
+	tag_set := make([]string, 0)
+	for _, tag := range action.tags {
+		if v, ok := action.event[tag]; ok {
+			tag_set = append(tag_set, fmt.Sprintf("%s=%s", tag, v))
+		}
+	}
+	if len(tag_set) > 0 {
+		bulk_buf = append(bulk_buf, ',')
+		bulk_buf = append(bulk_buf, strings.Join(tag_set, ",")...)
+	}
+
+	//field set
+	field_set := make([]string, 0)
+	for _, field := range action.fields {
+		if v, ok := action.event[field]; ok {
+			field_set = append(field_set, fmt.Sprintf("%s=%s", field, v))
+		}
+	}
+	if len(field_set) <= 0 {
+		glog.V(20).Infof("field set is nil. fields: %v. event: %v", action.fields, action.event)
+		return nil
+	} else {
+		bulk_buf = append(bulk_buf, ' ')
+		bulk_buf = append(bulk_buf, strings.Join(field_set, ",")...)
+	}
+
+	//timestamp
+	t := action.event[action.timestamp]
+	if t != nil && reflect.TypeOf(t).String() == "time.Time" {
+		bulk_buf = append(bulk_buf, fmt.Sprintf(" %d", t.(time.Time).UnixNano())...)
+	} else {
+		glog.V(20).Infof("%s is not time.Time", action.timestamp)
+	}
+
 	return bulk_buf
 }
 
@@ -28,6 +69,7 @@ type InfluxdbBulkRequest struct {
 
 func (br *InfluxdbBulkRequest) add(event Event) {
 	br.bulk_buf = append(br.bulk_buf, event.Encode()...)
+	br.bulk_buf = append(br.bulk_buf, '\n')
 	br.events = append(br.events, event)
 }
 
@@ -46,6 +88,9 @@ type InfluxdbOutput struct {
 	config map[interface{}]interface{}
 
 	measurement value_render.ValueRender
+	tags        []string
+	fields      []string
+	timestamp   string
 
 	bulkProcessor BulkProcessor
 }
@@ -63,6 +108,22 @@ func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 		rst.measurement = value_render.GetValueRender(v.(string))
 	} else {
 		glog.Fatal("measurement must be set in elasticsearch output")
+	}
+
+	if v, ok := config["tags"]; ok {
+		for _, t := range v.([]interface{}) {
+			rst.tags = append(rst.tags, t.(string))
+		}
+	}
+	if v, ok := config["fields"]; ok {
+		for _, f := range v.([]interface{}) {
+			rst.fields = append(rst.fields, f.(string))
+		}
+	}
+	if v, ok := config["timestamp"]; ok {
+		rst.timestamp = v.(string)
+	} else {
+		rst.timestamp = "@timestamp"
 	}
 
 	var (
@@ -141,7 +202,7 @@ func (p *InfluxdbOutput) Emit(event map[string]interface{}) {
 	var (
 		measurement string = p.measurement.Render(event).(string)
 	)
-	p.bulkProcessor.add(&InAction{measurement, event})
+	p.bulkProcessor.add(&InAction{measurement, event, p.tags, p.fields, p.timestamp})
 }
 func (outputPlugin *InfluxdbOutput) Shutdown() {
 	outputPlugin.bulkProcessor.awaitclose(30 * time.Second)
