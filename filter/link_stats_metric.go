@@ -12,11 +12,11 @@ import (
 type LinkStatsMetricFilter struct {
 	BaseFilter
 
-	config        map[interface{}]interface{}
-	timestamp     string
-	batchWindow   int64
-	reserveWindow int64
-	overwrite     bool
+	config            map[interface{}]interface{}
+	timestamp         string
+	batchWindow       int64
+	reserveWindow     int64
+	dropOriginalEvent bool
 
 	fields            []string
 	fieldsWithoutLast []string
@@ -32,13 +32,8 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 	plugin := &LinkStatsMetricFilter{
 		BaseFilter:   baseFilter,
 		config:       config,
-		overwrite:    true,
 		metric:       make(map[int64]interface{}),
 		metricToEmit: make(map[int64]interface{}),
-	}
-
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
 	}
 
 	if fieldsLink, ok := config["fieldsLink"]; ok {
@@ -54,6 +49,12 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 		plugin.timestamp = timestamp.(string)
 	} else {
 		plugin.timestamp = "@timestamp"
+	}
+
+	if dropOriginalEvent, ok := config["drop_original_event"]; ok {
+		plugin.dropOriginalEvent = dropOriginalEvent.(bool)
+	} else {
+		plugin.dropOriginalEvent = false
 	}
 
 	if batchWindow, ok := config["batchWindow"]; ok {
@@ -144,6 +145,9 @@ func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) 
 
 func (plugin *LinkStatsMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	plugin.updateMetric(event)
+	if plugin.dropOriginalEvent {
+		return nil, false
+	}
 	return event, false
 }
 
