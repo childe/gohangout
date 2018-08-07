@@ -77,7 +77,7 @@ type ElasticsearchOutput struct {
 	bulkProcessor BulkProcessor
 }
 
-func getRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
+func esGetRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 
@@ -219,7 +219,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		}
 	}
 
-	rst.bulkProcessor = NewHTTPBulkProcessor(headers, hosts, requestMethod, retryResponseCode, bulk_size, bulk_actions, flush_interval, concurrent, compress, f, getRetryEvents)
+	rst.bulkProcessor = NewHTTPBulkProcessor(headers, hosts, requestMethod, retryResponseCode, bulk_size, bulk_actions, flush_interval, concurrent, compress, f, esGetRetryEvents)
 	return rst
 }
 
