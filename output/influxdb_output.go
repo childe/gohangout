@@ -28,7 +28,7 @@ func (action *InAction) Encode() []byte {
 	tag_set := make([]string, 0)
 	for _, tag := range action.tags {
 		if v, ok := action.event[tag]; ok {
-			tag_set = append(tag_set, fmt.Sprintf("%s=%s", tag, v))
+			tag_set = append(tag_set, fmt.Sprintf("%s=%v", tag, v))
 		}
 	}
 	if len(tag_set) > 0 {
@@ -40,7 +40,7 @@ func (action *InAction) Encode() []byte {
 	field_set := make([]string, 0)
 	for _, field := range action.fields {
 		if v, ok := action.event[field]; ok {
-			field_set = append(field_set, fmt.Sprintf("%s=%s", field, v))
+			field_set = append(field_set, fmt.Sprintf("%s=%v", field, v))
 		}
 	}
 	if len(field_set) <= 0 {
