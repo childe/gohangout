@@ -87,6 +87,7 @@ type InfluxdbOutput struct {
 	BaseOutput
 	config map[interface{}]interface{}
 
+	db          string
 	measurement value_render.ValueRender
 	tags        []string
 	fields      []string
@@ -102,6 +103,12 @@ func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 	rst := &InfluxdbOutput{
 		BaseOutput: NewBaseOutput(config),
 		config:     config,
+	}
+
+	if v, ok := config["db"]; ok {
+		rst.db = v.(string)
+	} else {
+		glog.Fatal("db must be set in elasticsearch output")
 	}
 
 	if v, ok := config["measurement"]; ok {
@@ -163,7 +170,7 @@ func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
 		for _, h := range v.([]interface{}) {
-			hosts = append(hosts, h.(string))
+			hosts = append(hosts, h.(string)+"/write?db="+rst.db)
 		}
 	} else {
 		glog.Fatal("hosts must be set in elasticsearch output")
