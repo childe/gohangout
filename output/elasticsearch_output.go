@@ -188,7 +188,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
 		for _, h := range v.([]interface{}) {
-			hosts = append(hosts, h.(string))
+			hosts = append(hosts, h.(string)+"/_bulk")
 		}
 	} else {
 		glog.Fatal("hosts must be set in elasticsearch output")
