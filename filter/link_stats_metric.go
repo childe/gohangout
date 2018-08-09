@@ -92,7 +92,7 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 	}
 
 	if windowOffset, ok := config["windowOffset"]; ok {
-		plugin.windowOffset = windowOffset.(int64)
+		plugin.windowOffset = (int64)(windowOffset.(int))
 	} else {
 		plugin.windowOffset = 0
 	}
