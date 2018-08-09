@@ -17,6 +17,8 @@ type LinkStatsMetricFilter struct {
 	batchWindow       int64
 	reserveWindow     int64
 	dropOriginalEvent bool
+	windowOffset      int
+	accumulatateMode  int
 
 	fields            []string
 	fieldsWithoutLast []string
@@ -67,6 +69,24 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 		plugin.reserveWindow = int64(reserveWindow.(int))
 	} else {
 		glog.Fatal("reserveWindow must be set in linkstatmetric filter plugin")
+	}
+
+	if accumulatateModeI, ok := config["accumulatateMode"]; ok {
+		accumulatateMode := accumulatateModeI.(string)
+		switch accumulatateMode {
+		case "cumulative":
+			plugin.accumulatateMode = 0
+		case "separate":
+			plugin.accumulatateMode = 1
+		}
+	} else {
+		plugin.accumulatateMode = 0
+	}
+
+	if windowOffset, ok := config["windowOffset"]; ok {
+		plugin.windowOffset = windowOffset.(int)
+	} else {
+		plugin.windowOffset = 0
 	}
 
 	ticker := time.NewTicker(time.Second * time.Duration(plugin.batchWindow))
