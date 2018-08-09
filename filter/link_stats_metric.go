@@ -18,7 +18,7 @@ type LinkStatsMetricFilter struct {
 	batchWindow       int64
 	reserveWindow     int64
 	dropOriginalEvent bool
-	windowOffset      int
+	windowOffset      int64
 	accumulatateMode  int
 
 	fields            []string
@@ -83,13 +83,16 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 			plugin.accumulatateMode = 0
 		case "separate":
 			plugin.accumulatateMode = 1
+		default:
+			glog.Errorf("invalid accumulatateMode: %s. set to cumulative", accumulatateMode)
+			plugin.accumulatateMode = 0
 		}
 	} else {
 		plugin.accumulatateMode = 0
 	}
 
 	if windowOffset, ok := config["windowOffset"]; ok {
-		plugin.windowOffset = windowOffset.(int)
+		plugin.windowOffset = windowOffset.(int64)
 	} else {
 		plugin.windowOffset = 0
 	}
@@ -98,10 +101,31 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 	go func() {
 		for range ticker.C {
 			plugin.mutex.Lock()
+
 			if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
-				plugin.metricToEmit = plugin.metric
-				plugin.metric = make(map[int64]interface{})
+				timestamp := time.Now().Unix()
+				timestamp -= timestamp % plugin.batchWindow
+
+				plugin.metricToEmit = make(map[int64]interface{})
+				for k, v := range plugin.metric {
+					if k <= timestamp-plugin.batchWindow*plugin.windowOffset {
+						plugin.metricToEmit[k] = v
+					}
+				}
+
+				if plugin.accumulatateMode == 1 {
+					plugin.metric = make(map[int64]interface{})
+				} else {
+					newMetric := make(map[int64]interface{})
+					for k, v := range plugin.metric {
+						if k >= timestamp-plugin.reserveWindow {
+							newMetric[k] = v
+						}
+					}
+					plugin.metric = newMetric
+				}
 			}
+
 			plugin.mutex.Unlock()
 		}
 	}()
