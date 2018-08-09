@@ -5,11 +5,11 @@ import "testing"
 func TestConvertFilter(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	fields := make(map[interface{}]interface{})
-	fields["responseSize"] = map[string]interface{}{
+	fields["responseSize"] = map[interface{}]interface{}{
 		"to":            "int",
 		"setto_if_fail": 0,
 	}
-	fields["timeTaken"] = map[string]interface{}{
+	fields["timeTaken"] = map[interface{}]interface{}{
 		"to":             "float",
 		"remove_if_fail": true,
 	}
