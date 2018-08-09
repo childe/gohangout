@@ -3,6 +3,7 @@ package filter
 import (
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-collections/collections/stack"
@@ -27,6 +28,8 @@ type LinkStatsMetricFilter struct {
 
 	metric       map[int64]interface{}
 	metricToEmit map[int64]interface{}
+
+	mutex sync.Locker
 }
 
 func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetricFilter {
@@ -36,6 +39,8 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 		config:       config,
 		metric:       make(map[int64]interface{}),
 		metricToEmit: make(map[int64]interface{}),
+
+		mutex: &sync.Mutex{},
 	}
 
 	if fieldsLink, ok := config["fieldsLink"]; ok {
@@ -92,10 +97,12 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 	ticker := time.NewTicker(time.Second * time.Duration(plugin.batchWindow))
 	go func() {
 		for range ticker.C {
+			plugin.mutex.Lock()
 			if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
 				plugin.metricToEmit = plugin.metric
 				plugin.metric = make(map[int64]interface{})
 			}
+			plugin.mutex.Unlock()
 		}
 	}()
 	return plugin
@@ -207,6 +214,8 @@ func (plugin *LinkStatsMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
 	if len(plugin.metricToEmit) == 0 {
 		return
 	}
+	plugin.mutex.Lock()
+	defer plugin.mutex.Unlock()
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
 		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
