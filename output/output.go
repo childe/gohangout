@@ -12,6 +12,8 @@ func GetOutput(outputType string, config map[interface{}]interface{}) Output {
 	switch outputType {
 	case "Stdout":
 		return NewStdoutOutput(config)
+	case "Kafka":
+		return NewKafkaOutput(config)
 	case "Elasticsearch":
 		return NewElasticsearchOutput(config)
 	case "Influxdb":
