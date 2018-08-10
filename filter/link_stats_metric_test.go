@@ -104,67 +104,63 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
 
-	_15 := now - 15
-	_10 := now - 10
-
-	ts = _15 - _15%(int64)(batchWindow)
-	t.Logf("_15: %d", ts)
-	if len(f.metric[ts].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 10.1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-
-	ts = _10 - _10%(int64)(batchWindow)
-	t.Logf("_10: %d", ts)
-	if len(f.metric[ts].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
-		t.Errorf("%v", f.metric[ts])
-	}
-
 	f.swap_Metric_MetricToEmit()
-	t.Logf("metricToEmit: %v", f.metricToEmit)
+	t.Logf("metricToEmit %v", f.metricToEmit)
 	if len(f.metricToEmit) != 4 {
 		t.Error(f.metricToEmit)
 	}
 
+	_15 := now - 15
+	ts = _15 - _15%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_15 should be in metricToEmit")
+	}
+	_5 := now - 5
+	ts = _5 - _5%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_5 should be in metricToEmit")
+	}
+	_0 := now
+	ts = _0 - _0%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_0 should be in metricToEmit")
+	}
+
+	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	t.Logf("_10: %d", ts)
-	if len(f.metricToEmit[ts].(map[string]interface{})) != 2 {
+	_10_metric := f.metricToEmit[ts].(map[string]interface{})
+	if len(_10_metric) != 2 {
+		t.Errorf("_10 metric length should be 2")
+	}
+	if _10_metric["localhost"] == nil {
+		t.Errorf("localhost should be in _10 metric")
+	}
+	if _10_metric["remote"] == nil {
+		t.Errorf("remote should be in _10 metric")
+	}
+
+	localhost_metric := f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})
+	if len(localhost_metric) != 2 {
+		t.Errorf("localhost metric length should be 2")
+	}
+	if localhost_metric["200"] == nil {
+		t.Errorf("200 should be in localhost_metric")
+	}
+	if localhost_metric["301"] == nil {
+		t.Errorf("301 should be in localhost_metric")
+	}
+
+	if len(localhost_metric["200"].(map[string]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})) != 2 {
+	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metricToEmit[ts])
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
+		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if len(f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
-		t.Errorf("%v", f.metricToEmit[ts])
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
+		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
 
@@ -206,78 +202,153 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
 
-	_15 := now - 15
-	_10 := now - 10
-	_5 := now - 5
-	_0 := now
-
-	ts = _15 - _15%(int64)(batchWindow)
-	if len(f.metric[ts].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 10.1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-
-	ts = _10 - _10%(int64)(batchWindow)
-	if len(f.metric[ts].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if len(f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metric[ts])
-	}
-	if f.metric[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
-		t.Errorf("%v", f.metric[ts])
-	}
-
 	f.swap_Metric_MetricToEmit()
 	t.Logf("metricToEmit %v", f.metricToEmit)
 	if len(f.metricToEmit) != 2 {
 		t.Error(f.metricToEmit)
 	}
 
-	ts = _10 - _10%(int64)(batchWindow)
-	if len(f.metricToEmit[ts].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
+	_15 := now - 15
+	ts = _15 - _15%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_15 should be in metricToEmit")
 	}
-	if len(f.metricToEmit[ts].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if len(f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if len(f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})) != 1 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if len(f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-
+	_5 := now - 5
 	ts = _5 - _5%(int64)(batchWindow)
 	if f.metricToEmit[ts] != nil {
-		t.Errorf("_5 should be nil")
+		t.Errorf("_5 should not be in metricToEmit")
 	}
-
+	_0 := now
 	ts = _0 - _0%(int64)(batchWindow)
 	if f.metricToEmit[ts] != nil {
-		t.Errorf("_0 should be nil")
+		t.Errorf("_0 should not be in metricToEmit")
+	}
+
+	_10 := now - 10
+	ts = _10 - _10%(int64)(batchWindow)
+	_10_metric := f.metricToEmit[ts].(map[string]interface{})
+	if len(_10_metric) != 2 {
+		t.Errorf("_10 metric length should be 2")
+	}
+	if _10_metric["localhost"] == nil {
+		t.Errorf("localhost should be in _10 metric")
+	}
+	if _10_metric["remote"] == nil {
+		t.Errorf("remote should be in _10 metric")
+	}
+
+	localhost_metric := f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})
+	if len(localhost_metric) != 2 {
+		t.Errorf("localhost metric length should be 2")
+	}
+	if localhost_metric["200"] == nil {
+		t.Errorf("200 should be in localhost_metric")
+	}
+	if localhost_metric["301"] == nil {
+		t.Errorf("301 should be in localhost_metric")
+	}
+
+	if len(localhost_metric["200"].(map[string]interface{})) != 1 {
+		t.Errorf("%v", f.metricToEmit[ts])
+	}
+	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
+		t.Errorf("%v", f.metricToEmit[ts])
+	}
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
+		t.Errorf("_10->localhost->200->responseTime-count should be 2")
+	}
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
+		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
+	}
+}
+
+func TestLinkStatsMetricFilterAccumulatateMode(t *testing.T) {
+	var (
+		config              map[interface{}]interface{}
+		f                   *LinkStatsMetricFilter
+		batchWindow         int = 5
+		reserveWindow       int = 20
+		windowOffset        int = 0
+		ts                  int64
+		accumulateMode      string = "cumulative"
+		drop_original_event        = true
+	)
+
+	config = make(map[interface{}]interface{})
+	config["fieldsLink"] = "host->request_statusCode->responseTime"
+	config["reserveWindow"] = reserveWindow
+	config["batchWindow"] = batchWindow
+	config["windowOffset"] = windowOffset
+	config["accumulateMode"] = accumulateMode
+	config["drop_original_event"] = drop_original_event
+
+	f = NewLinkStatsMetricFilter(config)
+
+	now := time.Now().Unix()
+	for _, event := range createEvents(now) {
+		f.Process(event)
+	}
+	f.swap_Metric_MetricToEmit()
+	for _, event := range createEvents(now) {
+		f.Process(event)
+	}
+
+	f.swap_Metric_MetricToEmit()
+	t.Logf("metricToEmit: %v", f.metricToEmit)
+	if len(f.metricToEmit) != 4 {
+		t.Error(f.metricToEmit)
+	}
+
+	_15 := now - 15
+	ts = _15 - _15%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_15 should be in metricToEmit")
+	}
+	_5 := now - 5
+	ts = _5 - _5%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_5 should be in metricToEmit")
+	}
+	_0 := now
+	ts = _0 - _0%(int64)(batchWindow)
+	if f.metricToEmit[ts] == nil {
+		t.Errorf("_0 should be in metricToEmit")
+	}
+
+	_10 := now - 10
+	ts = _10 - _10%(int64)(batchWindow)
+	_10_metric := f.metricToEmit[ts].(map[string]interface{})
+	if len(_10_metric) != 2 {
+		t.Errorf("_10 metric length should be 2")
+	}
+	if _10_metric["localhost"] == nil {
+		t.Errorf("localhost should be in _10 metric")
+	}
+	if _10_metric["remote"] == nil {
+		t.Errorf("remote should be in _10 metric")
+	}
+
+	localhost_metric := f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})
+	if len(localhost_metric) != 2 {
+		t.Errorf("localhost metric length should be 2")
+	}
+	if localhost_metric["200"] == nil {
+		t.Errorf("200 should be in localhost_metric")
+	}
+	if localhost_metric["301"] == nil {
+		t.Errorf("301 should be in localhost_metric")
+	}
+
+	if len(localhost_metric["200"].(map[string]interface{})) != 1 {
+		t.Errorf("%v", f.metricToEmit[ts])
+	}
+	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
+		t.Errorf("%v", f.metricToEmit[ts])
+	}
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != 4 {
+		t.Errorf("_10->localhost->200->responseTime-count should be 4")
+	}
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 40.8 {
+		t.Errorf("_10->localhost->200->responseTime-sum should be 40.8")
 	}
 }
