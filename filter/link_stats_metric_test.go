@@ -168,7 +168,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 	}
 }
 
-func TestLinkStatsMetricFilter2(t *testing.T) {
+func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	var (
 		config              map[interface{}]interface{}
 		f                   *LinkStatsMetricFilter
@@ -208,6 +208,8 @@ func TestLinkStatsMetricFilter2(t *testing.T) {
 
 	_15 := now - 15
 	_10 := now - 10
+	_5 := now - 5
+	_0 := now
 
 	ts = _15 - _15%(int64)(batchWindow)
 	if len(f.metric[ts].(map[string]interface{})) != 1 {
@@ -267,5 +269,15 @@ func TestLinkStatsMetricFilter2(t *testing.T) {
 	}
 	if f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
 		t.Errorf("%v", f.metricToEmit[ts])
+	}
+
+	ts = _5 - _5%(int64)(batchWindow)
+	if f.metricToEmit[ts] != nil {
+		t.Errorf("_5 should be nil")
+	}
+
+	ts = _0 - _0%(int64)(batchWindow)
+	if f.metricToEmit[ts] != nil {
+		t.Errorf("_0 should be nil")
 	}
 }
