@@ -100,38 +100,41 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 	ticker := time.NewTicker(time.Second * time.Duration(plugin.batchWindow))
 	go func() {
 		for range ticker.C {
-			plugin.mutex.Lock()
-
-			if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
-				timestamp := time.Now().Unix()
-				timestamp -= timestamp % plugin.batchWindow
-
-				plugin.metricToEmit = make(map[int64]interface{})
-				for k, v := range plugin.metric {
-					if k <= timestamp-plugin.batchWindow*plugin.windowOffset {
-						plugin.metricToEmit[k] = v
-					}
-				}
-
-				if plugin.accumulatateMode == 1 {
-					plugin.metric = make(map[int64]interface{})
-				} else {
-					newMetric := make(map[int64]interface{})
-					for k, v := range plugin.metric {
-						if k >= timestamp-plugin.reserveWindow {
-							newMetric[k] = v
-						}
-					}
-					plugin.metric = newMetric
-				}
-			}
-
-			plugin.mutex.Unlock()
+			plugin.swap_Metric_MetricToEmit()
 		}
 	}()
 	return plugin
 }
 
+func (plugin *LinkStatsMetricFilter) swap_Metric_MetricToEmit() {
+	plugin.mutex.Lock()
+
+	if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
+		timestamp := time.Now().Unix()
+		timestamp -= timestamp % plugin.batchWindow
+
+		plugin.metricToEmit = make(map[int64]interface{})
+		for k, v := range plugin.metric {
+			if k <= timestamp-plugin.batchWindow*plugin.windowOffset {
+				plugin.metricToEmit[k] = v
+			}
+		}
+
+		if plugin.accumulatateMode == 1 {
+			plugin.metric = make(map[int64]interface{})
+		} else {
+			newMetric := make(map[int64]interface{})
+			for k, v := range plugin.metric {
+				if k >= timestamp-plugin.reserveWindow {
+					newMetric[k] = v
+				}
+			}
+			plugin.metric = newMetric
+		}
+	}
+
+	plugin.mutex.Unlock()
+}
 func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	var value float64
 	fieldValueI := event[plugin.lastField]
