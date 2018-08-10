@@ -19,7 +19,7 @@ type LinkStatsMetricFilter struct {
 	reserveWindow     int64
 	dropOriginalEvent bool
 	windowOffset      int64
-	accumulatateMode  int
+	accumulateMode    int
 
 	fields            []string
 	fieldsWithoutLast []string
@@ -76,19 +76,19 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 		glog.Fatal("reserveWindow must be set in linkstatmetric filter plugin")
 	}
 
-	if accumulatateModeI, ok := config["accumulatateMode"]; ok {
-		accumulatateMode := accumulatateModeI.(string)
-		switch accumulatateMode {
+	if accumulateModeI, ok := config["accumulateMode"]; ok {
+		accumulateMode := accumulateModeI.(string)
+		switch accumulateMode {
 		case "cumulative":
-			plugin.accumulatateMode = 0
+			plugin.accumulateMode = 0
 		case "separate":
-			plugin.accumulatateMode = 1
+			plugin.accumulateMode = 1
 		default:
-			glog.Errorf("invalid accumulatateMode: %s. set to cumulative", accumulatateMode)
-			plugin.accumulatateMode = 0
+			glog.Errorf("invalid accumulateMode: %s. set to cumulative", accumulateMode)
+			plugin.accumulateMode = 0
 		}
 	} else {
-		plugin.accumulatateMode = 0
+		plugin.accumulateMode = 0
 	}
 
 	if windowOffset, ok := config["windowOffset"]; ok {
@@ -120,7 +120,7 @@ func (plugin *LinkStatsMetricFilter) swap_Metric_MetricToEmit() {
 			}
 		}
 
-		if plugin.accumulatateMode == 1 {
+		if plugin.accumulateMode == 1 {
 			plugin.metric = make(map[int64]interface{})
 		} else {
 			newMetric := make(map[int64]interface{})
