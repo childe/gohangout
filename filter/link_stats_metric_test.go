@@ -262,61 +262,30 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	}
 }
 
-func TestLinkStatsMetricFilterAccumulatateMode(t *testing.T) {
-	var (
-		config              map[interface{}]interface{}
-		f                   *LinkStatsMetricFilter
-		batchWindow         int = 5
-		reserveWindow       int = 20
-		windowOffset        int = 0
-		ts                  int64
-		accumulateMode      string = "cumulative"
-		drop_original_event        = true
-	)
-
-	config = make(map[interface{}]interface{})
-	config["fieldsLink"] = "host->request_statusCode->responseTime"
-	config["reserveWindow"] = reserveWindow
-	config["batchWindow"] = batchWindow
-	config["windowOffset"] = windowOffset
-	config["accumulateMode"] = accumulateMode
-	config["drop_original_event"] = drop_original_event
-
-	f = NewLinkStatsMetricFilter(config)
-
-	now := time.Now().Unix()
-	for _, event := range createEvents(now) {
-		f.Process(event)
-	}
-	f.swap_Metric_MetricToEmit()
-	for _, event := range createEvents(now) {
-		f.Process(event)
-	}
-
-	f.swap_Metric_MetricToEmit()
-	t.Logf("metricToEmit: %v", f.metricToEmit)
+func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFilter, now int64, count, sum float64) {
 	if len(f.metricToEmit) != 4 {
 		t.Error(f.metricToEmit)
 	}
 
+	var ts int64
 	_15 := now - 15
-	ts = _15 - _15%(int64)(batchWindow)
+	ts = _15 - _15%f.batchWindow
 	if f.metricToEmit[ts] == nil {
 		t.Errorf("_15 should be in metricToEmit")
 	}
 	_5 := now - 5
-	ts = _5 - _5%(int64)(batchWindow)
+	ts = _5 - _5%f.batchWindow
 	if f.metricToEmit[ts] == nil {
 		t.Errorf("_5 should be in metricToEmit")
 	}
 	_0 := now
-	ts = _0 - _0%(int64)(batchWindow)
+	ts = _0 - _0%f.batchWindow
 	if f.metricToEmit[ts] == nil {
 		t.Errorf("_0 should be in metricToEmit")
 	}
 
 	_10 := now - 10
-	ts = _10 - _10%(int64)(batchWindow)
+	ts = _10 - _10%f.batchWindow
 	_10_metric := f.metricToEmit[ts].(map[string]interface{})
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
@@ -345,10 +314,85 @@ func TestLinkStatsMetricFilterAccumulatateMode(t *testing.T) {
 	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != 4 {
-		t.Errorf("_10->localhost->200->responseTime-count should be 4")
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != count {
+		t.Errorf("_10->localhost->200->responseTime-count should be %f", count)
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 40.8 {
-		t.Errorf("_10->localhost->200->responseTime-sum should be 40.8")
+	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != sum {
+		t.Errorf("_10->localhost->200->responseTime-sum should be %f", sum)
 	}
+}
+
+func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
+	var (
+		config              map[interface{}]interface{}
+		f                   *LinkStatsMetricFilter
+		batchWindow         int    = 5
+		reserveWindow       int    = 20
+		windowOffset        int    = 0
+		accumulateMode      string = "cumulative"
+		drop_original_event        = true
+	)
+
+	config = make(map[interface{}]interface{})
+	config["fieldsLink"] = "host->request_statusCode->responseTime"
+	config["reserveWindow"] = reserveWindow
+	config["batchWindow"] = batchWindow
+	config["windowOffset"] = windowOffset
+	config["accumulateMode"] = accumulateMode
+	config["drop_original_event"] = drop_original_event
+
+	f = NewLinkStatsMetricFilter(config)
+
+	now := time.Now().Unix()
+	for _, event := range createEvents(now) {
+		f.Process(event)
+	}
+	f.swap_Metric_MetricToEmit()
+	for _, event := range createEvents(now) {
+		f.Process(event)
+	}
+
+	f.swap_Metric_MetricToEmit()
+	t.Logf("metricToEmit: %v", f.metricToEmit)
+
+	_testLinkStatsMetricFilterAccumulateMode(t, f, now, 4, 40.8)
+}
+
+func TestLinkStatsMetricFilterSeparateMode(t *testing.T) {
+	var (
+		config              map[interface{}]interface{}
+		f                   *LinkStatsMetricFilter
+		batchWindow         int    = 5
+		reserveWindow       int    = 20
+		windowOffset        int    = 0
+		accumulateMode      string = "separate"
+		drop_original_event        = true
+	)
+
+	config = make(map[interface{}]interface{})
+	config["fieldsLink"] = "host->request_statusCode->responseTime"
+	config["reserveWindow"] = reserveWindow
+	config["batchWindow"] = batchWindow
+	config["windowOffset"] = windowOffset
+	config["accumulateMode"] = accumulateMode
+	config["drop_original_event"] = drop_original_event
+
+	f = NewLinkStatsMetricFilter(config)
+
+	now := time.Now().Unix()
+	for _, event := range createEvents(now) {
+		f.Process(event)
+	}
+	f.swap_Metric_MetricToEmit()
+	for _, event := range createEvents(now) {
+		f.Process(event)
+	}
+
+	f.swap_Metric_MetricToEmit()
+	t.Logf("metricToEmit: %v", f.metricToEmit)
+	if len(f.metricToEmit) != 4 {
+		t.Error(f.metricToEmit)
+	}
+
+	_testLinkStatsMetricFilterAccumulateMode(t, f, now, 2, 20.4)
 }
