@@ -1,8 +1,10 @@
 package filter
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-collections/collections/stack"
@@ -12,11 +14,14 @@ import (
 type LinkMetricFilter struct {
 	BaseFilter
 
-	config        map[interface{}]interface{}
-	timestamp     string
-	batchWindow   int64
-	reserveWindow int64
-	overwrite     bool
+	config            map[interface{}]interface{}
+	timestamp         string
+	batchWindow       int64
+	reserveWindow     int64
+	overwrite         bool
+	dropOriginalEvent bool
+	windowOffset      int64
+	accumulateMode    int
 
 	fields            []string
 	fieldsWithoutLast []string
@@ -25,6 +30,8 @@ type LinkMetricFilter struct {
 
 	metric       map[int64]interface{}
 	metricToEmit map[int64]interface{}
+
+	mutex sync.Locker
 }
 
 func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
@@ -35,6 +42,7 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 		overwrite:    true,
 		metric:       make(map[int64]interface{}),
 		metricToEmit: make(map[int64]interface{}),
+		mutex:        &sync.Mutex{},
 	}
 
 	if overwrite, ok := config["overwrite"]; ok {
@@ -68,21 +76,68 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 		glog.Fatal("reserveWindow must be set in linkmetric filter plugin")
 	}
 
+	if accumulateModeI, ok := config["accumulateMode"]; ok {
+		accumulateMode := accumulateModeI.(string)
+		switch accumulateMode {
+		case "cumulative":
+			plugin.accumulateMode = 0
+		case "separate":
+			plugin.accumulateMode = 1
+		default:
+			glog.Errorf("invalid accumulateMode: %s. set to cumulative", accumulateMode)
+			plugin.accumulateMode = 0
+		}
+	} else {
+		plugin.accumulateMode = 0
+	}
+
+	if windowOffset, ok := config["windowOffset"]; ok {
+		plugin.windowOffset = (int64)(windowOffset.(int))
+	} else {
+		plugin.windowOffset = 0
+	}
+
 	ticker := time.NewTicker(time.Second * time.Duration(plugin.batchWindow))
 	go func() {
 		for range ticker.C {
-			if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
-				plugin.metricToEmit = plugin.metric
-				plugin.metric = make(map[int64]interface{})
-			}
+			plugin.swap_Metric_MetricToEmit()
 		}
 	}()
 	return plugin
 }
 
+func (plugin *LinkMetricFilter) swap_Metric_MetricToEmit() {
+	plugin.mutex.Lock()
+
+	if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
+		timestamp := time.Now().Unix()
+		timestamp -= timestamp % plugin.batchWindow
+
+		plugin.metricToEmit = make(map[int64]interface{})
+		for k, v := range plugin.metric {
+			if k <= timestamp-plugin.batchWindow*plugin.windowOffset {
+				plugin.metricToEmit[k] = v
+			}
+		}
+
+		if plugin.accumulateMode == 1 {
+			plugin.metric = make(map[int64]interface{})
+		} else {
+			newMetric := make(map[int64]interface{})
+			for k, v := range plugin.metric {
+				if k >= timestamp-plugin.reserveWindow {
+					newMetric[k] = v
+				}
+			}
+			plugin.metric = newMetric
+		}
+	}
+
+	plugin.mutex.Unlock()
+}
 func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
-	lastFieldValueI := event[plugin.lastField]
-	if lastFieldValueI == nil {
+	lastFieldValue := event[plugin.lastField]
+	if lastFieldValue == nil {
 		return
 	}
 
@@ -104,36 +159,31 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 
 	timestamp -= timestamp % plugin.batchWindow
-	var set map[string]interface{} = nil
+	var set map[interface{}]interface{} = nil
 	if v, ok := plugin.metric[timestamp]; ok {
-		set = v.(map[string]interface{})
+		set = v.(map[interface{}]interface{})
 	} else {
-		set = make(map[string]interface{})
+		set = make(map[interface{}]interface{})
 		plugin.metric[timestamp] = set
 	}
 
-	var fieldValue string
-
 	for _, field := range plugin.fieldsWithoutLast {
-		fieldValueI := event[field]
-		if fieldValueI == nil {
+		fieldValue := event[field]
+		if fieldValue == nil {
 			return
 		}
-		fieldValue = fieldValueI.(string)
 		if v, ok := set[fieldValue]; ok {
-			set = v.(map[string]interface{})
+			set = v.(map[interface{}]interface{})
 		} else {
-			set[fieldValue] = make(map[string]interface{})
-			set = set[fieldValue].(map[string]interface{})
+			set[fieldValue] = make(map[interface{}]interface{})
+			set = set[fieldValue].(map[interface{}]interface{})
 		}
 	}
 
-	fieldValue = lastFieldValueI.(string)
-
-	if count, ok := set[fieldValue]; ok {
-		set[fieldValue] = 1 + count.(int)
+	if count, ok := set[lastFieldValue]; ok {
+		set[lastFieldValue] = 1 + count.(int)
 	} else {
-		set[fieldValue] = 1
+		set[lastFieldValue] = 1
 	}
 }
 
@@ -142,7 +192,7 @@ func (plugin *LinkMetricFilter) Process(event map[string]interface{}) (map[strin
 	return event, false
 }
 
-func (plugin *LinkMetricFilter) metricToEvents(metrics map[string]interface{}, level int) []map[string]interface{} {
+func (plugin *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, level int) []map[string]interface{} {
 	var (
 		fieldName string                   = plugin.fields[level]
 		events    []map[string]interface{} = make([]map[string]interface{}, 0)
@@ -151,7 +201,7 @@ func (plugin *LinkMetricFilter) metricToEvents(metrics map[string]interface{}, l
 	if level == plugin.fieldsLength-1 {
 		for fieldValue, count := range metrics {
 			event := make(map[string]interface{})
-			event[fieldName] = fieldValue
+			event[fmt.Sprintf("%s", fieldName)] = fieldValue
 			event["count"] = count
 			events = append(events, event)
 		}
@@ -159,7 +209,7 @@ func (plugin *LinkMetricFilter) metricToEvents(metrics map[string]interface{}, l
 	}
 
 	for fieldValue, nextLevelMetrics := range metrics {
-		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[string]interface{}), level+1) {
+		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
 			event := make(map[string]interface{})
 			event[fieldName] = fieldValue
 			for k, v := range e {
@@ -178,7 +228,7 @@ func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
 	}
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
-		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
+		for _, event = range plugin.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[plugin.timestamp] = time.Unix(timestamp, 0)
 			event = plugin.PostProcess(event, true)
 			sTo.Push(event)
