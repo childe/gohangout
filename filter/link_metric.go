@@ -211,7 +211,7 @@ func (plugin *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface
 	for fieldValue, nextLevelMetrics := range metrics {
 		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
 			event := make(map[string]interface{})
-			event[fieldName] = fieldValue
+			event[fmt.Sprintf("%s", fieldName)] = fieldValue
 			for k, v := range e {
 				event[k] = v
 			}

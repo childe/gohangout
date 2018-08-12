@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -161,27 +162,24 @@ func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) 
 	}
 
 	timestamp -= timestamp % plugin.batchWindow
-	var set map[string]interface{} = nil
+	var set map[interface{}]interface{} = nil
 	if v, ok := plugin.metric[timestamp]; ok {
-		set = v.(map[string]interface{})
+		set = v.(map[interface{}]interface{})
 	} else {
-		set = make(map[string]interface{})
+		set = make(map[interface{}]interface{})
 		plugin.metric[timestamp] = set
 	}
 
-	var fieldValue string
-
 	for _, field := range plugin.fieldsWithoutLast {
-		fieldValueI := event[field]
-		if fieldValueI == nil {
+		fieldValue := event[field]
+		if fieldValue == nil {
 			return
 		}
-		fieldValue = fieldValueI.(string)
 		if v, ok := set[fieldValue]; ok {
-			set = v.(map[string]interface{})
+			set = v.(map[interface{}]interface{})
 		} else {
-			set[fieldValue] = make(map[string]interface{})
-			set = set[fieldValue].(map[string]interface{})
+			set[fieldValue] = make(map[interface{}]interface{})
+			set = set[fieldValue].(map[interface{}]interface{})
 		}
 	}
 
@@ -205,7 +203,7 @@ func (plugin *LinkStatsMetricFilter) Process(event map[string]interface{}) (map[
 	return event, false
 }
 
-func (plugin *LinkStatsMetricFilter) metricToEvents(metrics map[string]interface{}, level int) []map[string]interface{} {
+func (plugin *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface{}, level int) []map[string]interface{} {
 	var (
 		fieldName string                   = plugin.fields[level]
 		events    []map[string]interface{} = make([]map[string]interface{}, 0)
@@ -224,9 +222,9 @@ func (plugin *LinkStatsMetricFilter) metricToEvents(metrics map[string]interface
 	}
 
 	for fieldValue, nextLevelMetrics := range metrics {
-		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[string]interface{}), level+1) {
+		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
 			event := make(map[string]interface{})
-			event[fieldName] = fieldValue
+			event[fmt.Sprintf("%s", fieldName)] = fieldValue
 			for k, v := range e {
 				event[k] = v
 			}
@@ -245,7 +243,7 @@ func (plugin *LinkStatsMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
 	defer plugin.mutex.Unlock()
 	var event map[string]interface{}
 	for timestamp, metrics := range plugin.metricToEmit {
-		for _, event = range plugin.metricToEvents(metrics.(map[string]interface{}), 0) {
+		for _, event = range plugin.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[plugin.timestamp] = time.Unix(timestamp, 0)
 			event = plugin.PostProcess(event, true)
 			sTo.Push(event)

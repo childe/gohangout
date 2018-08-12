@@ -6,65 +6,8 @@ import (
 	"time"
 )
 
-func createEvents(now int64) []map[string]interface{} {
-	var (
-		event  map[string]interface{}
-		events []map[string]interface{} = make([]map[string]interface{}, 0)
-	)
-
-	_15 := now - 15
-	_10 := now - 10
-	_5 := now - 5
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(_15, 0)
-	event["host"] = "localhost"
-	event["request_statusCode"] = "200"
-	event["responseTime"] = 10.1
-	events = append(events, event)
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(_10, 0)
-	event["host"] = "localhost"
-	event["request_statusCode"] = "301"
-	event["responseTime"] = 0.1
-	events = append(events, event)
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(_10, 0)
-	event["host"] = "localhost"
-	event["request_statusCode"] = "200"
-	event["responseTime"] = 10.1
-	events = append(events, event)
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(_10, 0)
-	event["host"] = "localhost"
-	event["request_statusCode"] = "200"
-	event["responseTime"] = 10.3
-	events = append(events, event)
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(_10, 0)
-	event["host"] = "remote"
-	event["request_statusCode"] = "200"
-	event["responseTime"] = 10.1
-	events = append(events, event)
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(_5, 0)
-	event["host"] = "localhost"
-	event["request_statusCode"] = "200"
-	event["responseTime"] = 10.1
-	events = append(events, event)
-
-	event = make(map[string]interface{})
-	event["@timestamp"] = time.Unix(now, 0)
-	event["host"] = "localhost"
-	event["request_statusCode"] = "200"
-	event["responseTime"] = 10.1
-	events = append(events, event)
-	return events
+func createLinkStatsMetricEvents(now int64) []map[string]interface{} {
+	return createLinkMetricEvents(now)
 }
 
 func TestLinkStatsMetricFilter(t *testing.T) {
@@ -88,7 +31,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 
 	f = NewLinkStatsMetricFilter(config)
 	now := time.Now().Unix()
-	for _, event := range createEvents(now) {
+	for _, event := range createLinkStatsMetricEvents(now) {
 		f.Process(event)
 	}
 
@@ -128,7 +71,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 
 	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric := f.metricToEmit[ts].(map[string]interface{})
+	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -139,7 +82,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -150,16 +93,16 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 		t.Errorf("301 should be in localhost_metric")
 	}
 
-	if len(localhost_metric["200"].(map[string]interface{})) != 1 {
+	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
+	if len(localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)) != 2 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
 		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
 		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
@@ -186,7 +129,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	f = NewLinkStatsMetricFilter(config)
 
 	now := time.Now().Unix()
-	for _, event := range createEvents(now) {
+	for _, event := range createLinkStatsMetricEvents(now) {
 		f.Process(event)
 	}
 
@@ -226,7 +169,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 
 	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric := f.metricToEmit[ts].(map[string]interface{})
+	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -237,7 +180,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -248,16 +191,16 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("301 should be in localhost_metric")
 	}
 
-	if len(localhost_metric["200"].(map[string]interface{})) != 1 {
+	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
+	if len(localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)) != 2 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
 		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
 		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
@@ -286,7 +229,7 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 
 	_10 := now - 10
 	ts = _10 - _10%f.batchWindow
-	_10_metric := f.metricToEmit[ts].(map[string]interface{})
+	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -297,7 +240,7 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[string]interface{})["localhost"].(map[string]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -308,16 +251,16 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 		t.Errorf("301 should be in localhost_metric")
 	}
 
-	if len(localhost_metric["200"].(map[string]interface{})) != 1 {
+	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)) != 2 {
+	if len(localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)) != 2 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["count"] != count {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["count"] != count {
 		t.Errorf("_10->localhost->200->responseTime-count should be %f", count)
 	}
-	if localhost_metric["200"].(map[string]interface{})["responseTime"].(map[string]float64)["sum"] != sum {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["sum"] != sum {
 		t.Errorf("_10->localhost->200->responseTime-sum should be %f", sum)
 	}
 }
@@ -326,11 +269,11 @@ func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
 	var (
 		config              map[interface{}]interface{}
 		f                   *LinkStatsMetricFilter
-		batchWindow         int    = 5
-		reserveWindow       int    = 20
-		windowOffset        int    = 0
-		accumulateMode      string = "cumulative"
-		drop_original_event        = true
+		batchWindow         int         = 5
+		reserveWindow       int         = 20
+		windowOffset        int         = 0
+		accumulateMode      interface{} = "cumulative"
+		drop_original_event             = true
 	)
 
 	config = make(map[interface{}]interface{})
@@ -344,11 +287,11 @@ func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
 	f = NewLinkStatsMetricFilter(config)
 
 	now := time.Now().Unix()
-	for _, event := range createEvents(now) {
+	for _, event := range createLinkStatsMetricEvents(now) {
 		f.Process(event)
 	}
 	f.swap_Metric_MetricToEmit()
-	for _, event := range createEvents(now) {
+	for _, event := range createLinkStatsMetricEvents(now) {
 		f.Process(event)
 	}
 
@@ -362,11 +305,11 @@ func TestLinkStatsMetricFilterSeparateMode(t *testing.T) {
 	var (
 		config              map[interface{}]interface{}
 		f                   *LinkStatsMetricFilter
-		batchWindow         int    = 5
-		reserveWindow       int    = 20
-		windowOffset        int    = 0
-		accumulateMode      string = "separate"
-		drop_original_event        = true
+		batchWindow         int         = 5
+		reserveWindow       int         = 20
+		windowOffset        int         = 0
+		accumulateMode      interface{} = "separate"
+		drop_original_event             = true
 	)
 
 	config = make(map[interface{}]interface{})
@@ -380,11 +323,11 @@ func TestLinkStatsMetricFilterSeparateMode(t *testing.T) {
 	f = NewLinkStatsMetricFilter(config)
 
 	now := time.Now().Unix()
-	for _, event := range createEvents(now) {
+	for _, event := range createLinkStatsMetricEvents(now) {
 		f.Process(event)
 	}
 	f.swap_Metric_MetricToEmit()
-	for _, event := range createEvents(now) {
+	for _, event := range createLinkStatsMetricEvents(now) {
 		f.Process(event)
 	}
 
