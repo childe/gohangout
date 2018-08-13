@@ -93,6 +93,9 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 func (plugin *ConvertFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	for fs, conveterAndRender := range plugin.fields {
 		originanV := conveterAndRender.valueRender.Render(event)
+		if originanV == nil {
+			continue
+		}
 		v, err := conveterAndRender.converter.convert(originanV.(string))
 		if err == nil {
 			event = fs.SetField(event, v, "", true)
