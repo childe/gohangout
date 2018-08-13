@@ -11,6 +11,8 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/golang/glog"
+
+	"github.com/kshvakov/clickhouse"
 )
 
 const (
@@ -27,6 +29,7 @@ type ClickhouseOutput struct {
 	fields       []string
 	table        string
 	fieldsLength int
+	query        string
 
 	events []map[string]interface{}
 
@@ -56,7 +59,9 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	}
 
 	if v, ok := config["fields"]; ok {
-		p.fields = v.([]string)
+		for _, f := range v.([]interface{}) {
+			p.fields = append(p.fields, f.(string))
+		}
 	} else {
 		glog.Fatalf("fields must be set in clickhouse output")
 	}
@@ -65,6 +70,17 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	}
 	p.fieldsLength = len(p.fields)
 
+	fields := make([]string, p.fieldsLength)
+	for i, _ := range fields {
+		fields[i] = fmt.Sprintf(`"%s"`, p.fields[i])
+	}
+	questionMarks := make([]string, p.fieldsLength)
+	for i := 0; i < p.fieldsLength; i++ {
+		questionMarks[i] = "?"
+	}
+	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
+	glog.V(5).Infof("query: %s", p.query)
+
 	db, err := sql.Open("clickhouse", p.host)
 	if err == nil {
 		p.db = db
@@ -72,10 +88,18 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		glog.Fatalf("open %s error: %s", p.host, err)
 	}
 
+	if err := db.Ping(); err != nil {
+		if exception, ok := err.(*clickhouse.Exception); ok {
+			glog.Fatalf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+		} else {
+			glog.Fatalf("clickhouse ping error: %s", err)
+		}
+	}
+
 	if v, ok := config["concurrent"]; ok {
 		p.semaphore = semaphore.NewWeighted(int64(v.(int)))
 	} else {
-		p.semaphore = semaphore.NewWeighted(int64(v.(int)))
+		p.semaphore = semaphore.NewWeighted(1)
 	}
 
 	if v, ok := config["bulk_actions"]; ok {
@@ -90,7 +114,6 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	} else {
 		flush_interval = CLICKHOUSE_DEFAULT_FLUSH_INTERVAL
 	}
-
 	go func() {
 		for range time.NewTicker(time.Second * time.Duration(flush_interval)).C {
 			p.Flush()
@@ -105,14 +128,9 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		return
 	}
 
-	questionMarks := make([]string, p.fieldsLength)
-	for i := 0; i < p.fieldsLength; i++ {
-		questionMarks[i] = "?"
-	}
 	var (
-		tx, _          = p.db.Begin()
-		query   string = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(p.fields, ","), strings.Join(questionMarks, ","))
-		stmt, _        = tx.Prepare(query)
+		tx, _   = p.db.Begin()
+		stmt, _ = tx.Prepare(p.query)
 	)
 	defer stmt.Close()
 
