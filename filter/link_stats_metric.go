@@ -210,9 +210,9 @@ func (plugin *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]inte
 	)
 
 	if level == plugin.fieldsLength-1 {
-		for fieldValue, statsI := range metrics {
+		for _, statsI := range metrics {
 			stats := statsI.(map[string]float64)
-			event := map[string]interface{}{fieldName: fieldValue}
+			event := make(map[string]interface{})
 			event["count"] = int(stats["count"])
 			event["sum"] = stats["sum"]
 			event["mean"] = stats["sum"] / stats["count"]
