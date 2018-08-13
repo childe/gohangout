@@ -64,6 +64,12 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 		plugin.timestamp = "@timestamp"
 	}
 
+	if dropOriginalEvent, ok := config["drop_original_event"]; ok {
+		plugin.dropOriginalEvent = dropOriginalEvent.(bool)
+	} else {
+		plugin.dropOriginalEvent = false
+	}
+
 	if batchWindow, ok := config["batchWindow"]; ok {
 		plugin.batchWindow = int64(batchWindow.(int))
 	} else {
