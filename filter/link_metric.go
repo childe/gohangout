@@ -189,6 +189,9 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 
 func (plugin *LinkMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
 	plugin.updateMetric(event)
+	if plugin.dropOriginalEvent {
+		return nil, false
+	}
 	return event, false
 }
 
