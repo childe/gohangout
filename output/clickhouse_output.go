@@ -137,7 +137,11 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	for _, event := range events {
 		args := make([]interface{}, p.fieldsLength)
 		for i, field := range p.fields {
-			args[i] = event[field]
+			if v, ok := event[field]; ok {
+				args[i] = v
+			} else {
+				args[i] = ""
+			}
 		}
 		if _, err := stmt.Exec(args...); err != nil {
 			glog.Errorf("exec clickhouse insert %v error: %s", event, err)
