@@ -124,6 +124,7 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 }
 
 func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
+	glog.Infof("write %d docs to clickhouse", len(events))
 	if len(events) == 0 {
 		return
 	}
@@ -151,6 +152,7 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	if err := tx.Commit(); err != nil {
 		glog.Errorf("exec clickhouse commit error: %s", err)
 	}
+	glog.Infof("%d docs has been committed to clickhouse", len(events))
 }
 
 func (p *ClickhouseOutput) Flush() {
