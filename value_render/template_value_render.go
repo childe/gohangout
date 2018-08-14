@@ -42,6 +42,10 @@ func init() {
 	funcMap["hassuffix"] = strings.HasSuffix
 	funcMap["replace"] = strings.Replace
 
+	funcMap["timeFormat"] = func(t time.Time, format string) string {
+		return t.Format(format)
+	}
+
 	funcMap["now"] = func() int64 { return time.Now().UnixNano() / 1000000 }
 	funcMap["timestamp"] = func(event map[string]interface{}) int64 {
 		timestamp := event["@timestamp"]
