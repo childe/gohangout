@@ -135,10 +135,16 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		return
 	}
 
-	var (
-		tx, _   = p.db.Begin()
-		stmt, _ = tx.Prepare(p.query)
-	)
+	tx, err := p.db.Begin()
+	if err != nil {
+		glog.Errorf("db begin to create transaction error: %s", err)
+		return
+	}
+	stmt, err := tx.Prepare(p.query)
+	if err != nil {
+		glog.Errorf("transaction prepare statement error: %s", err)
+		return
+	}
 	defer stmt.Close()
 
 	for _, event := range events {
