@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -25,7 +26,7 @@ type ClickhouseOutput struct {
 	config map[interface{}]interface{}
 
 	bulk_actions int
-	host         string
+	hosts        []string
 	fields       []string
 	table        string
 	fieldsLength int
@@ -41,6 +42,7 @@ type ClickhouseOutput struct {
 }
 
 func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
+	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
 		BaseOutput: NewBaseOutput(config),
 		config:     config,
@@ -52,10 +54,12 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		glog.Fatalf("table must be set in clickhouse output")
 	}
 
-	if v, ok := config["host"]; ok {
-		p.host = v.(string)
+	if v, ok := config["hosts"]; ok {
+		for _, h := range v.([]interface{}) {
+			p.hosts = append(p.hosts, h.(string))
+		}
 	} else {
-		glog.Fatalf("host must be set in clickhouse output")
+		glog.Fatalf("hosts must be set in clickhouse output")
 	}
 
 	if v, ok := config["fields"]; ok {
@@ -81,11 +85,13 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
 	glog.V(5).Infof("query: %s", p.query)
 
-	db, err := sql.Open("clickhouse", p.host)
+	n := rand.Int() % len(p.hosts)
+	host := p.hosts[n]
+	db, err := sql.Open("clickhouse", host)
 	if err == nil {
 		p.db = db
 	} else {
-		glog.Fatalf("open %s error: %s", p.host, err)
+		glog.Fatalf("open %s error: %s", host, err)
 	}
 
 	if err := db.Ping(); err != nil {
