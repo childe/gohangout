@@ -52,6 +52,8 @@ func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return NewRenameFilter(config)
 	case "Lowercase":
 		return NewLowercaseFilter(config)
+	case "Split":
+		return NewSplitFilter(config)
 	case "Grok":
 		return NewGrokFilter(config)
 	case "Date":
