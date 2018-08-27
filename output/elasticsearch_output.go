@@ -207,6 +207,9 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		for _, cI := range v.([]interface{}) {
 			retryResponseCode[cI.(int)] = true
 		}
+	} else {
+		retryResponseCode[401] = true
+		retryResponseCode[502] = true
 	}
 
 	byte_size_applied_in_advance := bulk_size + 1024*1024
