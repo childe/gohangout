@@ -202,7 +202,7 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	}
 	var requestMethod string = "POST"
 
-	var retryResponseCode map[int]bool
+	var retryResponseCode map[int]bool = make(map[int]bool)
 	if v, ok := config["retry_response_code"]; ok {
 		for _, cI := range v.([]interface{}) {
 			retryResponseCode[cI.(int)] = true
