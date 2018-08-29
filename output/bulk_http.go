@@ -343,6 +343,8 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 		return false, shouldRetry, noRetry
 	}
 
+	defer resp.Body.Close()
+
 	if p.retryResponseCode[resp.StatusCode] {
 		return false, shouldRetry, noRetry
 	}
@@ -354,8 +356,6 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 	}
 	glog.V(5).Infof("get response[%d]", len(respBody))
 	glog.V(20).Infof("%s", respBody)
-
-	defer resp.Body.Close()
 
 	shouldRetry, noRetry = p.getRetryEventsFunc(resp, respBody)
 
