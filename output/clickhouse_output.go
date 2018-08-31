@@ -151,7 +151,11 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		args := make([]interface{}, p.fieldsLength)
 		for i, field := range p.fields {
 			if v, ok := event[field]; ok {
-				args[i] = v
+				if v == nil {
+					args[i] = ""
+				} else {
+					args[i] = v
+				}
 			} else {
 				args[i] = ""
 			}
