@@ -27,6 +27,7 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 		config:      config,
 		fields:      make([]field_setter.FieldSetter, 0),
 		overwrite:   true,
+		sep:         "",
 		ignoreBlank: true,
 		maxSplit:    -1,
 	}
@@ -51,7 +52,13 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 
 	if sep, ok := config["sep"]; ok {
 		plugin.sep = sep.(string)
-	} else {
+	}
+
+	if sepASCII, ok := config["sepASCII"]; ok {
+		plugin.sep = string(sepASCII.(int))
+	}
+
+	if plugin.sep == "" {
 		glog.Fatal("sep must be set in split filter plugin")
 	}
 
