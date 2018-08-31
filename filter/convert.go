@@ -1,6 +1,9 @@
 package filter
 
 import (
+	"encoding/json"
+	"errors"
+	"reflect"
 	"strconv"
 
 	"github.com/childe/gohangout/field_setter"
@@ -9,26 +12,49 @@ import (
 )
 
 type Converter interface {
-	convert(v string) (interface{}, error)
+	convert(v interface{}) (interface{}, error)
 }
+
+var ConvertUnknownFormat error = errors.New("unknown format")
 
 type IntConverter struct{}
 
-func (c *IntConverter) convert(v string) (interface{}, error) {
-	i, err := strconv.ParseInt(v, 0, 32)
-	return (int)(i), err
+func (c *IntConverter) convert(v interface{}) (interface{}, error) {
+	if reflect.TypeOf(v).String() == "json.Number" {
+		i, err := v.(json.Number).Int64()
+		if err == nil {
+			return (int)(i), err
+		} else {
+			return i, err
+		}
+	}
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		i, err := strconv.ParseInt(v.(string), 0, 32)
+		if err == nil {
+			return (int)(i), err
+		} else {
+			return i, err
+		}
+	}
+	return nil, ConvertUnknownFormat
 }
 
 type FloatConverter struct{}
 
-func (c *FloatConverter) convert(v string) (interface{}, error) {
-	return strconv.ParseFloat(v, 64)
+func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
+	if reflect.TypeOf(v).String() == "json.Number" {
+		return v.(json.Number).Float64()
+	}
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		return strconv.ParseFloat(v.(string), 64)
+	}
+	return nil, ConvertUnknownFormat
 }
 
 type BoolConverter struct{}
 
-func (c *BoolConverter) convert(v string) (interface{}, error) {
-	return strconv.ParseBool(v)
+func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
+	return strconv.ParseBool(v.(string))
 }
 
 type ConveterAndRender struct {
@@ -96,7 +122,7 @@ func (plugin *ConvertFilter) Process(event map[string]interface{}) (map[string]i
 		if originanV == nil {
 			continue
 		}
-		v, err := conveterAndRender.converter.convert(originanV.(string))
+		v, err := conveterAndRender.converter.convert(originanV)
 		if err == nil {
 			event = fs.SetField(event, v, "", true)
 		} else {
