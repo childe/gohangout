@@ -120,7 +120,7 @@ type BulkProcessor interface {
 	awaitclose(time.Duration)
 }
 
-type GetRetryEventsFunc func(*http.Response, []byte) ([]int, []int)
+type GetRetryEventsFunc func(*http.Response, []byte, BulkRequest) ([]int, []int, BulkRequest)
 
 type HTTPBulkProcessor struct {
 	headers           map[string]string
@@ -265,7 +265,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int)
 		glog.Infof("try to bulk with host (%s)", host)
 
 		url := host
-		success, shouldRetry, noRetry := p.tryOneBulk(url, bulkRequest)
+		success, shouldRetry, noRetry, newBulkRequest := p.tryOneBulk(url, bulkRequest)
 		if success {
 			glog.Infof("bulk done with execution_id %d", execution_id)
 			p.hostSelector.addWeight(host)
@@ -279,41 +279,28 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int)
 			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
 		}
 
-		//if len(noRetry) > 0 {
-		//b, err := json.Marshal(bulkRequest.actions[noRetry[0]].event)
-		//if err != nil {
-		//glog.Infof("one failed doc that need no retry: %+v", bulkRequest.actions[noRetry[0]].event)
-		//} else {
-		//glog.Infof("one failed doc that need no retry: %s", b)
-		//}
-		//}
-
-		//if len(shouldRetry) > 0 {
-		//newBulkRequest := &BulkRequest{}
-		//for _, i := range shouldRetry {
-		//newBulkRequest.add(bulkRequest.actions[i])
-		//}
-		//p.mux.Lock()
-		//p.execution_id++
-		//execution_id := p.execution_id
-		//p.mux.Unlock()
-		//p.innerBulk(newBulkRequest, execution_id)
-		//}
-		//bulkRequest.bulk_buf = nil
+		if len(shouldRetry) > 0 {
+			p.mux.Lock()
+			p.execution_id++
+			execution_id := p.execution_id
+			p.mux.Unlock()
+			p.innerBulk(newBulkRequest, execution_id)
+		}
 
 		return // only success will go to here
 	}
 }
 
-func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int, []int) {
+func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int, []int, BulkRequest) {
 	glog.V(5).Infof("request size:%d", br.bufSizeByte())
 	glog.V(20).Infof("%s", br.readBuf())
 
 	var (
-		shouldRetry = make([]int, 0)
-		noRetry     = make([]int, 0)
-		err         error
-		req         *http.Request
+		shouldRetry    = make([]int, 0)
+		noRetry        = make([]int, 0)
+		err            error
+		req            *http.Request
+		newBulkRequest BulkRequest
 	)
 
 	if p.compress {
@@ -321,11 +308,11 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 		g := gzip.NewWriter(&buf)
 		if _, err = g.Write(br.readBuf()); err != nil {
 			glog.Errorf("gzip bulk buf error: %s", err)
-			return false, shouldRetry, noRetry
+			return false, shouldRetry, noRetry, nil
 		}
 		if err = g.Close(); err != nil {
 			glog.Errorf("gzip bulk buf error: %s", err)
-			return false, shouldRetry, noRetry
+			return false, shouldRetry, noRetry, nil
 		}
 		req, err = http.NewRequest(p.requestMethod, url, &buf)
 		req.Header.Set("Content-Encoding", "gzip")
@@ -340,24 +327,24 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 
 	if err != nil {
 		glog.Infof("request with %s error: %s", url, err)
-		return false, shouldRetry, noRetry
+		return false, shouldRetry, noRetry, nil
 	}
 
 	defer resp.Body.Close()
 
 	if p.retryResponseCode[resp.StatusCode] {
-		return false, shouldRetry, noRetry
+		return false, shouldRetry, noRetry, nil
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf(`read bulk response error: %s. will NOT retry`, err)
-		return true, shouldRetry, noRetry
+		return true, shouldRetry, noRetry, nil
 	}
 	glog.V(5).Infof("get response[%d]", len(respBody))
 	glog.V(20).Infof("%s", respBody)
 
-	shouldRetry, noRetry = p.getRetryEventsFunc(resp, respBody)
+	shouldRetry, noRetry, newBulkRequest = p.getRetryEventsFunc(resp, respBody, br)
 
-	return true, shouldRetry, noRetry
+	return true, shouldRetry, noRetry, newBulkRequest
 }

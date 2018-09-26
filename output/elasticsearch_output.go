@@ -77,7 +77,7 @@ type ElasticsearchOutput struct {
 	bulkProcessor BulkProcessor
 }
 
-func esGetRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
+func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest BulkRequest) ([]int, []int, BulkRequest) {
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 
@@ -85,7 +85,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
 	err := json.Unmarshal(respBody, &responseI)
 	if err != nil {
 		glog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
-		return retry, noRetry
+		return retry, noRetry, nil
 	}
 
 	bulkResponse := responseI.(map[string]interface{})
@@ -93,11 +93,11 @@ func esGetRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
 
 	if bulkResponse["errors"] == nil {
 		glog.Infof("could NOT get errors in response:%v", bulkResponse)
-		return retry, noRetry
+		return retry, noRetry, nil
 	}
 
 	if bulkResponse["errors"].(bool) == false {
-		return retry, noRetry
+		return retry, noRetry, nil
 	}
 
 	hasLog := false
@@ -119,8 +119,33 @@ func esGetRetryEvents(resp *http.Response, respBody []byte) ([]int, []int) {
 			}
 		}
 	}
-	return retry, noRetry
+	newbulkRequest := buildRetryBulkRequest(retry, noRetry, bulkRequest)
+	return retry, noRetry, newbulkRequest
 }
+
+func buildRetryBulkRequest(shouldRetry, noRetry []int, bulkRequest BulkRequest) BulkRequest {
+	esBulkRequest := bulkRequest.(*ESBulkRequest)
+	if len(noRetry) > 0 {
+		b, err := json.Marshal(esBulkRequest.events[noRetry[0]].(*Action).event)
+		if err != nil {
+			glog.Infof("one failed doc that need no retry: %+v", esBulkRequest.events[noRetry[0]].(*Action).event)
+		} else {
+			glog.Infof("one failed doc that need no retry: %s", b)
+		}
+	}
+
+	if len(shouldRetry) > 0 {
+		newBulkRequest := &ESBulkRequest{
+			bulk_buf: make([]byte, 0),
+		}
+		for _, i := range shouldRetry {
+			newBulkRequest.add(esBulkRequest.events[i])
+		}
+		return newBulkRequest
+	}
+	return nil
+}
+
 func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOutput {
 	rst := &ElasticsearchOutput{
 		BaseOutput: NewBaseOutput(config),
