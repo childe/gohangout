@@ -271,7 +271,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int)
 		if success {
 			_finishTime := float64(time.Now().UnixNano()/1000000) / 1000
 			timeTaken := _finishTime - _startTime
-			glog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, timeTaken/float64(eventCount))
+			glog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, float64(eventCount)/timeTaken)
 			p.hostSelector.addWeight(host)
 		} else {
 			glog.Errorf("bulk failed with %s", url)
