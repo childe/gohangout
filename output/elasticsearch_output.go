@@ -23,6 +23,7 @@ type Action struct {
 	id         string
 	routing    string
 	event      map[string]interface{}
+	rawSource  []byte
 }
 
 func (action *Action) Encode() []byte {
@@ -32,10 +33,19 @@ func (action *Action) Encode() []byte {
 	} else {
 		meta = []byte(fmt.Sprintf(META_FORMAT_WITHOUT_ID, action.op, action.index, action.index_type, action.routing))
 	}
-	buf, err := json.Marshal(action.event)
-	if err != nil {
-		glog.Errorf("could marshal event(%v):%s", action.event, err)
-		return nil
+
+	var (
+		buf []byte
+		err error
+	)
+	if action.rawSource == nil {
+		buf, err = json.Marshal(action.event)
+		if err != nil {
+			glog.Errorf("could marshal event(%v):%s", action.event, err)
+			return nil
+		}
+	} else {
+		buf = action.rawSource
 	}
 
 	bulk_buf := make([]byte, 0, len(meta)+len(buf)+1)
@@ -69,10 +79,12 @@ type ElasticsearchOutput struct {
 	BaseOutput
 	config map[interface{}]interface{}
 
-	index      value_render.ValueRender
-	index_type value_render.ValueRender
-	id         value_render.ValueRender
-	routing    value_render.ValueRender
+	index              value_render.ValueRender
+	index_type         value_render.ValueRender
+	id                 value_render.ValueRender
+	routing            value_render.ValueRender
+	source_field       value_render.ValueRender
+	bytes_source_field value_render.ValueRender
 
 	bulkProcessor BulkProcessor
 }
@@ -174,6 +186,18 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		rst.routing = value_render.GetValueRender(v.(string))
 	} else {
 		rst.routing = nil
+	}
+
+	if v, ok := config["source_field"]; ok {
+		rst.source_field = value_render.GetValueRender2(v.(string))
+	} else {
+		rst.source_field = nil
+	}
+
+	if v, ok := config["bytes_source_field"]; ok {
+		rst.bytes_source_field = value_render.GetValueRender2(v.(string))
+	} else {
+		rst.bytes_source_field = nil
 	}
 
 	var (
@@ -282,7 +306,24 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 			routing = t.(string)
 		}
 	}
-	p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event})
+
+	if p.source_field == nil && p.bytes_source_field == nil {
+		p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil})
+	} else if p.bytes_source_field != nil {
+		t := p.bytes_source_field.Render(event)
+		if t == nil {
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil})
+		} else {
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, (t.([]byte))})
+		}
+	} else {
+		t := p.source_field.Render(event)
+		if t == nil {
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil})
+		} else {
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, []byte(t.(string))})
+		}
+	}
 }
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
 	outputPlugin.bulkProcessor.awaitclose(30 * time.Second)

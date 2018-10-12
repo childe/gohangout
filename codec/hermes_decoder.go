@@ -97,5 +97,6 @@ func (hd *HermesDecoder) Decode(s string) map[string]interface{} {
 	if err != nil {
 		rst["message"] = string(value)
 	}
+	rst["_source"] = value
 	return rst
 }
