@@ -77,6 +77,7 @@ func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
 		return nil
 	}
 	s := string(message.Message.Value)
+	// TODO DecodeString & DecodeBytes
 	return inputPlugin.decoder.Decode(s)
 }
 
