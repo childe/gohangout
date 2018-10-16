@@ -1,6 +1,9 @@
 package output
 
-import "github.com/childe/gohangout/condition_filter"
+import (
+	"github.com/childe/gohangout/condition_filter"
+	"github.com/golang/glog"
+)
 
 type Output interface {
 	Emit(map[string]interface{})
@@ -8,7 +11,7 @@ type Output interface {
 	Shutdown()
 }
 
-func GetOutput(outputType string, config map[interface{}]interface{}) Output {
+func BuildOutput(outputType string, config map[interface{}]interface{}) Output {
 	switch outputType {
 	case "Stdout":
 		return NewStdoutOutput(config)
@@ -21,6 +24,7 @@ func GetOutput(outputType string, config map[interface{}]interface{}) Output {
 	case "Clickhouse":
 		return NewClickhouseOutput(config)
 	}
+	glog.Fatalf("could not build %s output plugin", outputType)
 	return nil
 }
 

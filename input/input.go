@@ -1,20 +1,51 @@
 package input
 
+import (
+	"github.com/childe/gohangout/filter"
+	"github.com/childe/gohangout/output"
+)
+
 type Input interface {
 	readOneEvent() map[string]interface{}
 	Shutdown()
+
+	GotoNext(map[string]interface{})
 }
 
-func GetInput(inputType string, config map[interface{}]interface{}) Input {
+func GetInput(inputType string, config map[interface{}]interface{}, nextFilter filter.Filter, outputs []output.Output) Input {
 	switch inputType {
 	case "Stdin":
-		//t := reflect.TypeOf(StdinInput{})
-		//pt := reflect.New(t)
-		//b := pt.Interface().(Input)
-		//return b
-		return NewStdinInput(config)
+		f := NewStdinInput(config)
+		f.BaseInput.nextFilter = nextFilter
+		f.BaseInput.outputs = outputs
+		return f
 	case "Kafka":
-		return NewKafkaInput(config)
+		f := NewKafkaInput(config)
+		f.BaseInput.nextFilter = nextFilter
+		f.BaseInput.outputs = outputs
+		return f
 	}
 	return nil
+}
+
+type BaseInput struct {
+	nextFilter filter.Filter
+	outputs    []output.Output
+}
+
+func (i *BaseInput) GotoNext(event map[string]interface{}) {
+	var rst bool
+	if i.nextFilter != nil {
+		if i.nextFilter.Pass(event) {
+			event, rst = i.nextFilter.Process(event)
+			event = i.nextFilter.PostProcess(event, rst)
+		}
+		i.nextFilter.GotoNext(event)
+	} else {
+		for _, outputPlugin := range i.outputs {
+			if outputPlugin.Pass(event) {
+				outputPlugin.Emit(event)
+			}
+		}
+	}
 }

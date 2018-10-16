@@ -9,6 +9,8 @@ import (
 )
 
 type KafkaInput struct {
+	BaseInput
+
 	config   map[interface{}]interface{}
 	messages chan *healer.FullMessage
 
@@ -41,6 +43,8 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	}
 
 	kafkaInput := &KafkaInput{
+		BaseInput: BaseInput{},
+
 		config:   config,
 		messages: make(chan *healer.FullMessage, 100),
 

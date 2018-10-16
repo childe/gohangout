@@ -32,6 +32,7 @@ func (f *ConditionFilter) Pass(event map[string]interface{}) bool {
 	if f.ifConditions == nil {
 		return true
 	}
+
 	for _, c := range f.ifConditions {
 		r := c.Render(event)
 		if r == nil || r.(string) != f.ifResult {

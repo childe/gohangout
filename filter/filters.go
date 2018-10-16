@@ -20,7 +20,7 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	for k, v := range config {
 		_config[k.(string)] = v
 	}
-	plugin.filters = GetFilters(_config)
+	//plugin.filters = BuildFilters(_config)
 	return plugin
 }
 
