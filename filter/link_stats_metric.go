@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 )
 
@@ -192,6 +191,8 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		stats["sum"] = value
 		set[f.lastField] = stats
 	}
+
+	f.EmitMetrics()
 }
 
 func (f *LinkStatsMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
@@ -234,7 +235,7 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 	return events
 }
 
-func (f *LinkStatsMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
+func (f *LinkStatsMetricFilter) EmitMetrics() {
 	if len(f.metricToEmit) == 0 {
 		return
 	}
@@ -246,8 +247,17 @@ func (f *LinkStatsMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
 	for timestamp, metrics := range f.metricToEmit {
 		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[f.timestamp] = time.Unix(timestamp, 0)
-			event = f.PostProcess(event, true)
-			sTo.Push(event)
+
+			if f.BaseFilter.nextFilter != nil {
+				f.BaseFilter.nextFilter.Process(event)
+			} else {
+				for _, outputPlugin := range f.BaseFilter.outputs {
+					if outputPlugin.Pass(event) {
+						outputPlugin.Emit(event)
+					}
+				}
+			}
+
 		}
 	}
 	f.metricToEmit = make(map[int64]interface{})
