@@ -35,7 +35,7 @@ func init() {
 
 func buildPluginLink(config map[string]interface{}) []input.Input {
 	outputs := output.BuildOutputs(config)
-	filters := filter.BuildFilters(config, outputs)
+	filters := filter.BuildFilters(config, nil, outputs)
 
 	inputs := make([]input.Input, 0)
 

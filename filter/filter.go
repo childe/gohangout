@@ -18,10 +18,9 @@ type Filter interface {
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
 }
 
-func BuildFilters(config map[string]interface{}, outputs []output.Output) []Filter {
+func BuildFilters(config map[string]interface{}, nextFilter Filter, outputs []output.Output) []Filter {
 	var (
-		nextFilter Filter
-		rst        []Filter
+		rst []Filter
 	)
 
 	if fsI, ok := config["filters"]; ok {
@@ -36,7 +35,7 @@ func BuildFilters(config map[string]interface{}, outputs []output.Output) []Filt
 			filterConfig := filterConfigI.(map[interface{}]interface{})
 			glog.Infof("filter config: %v", filterConfig)
 
-			nextFilter = BuildFilter(filterType, filterConfig, nil, outputs)
+			nextFilter = BuildFilter(filterType, filterConfig, nextFilter, outputs)
 
 			rst[len(filtersI)-1] = nextFilter
 			break // len(filtersI[-1]) is 1
@@ -149,7 +148,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}, nextFilt
 		f.outputs = outputs
 		return f
 	case "Filters":
-		f := NewFiltersFilter(config)
+		f := NewFiltersFilter(config, nextFilter, outputs)
 		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
