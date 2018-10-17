@@ -245,7 +245,17 @@ func (f *LinkMetricFilter) EmitMetrics() {
 		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[f.timestamp] = time.Unix(timestamp, 0)
 			event = f.PostProcess(event, true)
-			f.BaseFilter.nextFilter.Process(event)
+
+			if f.BaseFilter.nextFilter != nil {
+				f.BaseFilter.nextFilter.Process(event)
+			} else {
+				for _, outputPlugin := range f.BaseFilter.outputs {
+					if outputPlugin.Pass(event) {
+						outputPlugin.Emit(event)
+					}
+				}
+			}
+
 		}
 	}
 	f.metricToEmit = make(map[int64]interface{})
