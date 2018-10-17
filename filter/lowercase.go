@@ -10,7 +10,7 @@ import (
 )
 
 type LowercaseFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]value_render.ValueRender
@@ -38,7 +38,7 @@ func NewLowercaseFilter(config map[interface{}]interface{}) *LowercaseFilter {
 }
 
 // 如果字段不是字符串, 返回false, 其它返回true
-func (plugin *LowercaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *LowercaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	success := true
 	for s, v := range plugin.fields {
 		value := v.Render(event)

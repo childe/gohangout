@@ -34,13 +34,8 @@ type BaseInput struct {
 }
 
 func (i *BaseInput) GotoNext(event map[string]interface{}) {
-	var rst bool
 	if i.nextFilter != nil {
-		if i.nextFilter.Pass(event) {
-			event, rst = i.nextFilter.Process(event)
-			event = i.nextFilter.PostProcess(event, rst)
-		}
-		i.nextFilter.GotoNext(event)
+		i.nextFilter.Process(event)
 	} else {
 		for _, outputPlugin := range i.outputs {
 			if outputPlugin.Pass(event) {

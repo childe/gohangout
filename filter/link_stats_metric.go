@@ -12,7 +12,7 @@ import (
 )
 
 type LinkStatsMetricFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config            map[interface{}]interface{}
 	timestamp         string
@@ -195,7 +195,7 @@ func (plugin *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) 
 	}
 }
 
-func (plugin *LinkStatsMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *LinkStatsMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	plugin.updateMetric(event)
 	if plugin.dropOriginalEvent {
 		return nil, false

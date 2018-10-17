@@ -65,7 +65,7 @@ type ConveterAndRender struct {
 }
 
 type ConvertFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]ConveterAndRender
@@ -116,7 +116,7 @@ func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 	return plugin
 }
 
-func (plugin *ConvertFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	for fs, conveterAndRender := range plugin.fields {
 		originanV := conveterAndRender.valueRender.Render(event)
 		if originanV == nil {

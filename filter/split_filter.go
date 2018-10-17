@@ -9,7 +9,7 @@ import (
 )
 
 type SplitFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config       map[interface{}]interface{}
 	fields       []field_setter.FieldSetter
@@ -74,7 +74,7 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 	return plugin
 }
 
-func (plugin *SplitFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	src := plugin.src.Render(event)
 	if src == nil {
 		return event, false

@@ -9,7 +9,7 @@ import (
 )
 
 type JsonFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	field     string
 	target    string
@@ -40,7 +40,7 @@ func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
 	return plugin
 }
 
-func (plugin *JsonFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	if s, ok := event[plugin.field]; ok {
 		if reflect.TypeOf(s).Kind() != reflect.String {
 			return event, false

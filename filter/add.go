@@ -7,7 +7,7 @@ import (
 )
 
 type AddFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config    map[interface{}]interface{}
 	fields    map[field_setter.FieldSetter]value_render.ValueRender
@@ -40,7 +40,7 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	return plugin
 }
 
-func (plugin *AddFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *AddFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	for fs, v := range plugin.fields {
 		event = fs.SetField(event, v.Render(event), "", plugin.overwrite)
 	}

@@ -8,92 +8,105 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/output"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 )
 
 type Filter interface {
 	Pass(map[string]interface{}) bool
-	Process(map[string]interface{}) (map[string]interface{}, bool)
+	Filter(map[string]interface{}) (map[string]interface{}, bool)
+	Process(map[string]interface{})
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
-	EmitExtraEvents(*stack.Stack)
-	GotoNext(map[string]interface{})
 }
 
 func BuildFilter(filterType string, config map[interface{}]interface{}, nextFilter Filter, outputs []output.Output) Filter {
 	switch filterType {
 	case "Add":
 		f := NewAddFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Remove":
 		f := NewRemoveFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Rename":
 		f := NewRenameFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Lowercase":
 		f := NewLowercaseFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Split":
 		f := NewSplitFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Grok":
 		f := NewGrokFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Date":
 		f := NewDateFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Drop":
 		f := NewDropFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Json":
 		f := NewJsonFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Translate":
 		f := NewTranslateFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Convert":
 		f := NewConvertFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "IPIP":
 		f := NewIPIPFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "LinkMetric":
 		f := NewLinkMetricFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "LinkStatsMetric":
 		f := NewLinkStatsMetricFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
 	case "Filters":
 		f := NewFiltersFilter(config)
+		f.BaseFilter.filter = f
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
@@ -110,11 +123,12 @@ type BaseFilter struct {
 	removeFields []field_deleter.FieldDeleter
 	addFields    map[field_setter.FieldSetter]value_render.ValueRender
 
+	filter     Filter
 	nextFilter Filter
 	outputs    []output.Output
 }
 
-func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
+func NewBaseFilter(config map[interface{}]interface{}) *BaseFilter {
 	f := BaseFilter{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
@@ -147,18 +161,15 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	} else {
 		f.addFields = nil
 	}
-	return f
+	return &f
 }
 
 func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 	return f.conditionFilter.Pass(event)
 }
 
-func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (f *BaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
-}
-func (f *BaseFilter) EmitExtraEvents(*stack.Stack) {
-	return
 }
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
@@ -187,24 +198,21 @@ func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map
 	return event
 }
 
-func (i *BaseFilter) GotoNext(event map[string]interface{}) {
-	if event == nil {
-		return
+func (b *BaseFilter) Process(event map[string]interface{}) {
+	var rst bool
+
+	if b.Pass(event) {
+		event, rst = b.filter.Filter(event)
+		if event == nil {
+			return
+		}
+		event = b.filter.PostProcess(event, rst)
 	}
 
-	var rst bool
-	if i.nextFilter != nil {
-		if i.nextFilter.Pass(event) {
-			event, rst = i.nextFilter.Process(event)
-			event = i.nextFilter.PostProcess(event, rst)
-
-			if event == nil {
-				return
-			}
-		}
-		i.nextFilter.GotoNext(event)
+	if b.nextFilter != nil {
+		b.nextFilter.Process(event)
 	} else {
-		for _, outputPlugin := range i.outputs {
+		for _, outputPlugin := range b.outputs {
 			if outputPlugin.Pass(event) {
 				outputPlugin.Emit(event)
 			}

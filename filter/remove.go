@@ -6,7 +6,7 @@ import (
 )
 
 type RemoveFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config         map[interface{}]interface{}
 	fieldsDeleters []field_deleter.FieldDeleter
@@ -29,7 +29,7 @@ func NewRemoveFilter(config map[interface{}]interface{}) *RemoveFilter {
 	return plugin
 }
 
-func (plugin *RemoveFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *RemoveFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	for _, d := range plugin.fieldsDeleters {
 		d.Delete(event)
 	}

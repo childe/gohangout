@@ -14,7 +14,7 @@ import (
 )
 
 type TranslateFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config          map[interface{}]interface{}
 	refreshInterval int
@@ -114,7 +114,7 @@ func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 	return plugin
 }
 
-func (plugin *TranslateFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *TranslateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	o := plugin.sourceVR.Render(event)
 	if o == nil {
 		return event, false

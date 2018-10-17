@@ -1,7 +1,7 @@
 package filter
 
 type DropFilter struct {
-	BaseFilter
+	*BaseFilter
 	config map[interface{}]interface{}
 }
 
@@ -13,6 +13,6 @@ func NewDropFilter(config map[interface{}]interface{}) *DropFilter {
 	return plugin
 }
 
-func (plugin *DropFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *DropFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	return nil, true
 }
