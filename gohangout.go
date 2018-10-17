@@ -33,69 +33,9 @@ func init() {
 	flag.Parse()
 }
 
-func buildOutputs(config map[string]interface{}) []output.Output {
-	rst := make([]output.Output, 0)
-
-	for _, outputI := range config["outputs"].([]interface{}) {
-		// len(outputI) is 1
-		for outputTypeI, outputConfigI := range outputI.(map[interface{}]interface{}) {
-			outputType := outputTypeI.(string)
-			glog.Infof("output type: %s", outputType)
-			outputConfig := outputConfigI.(map[interface{}]interface{})
-			glog.Infof("output config: %v", outputConfig)
-			outputPlugin := output.BuildOutput(outputType, outputConfig)
-			rst = append(rst, outputPlugin)
-		}
-	}
-	return rst
-}
-
-func buildFilters(config map[string]interface{}, outputs []output.Output) []filter.Filter {
-	var (
-		nextFilter filter.Filter
-		rst        []filter.Filter
-	)
-
-	if fsI, ok := config["filters"]; ok {
-		filtersI := fsI.([]interface{})
-
-		rst = make([]filter.Filter, len(filtersI))
-
-		// build last filter plugin, pass outputs to it
-		for filterTypeI, filterConfigI := range filtersI[len(filtersI)-1].(map[interface{}]interface{}) {
-			filterType := filterTypeI.(string)
-			glog.Infof("filter type: %s", filterType)
-			filterConfig := filterConfigI.(map[interface{}]interface{})
-			glog.Infof("filter config: %v", filterConfig)
-
-			nextFilter = filter.BuildFilter(filterType, filterConfig, nil, outputs)
-
-			rst[len(filtersI)-1] = nextFilter
-			break // len(filtersI[-1]) is 1
-		}
-
-		for i := len(filtersI) - 2; i >= 0; i-- {
-			for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
-				filterType := filterTypeI.(string)
-				glog.Infof("filter type: %s", filterType)
-				filterConfig := filterConfigI.(map[interface{}]interface{})
-				glog.Infof("filter config: %v", filterConfig)
-
-				filterPlugin := filter.BuildFilter(filterType, filterConfig, nextFilter, nil)
-
-				rst[i] = filterPlugin
-				nextFilter = filterPlugin
-				break // len(filtersI[i]) is 1
-			}
-		}
-		return rst
-	} else {
-		return nil
-	}
-}
 func buildPluginLink(config map[string]interface{}) []input.Input {
-	outputs := buildOutputs(config)
-	filters := buildFilters(config, outputs)
+	outputs := output.BuildOutputs(config)
+	filters := filter.BuildFilters(config, outputs)
 
 	inputs := make([]input.Input, 0)
 

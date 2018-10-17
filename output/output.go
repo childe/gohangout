@@ -11,6 +11,23 @@ type Output interface {
 	Shutdown()
 }
 
+func BuildOutputs(config map[string]interface{}) []Output {
+	rst := make([]Output, 0)
+
+	for _, outputI := range config["outputs"].([]interface{}) {
+		// len(outputI) is 1
+		for outputTypeI, outputConfigI := range outputI.(map[interface{}]interface{}) {
+			outputType := outputTypeI.(string)
+			glog.Infof("output type: %s", outputType)
+			outputConfig := outputConfigI.(map[interface{}]interface{})
+			glog.Infof("output config: %v", outputConfig)
+			outputPlugin := BuildOutput(outputType, outputConfig)
+			rst = append(rst, outputPlugin)
+		}
+	}
+	return rst
+}
+
 func BuildOutput(outputType string, config map[interface{}]interface{}) Output {
 	switch outputType {
 	case "Stdout":

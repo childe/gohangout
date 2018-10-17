@@ -18,6 +18,50 @@ type Filter interface {
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
 }
 
+func BuildFilters(config map[string]interface{}, outputs []output.Output) []Filter {
+	var (
+		nextFilter Filter
+		rst        []Filter
+	)
+
+	if fsI, ok := config["filters"]; ok {
+		filtersI := fsI.([]interface{})
+
+		rst = make([]Filter, len(filtersI))
+
+		// build last filter plugin, pass outputs to it
+		for filterTypeI, filterConfigI := range filtersI[len(filtersI)-1].(map[interface{}]interface{}) {
+			filterType := filterTypeI.(string)
+			glog.Infof("filter type: %s", filterType)
+			filterConfig := filterConfigI.(map[interface{}]interface{})
+			glog.Infof("filter config: %v", filterConfig)
+
+			nextFilter = BuildFilter(filterType, filterConfig, nil, outputs)
+
+			rst[len(filtersI)-1] = nextFilter
+			break // len(filtersI[-1]) is 1
+		}
+
+		for i := len(filtersI) - 2; i >= 0; i-- {
+			for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
+				filterType := filterTypeI.(string)
+				glog.Infof("filter type: %s", filterType)
+				filterConfig := filterConfigI.(map[interface{}]interface{})
+				glog.Infof("filter config: %v", filterConfig)
+
+				filterPlugin := BuildFilter(filterType, filterConfig, nextFilter, nil)
+
+				rst[i] = filterPlugin
+				nextFilter = filterPlugin
+				break // len(filtersI[i]) is 1
+			}
+		}
+		return rst
+	} else {
+		return nil
+	}
+}
+
 func BuildFilter(filterType string, config map[interface{}]interface{}, nextFilter Filter, outputs []output.Output) Filter {
 	switch filterType {
 	case "Add":
