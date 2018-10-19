@@ -132,7 +132,7 @@ func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 }
 
 type DateFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config      map[interface{}]interface{}
 	dateParsers []DateParser
@@ -196,7 +196,7 @@ func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	return plugin
 }
 
-func (plugin *DateFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *DateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	inputI := plugin.srcVR.Render(event)
 	if inputI == nil {
 		return event, false

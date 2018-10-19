@@ -9,7 +9,7 @@ import (
 )
 
 type IPIPFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config    map[interface{}]interface{}
 	src       string
@@ -57,7 +57,7 @@ func NewIPIPFilter(config map[interface{}]interface{}) *IPIPFilter {
 	return plugin
 }
 
-func (plugin *IPIPFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	inputI := plugin.srcVR.Render(event)
 	if inputI == nil {
 		return event, false

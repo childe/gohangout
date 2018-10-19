@@ -23,7 +23,7 @@ filters:
         pattern_paths:
             - '/opt/gohangout/patterns'
         match:
-            - '^(?P<user>\w+) (?P<status>\d+)$'
+            - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
             - '^%{USER:user} %{INT:status} %{INT:request_time}$'
         remove_fields: ['message']
     - Date:

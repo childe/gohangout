@@ -22,7 +22,6 @@ var options = &struct {
 	pprof     bool
 	pprofAddr string
 }{}
-var boxes []*input.InputBox
 
 func init() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
@@ -33,28 +32,33 @@ func init() {
 	flag.Parse()
 }
 
-func getOutputs(config map[string]interface{}) []output.Output {
-	if outputValue, ok := config["outputs"]; ok {
-		rst := make([]output.Output, 0)
-		outputs := outputValue.([]interface{})
-		for _, outputValue := range outputs {
-			o := outputValue.(map[interface{}]interface{})
-			for k, v := range o {
-				outputType := k.(string)
-				glog.Infof("output type:%s", outputType)
-				outputConfig := v.(map[interface{}]interface{})
-				glog.Infof("output config:%v", outputConfig)
-				outputPlugin := output.GetOutput(outputType, outputConfig)
-				if outputPlugin == nil {
-					glog.Fatalf("could build output plugin from type (%s)", outputType)
-				}
-				rst = append(rst, outputPlugin)
+func buildPluginLink(config map[string]interface{}) []*input.InputBox {
+	boxes := make([]*input.InputBox, 0)
+
+	var inputPlugin input.Input
+	for input_idx, inputI := range config["inputs"].([]interface{}) {
+		outputs := output.BuildOutputs(config)
+		filters := filter.BuildFilters(config, nil, outputs)
+
+		i := inputI.(map[interface{}]interface{})
+		glog.Infof("input[%d] %v", input_idx+1, i)
+
+		// len(i) is 1
+		for inputTypeI, inputConfigI := range i {
+			inputType := inputTypeI.(string)
+			inputConfig := inputConfigI.(map[interface{}]interface{})
+
+			if len(filters) > 0 {
+				inputPlugin = input.GetInput(inputType, inputConfig, filters[0], nil)
+			} else {
+				inputPlugin = input.GetInput(inputType, inputConfig, nil, outputs)
 			}
+
+			box := input.NewInputBox(inputPlugin, outputs)
+			boxes = append(boxes, box)
 		}
-		return rst
-	} else {
-		return nil
 	}
+	return boxes
 }
 
 func main() {
@@ -64,6 +68,14 @@ func main() {
 		}()
 	}
 
+	config, err := parseConfig(options.config)
+	if err != nil {
+		glog.Fatalf("could not parse config:%s", err)
+	}
+	glog.Infof("%v", config)
+
+	boxes := buildPluginLink(config)
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -71,48 +83,22 @@ func main() {
 			<-c
 			signal.Stop(c)
 			for _, box := range boxes {
+				glog.Info(box)
 				box.Shutdown()
 			}
-			//os.Exit(0) // leave the program leave itself
+			os.Exit(0)
 		}
 	}()
 
-	config, err := parseConfig(options.config)
-	if err != nil {
-		glog.Fatalf("could not parse config:%s", err)
-	}
-	glog.Infof("%v", config)
+	var wg sync.WaitGroup
+	wg.Add(len(boxes))
+	defer wg.Wait()
 
-	if inputValue, ok := config["inputs"]; ok {
-		//glog.Info(inputValue)
-		var wg sync.WaitGroup
-		inputs := inputValue.([]interface{})
-		wg.Add(len(inputs))
-		boxes = make([]*input.InputBox, len(inputs))
-		for input_idx, inputValue := range inputs {
-			i := inputValue.(map[interface{}]interface{})
-			glog.Info(i)
-			for k, v := range i {
-				filters := filter.GetFilters(config)
-				outputs := getOutputs(config)
-
-				inputType := k.(string)
-				glog.Info(inputType)
-				inputConfig := v.(map[interface{}]interface{})
-				glog.Info(inputConfig)
-
-				inputPlugin := input.GetInput(inputType, inputConfig)
-				box := input.NewInputBox(inputPlugin, filters, outputs, inputConfig)
-				boxes[input_idx] = &box
-
-				go func() {
-					defer wg.Done()
-					box.Beat()
-				}()
-			}
-		}
-		wg.Wait()
-	} else {
-		glog.Fatal("could not find inputs in config file")
+	for _, box := range boxes {
+		go func() {
+			defer wg.Done()
+			glog.Info(box)
+			box.Beat()
+		}()
 	}
 }

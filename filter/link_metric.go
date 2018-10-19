@@ -7,12 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 )
 
 type LinkMetricFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config            map[interface{}]interface{}
 	timestamp         string
@@ -112,43 +111,43 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	return plugin
 }
 
-func (plugin *LinkMetricFilter) swap_Metric_MetricToEmit() {
-	plugin.mutex.Lock()
+func (f *LinkMetricFilter) swap_Metric_MetricToEmit() {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
 
-	if len(plugin.metric) > 0 && len(plugin.metricToEmit) == 0 {
+	if len(f.metric) > 0 && len(f.metricToEmit) == 0 {
 		timestamp := time.Now().Unix()
-		timestamp -= timestamp % plugin.batchWindow
+		timestamp -= timestamp % f.batchWindow
 
-		plugin.metricToEmit = make(map[int64]interface{})
-		for k, v := range plugin.metric {
-			if k <= timestamp-plugin.batchWindow*plugin.windowOffset {
-				plugin.metricToEmit[k] = v
+		f.metricToEmit = make(map[int64]interface{})
+		for k, v := range f.metric {
+			if k <= timestamp-f.batchWindow*f.windowOffset {
+				f.metricToEmit[k] = v
 			}
 		}
 
-		if plugin.accumulateMode == 1 {
-			plugin.metric = make(map[int64]interface{})
+		if f.accumulateMode == 1 {
+			f.metric = make(map[int64]interface{})
 		} else {
 			newMetric := make(map[int64]interface{})
-			for k, v := range plugin.metric {
-				if k >= timestamp-plugin.reserveWindow {
+			for k, v := range f.metric {
+				if k >= timestamp-f.reserveWindow {
 					newMetric[k] = v
 				}
 			}
-			plugin.metric = newMetric
+			f.metric = newMetric
 		}
 	}
-
-	plugin.mutex.Unlock()
 }
-func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
-	lastFieldValue := event[plugin.lastField]
+
+func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
+	lastFieldValue := event[f.lastField]
 	if lastFieldValue == nil {
 		return
 	}
 
 	var timestamp int64
-	if v, ok := event[plugin.timestamp]; ok {
+	if v, ok := event[f.timestamp]; ok {
 		if reflect.TypeOf(v).String() != "time.Time" {
 			glog.V(10).Infof("timestamp must be time.Time, but it's %s", reflect.TypeOf(v).String())
 			return
@@ -160,20 +159,20 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 
 	diff := time.Now().Unix() - timestamp
-	if diff > plugin.reserveWindow || diff < 0 {
+	if diff > f.reserveWindow || diff < 0 {
 		return
 	}
 
-	timestamp -= timestamp % plugin.batchWindow
+	timestamp -= timestamp % f.batchWindow
 	var set map[interface{}]interface{} = nil
-	if v, ok := plugin.metric[timestamp]; ok {
+	if v, ok := f.metric[timestamp]; ok {
 		set = v.(map[interface{}]interface{})
 	} else {
 		set = make(map[interface{}]interface{})
-		plugin.metric[timestamp] = set
+		f.metric[timestamp] = set
 	}
 
-	for _, field := range plugin.fieldsWithoutLast {
+	for _, field := range f.fieldsWithoutLast {
 		fieldValue := event[field]
 		if fieldValue == nil {
 			return
@@ -191,23 +190,25 @@ func (plugin *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	} else {
 		set[lastFieldValue] = 1
 	}
+
+	f.EmitMetrics()
 }
 
-func (plugin *LinkMetricFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
-	plugin.updateMetric(event)
-	if plugin.dropOriginalEvent {
+func (f *LinkMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+	f.updateMetric(event)
+	if f.dropOriginalEvent {
 		return nil, false
 	}
 	return event, false
 }
 
-func (plugin *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, level int) []map[string]interface{} {
+func (f *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, level int) []map[string]interface{} {
 	var (
-		fieldName string                   = plugin.fields[level]
+		fieldName string                   = f.fields[level]
 		events    []map[string]interface{} = make([]map[string]interface{}, 0)
 	)
 
-	if level == plugin.fieldsLength-1 {
+	if level == f.fieldsLength-1 {
 		for fieldValue, count := range metrics {
 			event := make(map[string]interface{})
 			event[fmt.Sprintf("%s", fieldName)] = fieldValue
@@ -218,7 +219,7 @@ func (plugin *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface
 	}
 
 	for fieldValue, nextLevelMetrics := range metrics {
-		for _, e := range plugin.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
+		for _, e := range f.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
 			event := make(map[string]interface{})
 			event[fmt.Sprintf("%s", fieldName)] = fieldValue
 			for k, v := range e {
@@ -231,18 +232,32 @@ func (plugin *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface
 	return events
 }
 
-func (plugin *LinkMetricFilter) EmitExtraEvents(sTo *stack.Stack) {
-	if len(plugin.metricToEmit) == 0 {
+func (f *LinkMetricFilter) EmitMetrics() {
+	if len(f.metricToEmit) == 0 {
 		return
 	}
+
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
 	var event map[string]interface{}
-	for timestamp, metrics := range plugin.metricToEmit {
-		for _, event = range plugin.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
-			event[plugin.timestamp] = time.Unix(timestamp, 0)
-			event = plugin.PostProcess(event, true)
-			sTo.Push(event)
+	for timestamp, metrics := range f.metricToEmit {
+		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
+			event[f.timestamp] = time.Unix(timestamp, 0)
+			event = f.PostProcess(event, true)
+
+			if f.BaseFilter.nextFilter != nil {
+				f.BaseFilter.nextFilter.Process(event)
+			} else {
+				for _, outputPlugin := range f.BaseFilter.outputs {
+					if outputPlugin.Pass(event) {
+						outputPlugin.Emit(event)
+					}
+				}
+			}
+
 		}
 	}
-	plugin.metricToEmit = make(map[int64]interface{})
+	f.metricToEmit = make(map[int64]interface{})
 	return
 }

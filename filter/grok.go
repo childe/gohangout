@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/childe/gohangout/value_render"
+	"github.com/golang/glog"
 )
 
 func (grok *Grok) loadPattern(filename string) {
@@ -139,7 +139,7 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 }
 
 type GrokFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config    map[interface{}]interface{}
 	overwrite bool
@@ -190,7 +190,7 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	return gf
 }
 
-func (gf *GrokFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	var input string
 	inputI := gf.vr.Render(event)
 	if inputI == nil {

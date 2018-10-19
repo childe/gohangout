@@ -3,7 +3,7 @@ package filter
 import "github.com/golang/glog"
 
 type RenameFilter struct {
-	BaseFilter
+	*BaseFilter
 
 	config map[interface{}]interface{}
 	fields map[string]string
@@ -26,7 +26,7 @@ func NewRenameFilter(config map[interface{}]interface{}) *RenameFilter {
 	return plugin
 }
 
-func (plugin *RenameFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *RenameFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	for source, target := range plugin.fields {
 		if v, ok := event[source]; ok {
 			event[target] = v

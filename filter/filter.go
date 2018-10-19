@@ -6,34 +6,53 @@ import (
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/field_deleter"
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/output"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 )
 
 type Filter interface {
 	Pass(map[string]interface{}) bool
-	Process(map[string]interface{}) (map[string]interface{}, bool)
+	Filter(map[string]interface{}) (map[string]interface{}, bool)
+	Process(map[string]interface{})
 	PostProcess(map[string]interface{}, bool) map[string]interface{}
-	EmitExtraEvents(*stack.Stack)
 }
 
-func GetFilters(config map[string]interface{}) []Filter {
-	if filterValue, ok := config["filters"]; ok {
-		rst := make([]Filter, 0)
-		filters := filterValue.([]interface{})
-		for _, filterValue := range filters {
-			filters := filterValue.(map[interface{}]interface{})
-			for k, v := range filters {
-				filterType := k.(string)
-				glog.Infof("filter type:%s", filterType)
-				filterConfig := v.(map[interface{}]interface{})
-				glog.Infof("filter config:%v", filterConfig)
-				filterPlugin := GetFilter(filterType, filterConfig)
-				if filterPlugin == nil {
-					glog.Fatalf("could build filter plugin from type (%s)", filterType)
-				}
-				rst = append(rst, filterPlugin)
+func BuildFilters(config map[string]interface{}, nextFilter Filter, outputs []output.Output) []Filter {
+	var (
+		rst []Filter
+	)
+
+	if fsI, ok := config["filters"]; ok {
+		filtersI := fsI.([]interface{})
+
+		rst = make([]Filter, len(filtersI))
+
+		// build last filter plugin, pass outputs to it
+		for filterTypeI, filterConfigI := range filtersI[len(filtersI)-1].(map[interface{}]interface{}) {
+			filterType := filterTypeI.(string)
+			glog.Infof("filter type: %s", filterType)
+			filterConfig := filterConfigI.(map[interface{}]interface{})
+			glog.Infof("filter config: %v", filterConfig)
+
+			nextFilter = BuildFilter(filterType, filterConfig, nextFilter, outputs)
+
+			rst[len(filtersI)-1] = nextFilter
+			break // len(filtersI[-1]) is 1
+		}
+
+		for i := len(filtersI) - 2; i >= 0; i-- {
+			for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
+				filterType := filterTypeI.(string)
+				glog.Infof("filter type: %s", filterType)
+				filterConfig := filterConfigI.(map[interface{}]interface{})
+				glog.Infof("filter config: %v", filterConfig)
+
+				filterPlugin := BuildFilter(filterType, filterConfig, nextFilter, nil)
+
+				rst[i] = filterPlugin
+				nextFilter = filterPlugin
+				break // len(filtersI[i]) is 1
 			}
 		}
 		return rst
@@ -42,38 +61,98 @@ func GetFilters(config map[string]interface{}) []Filter {
 	}
 }
 
-func GetFilter(filterType string, config map[interface{}]interface{}) Filter {
+func BuildFilter(filterType string, config map[interface{}]interface{}, nextFilter Filter, outputs []output.Output) Filter {
 	switch filterType {
 	case "Add":
-		return NewAddFilter(config)
+		f := NewAddFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Remove":
-		return NewRemoveFilter(config)
+		f := NewRemoveFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Rename":
-		return NewRenameFilter(config)
+		f := NewRenameFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Lowercase":
-		return NewLowercaseFilter(config)
+		f := NewLowercaseFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Split":
-		return NewSplitFilter(config)
+		f := NewSplitFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Grok":
-		return NewGrokFilter(config)
+		f := NewGrokFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Date":
-		return NewDateFilter(config)
+		f := NewDateFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Drop":
-		return NewDropFilter(config)
+		f := NewDropFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Json":
-		return NewJsonFilter(config)
+		f := NewJsonFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Translate":
-		return NewTranslateFilter(config)
+		f := NewTranslateFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Convert":
-		return NewConvertFilter(config)
+		f := NewConvertFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "IPIP":
-		return NewIPIPFilter(config)
+		f := NewIPIPFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "LinkMetric":
-		return NewLinkMetricFilter(config)
+		f := NewLinkMetricFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "LinkStatsMetric":
-		return NewLinkStatsMetricFilter(config)
+		f := NewLinkStatsMetricFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Filters":
-		return NewFiltersFilter(config)
+		f := NewFiltersFilter(config, nextFilter, outputs)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	}
 	glog.Fatalf("could not build %s filter plugin", filterType)
 	return nil
@@ -86,13 +165,18 @@ type BaseFilter struct {
 	failTag      string
 	removeFields []field_deleter.FieldDeleter
 	addFields    map[field_setter.FieldSetter]value_render.ValueRender
+
+	filter     Filter
+	nextFilter Filter
+	outputs    []output.Output
 }
 
-func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
+func NewBaseFilter(config map[interface{}]interface{}) *BaseFilter {
 	f := BaseFilter{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
 	}
+
 	if v, ok := config["failTag"]; ok {
 		f.failTag = v.(string)
 	} else {
@@ -120,18 +204,15 @@ func NewBaseFilter(config map[interface{}]interface{}) BaseFilter {
 	} else {
 		f.addFields = nil
 	}
-	return f
+	return &f
 }
 
 func (f *BaseFilter) Pass(event map[string]interface{}) bool {
 	return f.conditionFilter.Pass(event)
 }
 
-func (f *BaseFilter) Process(event map[string]interface{}) (map[string]interface{}, bool) {
+func (f *BaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	return event, true
-}
-func (f *BaseFilter) EmitExtraEvents(*stack.Stack) {
-	return
 }
 func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
@@ -158,4 +239,26 @@ func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map
 		}
 	}
 	return event
+}
+
+func (b *BaseFilter) Process(event map[string]interface{}) {
+	var rst bool
+
+	if b.Pass(event) {
+		event, rst = b.filter.Filter(event)
+		if event == nil {
+			return
+		}
+		event = b.filter.PostProcess(event, rst)
+	}
+
+	if b.nextFilter != nil {
+		b.nextFilter.Process(event)
+	} else {
+		for _, outputPlugin := range b.outputs {
+			if outputPlugin.Pass(event) {
+				outputPlugin.Emit(event)
+			}
+		}
+	}
 }

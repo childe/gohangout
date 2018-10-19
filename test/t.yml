@@ -1,0 +1,56 @@
+inputs:
+    - Stdin:
+        codec: json
+filters:
+    - Add:
+        fields:
+            xxx: xxx
+            yyy: '[client]'
+            zzz: '[stored][message]'
+            '[a][b]': '[stored][message]'
+    - Grok:
+        src: message
+        match:
+            - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
+            - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
+        remove_fields: ['message']
+    - Date:
+        location: 'Asia/Shanghai'
+        src: logtime
+        formats:
+            - 'RFC3339'
+            - '2006-01-02T15:04:05'
+            - '2006-01-02T15:04:05Z07:00'
+            - '2006-01-02T15:04:05Z0700'
+            - '2006-01-02'
+            - 'UNIX'
+            - 'UNIX_MS'
+        remove_fields: ["logtime"]
+    - Filters:
+        if:
+            - '{{if eq .name "childe"}}y{{end}}'
+        filters:
+            - Add:
+                fields:
+                    a: 'xyZ'
+            - Lowercase:
+                fields:
+                    - a
+    - Drop:
+        if:
+            - '{{if .name}}y{{end}}'
+            - '{{if eq .name "null"}}y{{end}}'
+            - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
+    - Filters:
+        if:
+            - '{{if eq .name "liujia"}}y{{end}}'
+        filters:
+            - Add:
+                fields:
+                    b: 'xYz'
+            - Lowercase:
+                fields:
+                    - b
+
+outputs:
+    - Stdout: {}
