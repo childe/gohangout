@@ -32,4 +32,9 @@ expectation = '''{"@timestamp":"2006-01-02T07:04:05Z","a":{"b":null},"b":"xyz","
 {"@timestamp":"2006-01-02T15:04:05","a":{"b":"hello gohangout"},"client":"liujia","stored":{"message":"hello gohangout"},"xxx":"xxx","yyy":"liujia","zzz":"hello gohangout"}
 '''
 
-print output == expectation
+
+for a, b in zip(output.strip().split('\n'), expectation.strip().split('\n')):
+    print '=' * 40
+    print a
+    print b
+    print json.loads(a) == json.loads(b)
