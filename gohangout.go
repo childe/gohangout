@@ -22,7 +22,6 @@ var options = &struct {
 	pprof     bool
 	pprofAddr string
 }{}
-var boxes []*input.InputBox
 
 func init() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
@@ -33,8 +32,8 @@ func init() {
 	flag.Parse()
 }
 
-func buildPluginLink(config map[string]interface{}) []input.Input {
-	inputs := make([]input.Input, 0)
+func buildPluginLink(config map[string]interface{}) []*input.InputBox {
+	boxes := make([]*input.InputBox, 0)
 
 	var inputPlugin input.Input
 	for input_idx, inputI := range config["inputs"].([]interface{}) {
@@ -55,10 +54,11 @@ func buildPluginLink(config map[string]interface{}) []input.Input {
 				inputPlugin = input.GetInput(inputType, inputConfig, nil, outputs)
 			}
 
-			inputs = append(inputs, inputPlugin)
+			box := input.NewInputBox(inputPlugin, outputs)
+			boxes = append(boxes, box)
 		}
 	}
-	return inputs
+	return boxes
 }
 
 func main() {
@@ -68,6 +68,14 @@ func main() {
 		}()
 	}
 
+	config, err := parseConfig(options.config)
+	if err != nil {
+		glog.Fatalf("could not parse config:%s", err)
+	}
+	glog.Infof("%v", config)
+
+	boxes := buildPluginLink(config)
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -75,33 +83,22 @@ func main() {
 			<-c
 			signal.Stop(c)
 			for _, box := range boxes {
+				glog.Info(box)
 				box.Shutdown()
 			}
 			os.Exit(0)
 		}
 	}()
 
-	config, err := parseConfig(options.config)
-	if err != nil {
-		glog.Fatalf("could not parse config:%s", err)
-	}
-	glog.Infof("%v", config)
-
-	inputs := buildPluginLink(config)
-
 	var wg sync.WaitGroup
-	wg.Add(len(inputs))
+	wg.Add(len(boxes))
 	defer wg.Wait()
 
-	boxes = make([]*input.InputBox, len(inputs))
-	for input_idx, inputPlugin := range inputs {
-		box := input.NewInputBox(inputPlugin)
-		boxes[input_idx] = &box
-
+	for _, box := range boxes {
 		go func() {
 			defer wg.Done()
+			glog.Info(box)
 			box.Beat()
 		}()
 	}
-
 }

@@ -1,20 +1,19 @@
 package input
 
-import "github.com/golang/glog"
+import (
+	"github.com/childe/gohangout/output"
+	"github.com/golang/glog"
+)
 
 type InputBox struct {
-	input Input
-
-	stopped bool
+	input   Input
+	outputs []output.Output
 }
 
-func NewInputBox(input Input) InputBox {
-	return InputBox{
-		//config: config,
-
-		input: input,
-
-		stopped: false,
+func NewInputBox(input Input, outputs []output.Output) *InputBox {
+	return &InputBox{
+		input:   input,
+		outputs: outputs,
 	}
 }
 
@@ -23,7 +22,7 @@ func (box *InputBox) Beat() {
 		event map[string]interface{}
 	)
 
-	for box.stopped == false {
+	for {
 		event = box.input.readOneEvent()
 		if event == nil {
 			glog.Info("receive nil message. shutdown...")
@@ -35,19 +34,13 @@ func (box *InputBox) Beat() {
 
 		box.input.GotoNext(event)
 	}
-
-	box.shutdown()
 }
 
 func (box *InputBox) Shutdown() {
-	box.stopped = true
-}
-
-func (box *InputBox) shutdown() {
 	glog.Infof("try to shutdown input %T", box.input)
-	//box.input.Shutdown()
-	//for _, o := range box.outputs {
-	//glog.Infof("try to shutdown output %T", o)
-	//o.Shutdown()
-	//}
+	box.input.Shutdown()
+	for _, o := range box.outputs {
+		glog.Infof("try to shutdown output %T", o)
+		o.Shutdown()
+	}
 }
