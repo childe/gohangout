@@ -34,13 +34,13 @@ func init() {
 }
 
 func buildPluginLink(config map[string]interface{}) []input.Input {
-	outputs := output.BuildOutputs(config)
-	filters := filter.BuildFilters(config, nil, outputs)
-
 	inputs := make([]input.Input, 0)
 
 	var inputPlugin input.Input
 	for input_idx, inputI := range config["inputs"].([]interface{}) {
+		outputs := output.BuildOutputs(config)
+		filters := filter.BuildFilters(config, nil, outputs)
+
 		i := inputI.(map[interface{}]interface{})
 		glog.Infof("input[%d] %v", input_idx+1, i)
 
@@ -77,7 +77,7 @@ func main() {
 			for _, box := range boxes {
 				box.Shutdown()
 			}
-			//os.Exit(0) // leave the program leave itself
+			os.Exit(0)
 		}
 	}()
 
