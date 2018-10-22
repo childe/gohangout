@@ -42,8 +42,7 @@ func getCodecType(header []byte) string {
 	return ""
 }
 
-func (hd *HermesDecoder) Decode(s string) map[string]interface{} {
-	value := []byte(s)
+func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 	offset := 0
 	offset += 4
 

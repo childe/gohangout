@@ -80,9 +80,7 @@ func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
 	if message.Error != nil {
 		return nil
 	}
-	s := string(message.Message.Value)
-	// TODO DecodeString & DecodeBytes
-	return inputPlugin.decoder.Decode(s)
+	return inputPlugin.decoder.Decode(message.Message.Value)
 }
 
 func (inputPlugin *KafkaInput) Shutdown() {
