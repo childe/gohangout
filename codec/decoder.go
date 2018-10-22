@@ -3,7 +3,7 @@ package codec
 import "github.com/golang/glog"
 
 type Decoder interface {
-	Decode(string) map[string]interface{}
+	Decode([]byte) map[string]interface{}
 }
 
 func NewDecoder(t string) Decoder {

@@ -18,8 +18,7 @@ type HermesDecoder2 struct {
 	CRC_LENGTH int
 }
 
-func (hd *HermesDecoder2) Decode(s string) map[string]interface{} {
-	value := []byte(s)
+func (hd *HermesDecoder2) Decode(value []byte) map[string]interface{} {
 	offset := 0
 	offset += 4
 
