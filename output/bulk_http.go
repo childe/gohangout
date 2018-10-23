@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 
@@ -22,6 +23,10 @@ const (
 	DEFAULT_CONCURRENT     = 1
 
 	MAX_BYTE_SIZE_APPLIED_IN_ADVANCE = 1024 * 1024 * 50
+)
+
+var (
+	REMOVE_HTTP_AUTH_REGEXP = regexp.MustCompile(`^(?i)(http(s?)://)[^:]+:[^@]+@`)
 )
 
 type HostSelector interface {
@@ -264,7 +269,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int)
 			continue
 		}
 
-		glog.Infof("try to bulk with host (%s)", host)
+		glog.Infof("try to bulk with host (%s)", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"))
 
 		url := host
 		success, shouldRetry, noRetry, newBulkRequest := p.tryOneBulk(url, bulkRequest)
