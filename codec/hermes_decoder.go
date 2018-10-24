@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"io"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,12 +19,76 @@ type HermesDecoder struct {
 	CRC_LENGTH int
 }
 
-func getCodecType(header []byte) string {
-	offset := 0
+// http://git.dev.sh.ctripcorp.com/hermes/hermes/blob/85593a3d/hermes-core/src/main/java/com/ctrip/hermes/core/message/codec/internal/MessageCodecBinaryV1Handler.java#L185
+func getHeaderProperties(header []byte, thekey string) []byte {
+	var (
+		offset    int = 0
+		length    int
+		firstByte int8
+	)
 
-	firstByte := int8(header[offset])
+	//codec.writeString(msg.getKey());
+	firstByte = int8(header[offset])
 	if firstByte != -1 {
-		length := int(binary.BigEndian.Uint32(header[offset:]))
+		length = int(binary.BigEndian.Uint32(header[offset:]))
+		offset += 4
+		offset += length
+	} else {
+		offset += 1
+	}
+
+	offset += 8 // skip bornTime
+	offset += 4 // skip remaining retries
+
+	//codec.writeString(msg.getBodyCodecType());
+	firstByte = int8(header[offset])
+	if firstByte != -1 {
+		length = int(binary.BigEndian.Uint32(header[offset:]))
+		offset += 4
+		offset += length
+	} else {
+		offset += 1
+	}
+
+	// writeProperties(msg.getDurableProperties(), buf, codec);
+	firstByte = int8(header[offset])
+	if firstByte == -1 {
+		return nil
+	}
+
+	//properties_bytes_length := int(binary.BigEndian.Uint32(header[offset:]))
+	offset += 4
+
+	properties_count := int(binary.BigEndian.Uint32(header[offset:]))
+	offset += 4
+	for i := 0; i < properties_count; i++ {
+		length = int(binary.BigEndian.Uint32(header[i+offset:]))
+		i += 4
+		key := string(header[i+offset : i+offset+length])
+		i += length
+
+		length = int(binary.BigEndian.Uint32(header[offset:]))
+		i += 4
+		value := header[i+offset : i+offset+length]
+		i += length
+
+		if key == thekey {
+			return value
+		}
+	}
+	return nil
+}
+
+func getCodecType(header []byte) string {
+	var (
+		offset    int = 0
+		length    int
+		firstByte int8
+	)
+
+	firstByte = int8(header[offset])
+	if firstByte != -1 {
+		length = int(binary.BigEndian.Uint32(header[offset:]))
 		offset += 4
 		offset += length
 	} else {
@@ -34,7 +99,7 @@ func getCodecType(header []byte) string {
 
 	firstByte = int8(header[offset])
 	if firstByte != -1 {
-		length := int(binary.BigEndian.Uint32(header[offset:]))
+		length = int(binary.BigEndian.Uint32(header[offset:]))
 		offset += 4
 		return string(header[offset : offset+length])
 	}
@@ -59,6 +124,7 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 	offset += 4
 
 	codecType := getCodecType(value[offset : offset+headerLength])
+	timestamp, parse_timestamp_err := strconv.ParseInt(string(getHeaderProperties(value[offset:offset+headerLength], "APP.@timestamp")), 10, 64)
 
 	offset += headerLength
 
@@ -85,6 +151,13 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 			}
 		} else {
 			glog.Fatalf("%s unknown codec type", codecType)
+		}
+	}
+
+	if parse_timestamp_err == nil {
+		return map[string]interface{}{
+			"@timestamp": timestamp,
+			"_source":    value,
 		}
 	}
 
