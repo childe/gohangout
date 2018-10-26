@@ -54,10 +54,6 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 		plugin.sep = sep.(string)
 	}
 
-	if sepASCII, ok := config["sepASCII"]; ok {
-		plugin.sep = string(sepASCII.(int))
-	}
-
 	if plugin.sep == "" {
 		glog.Fatal("sep must be set in split filter plugin")
 	}
