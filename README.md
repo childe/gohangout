@@ -86,9 +86,124 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
 
 ## INPUT
 
-### 
+### Stdin
+
+```
+Stdin:
+    codec: json
+```
+
+从标准输入读取数据.
+
+#### codec
+目前有json/plain两种.
+
+- json 对数据做 json 解析, 如果解析失败, 则将整条数据写到 message 字段, 并添加当前时间到 `@timestamp` 字段. 如果解析成功而且数据中没有 `@timestamp` 字段, 则添加当前时间到 `@timestamp` 字段.
+- plain 将整条数据写到 message 字段, 并添加当前时间到 `@timestamp` 字段.
+
+### Kafka
+
+```
+Kafka:
+    topic:
+        weblog: 1
+    codec: json
+    consumer_settings:
+        bootstrap.servers: "10.0.0.100:9092,10.0.0.101:9092"
+        group.id: gohangout.weblog
+        max.partition.fetch.bytes: 10485760
+        auto.commit.interval.ms: 5000
+```
+
+`weblog: 1` 是指开一个goroutine去消费 weblog 这个topic. 可以配置多个topic, 多个goroutine, 但我这边在实践中都是使用多进程(docker), 而不是多goroutine.
+
+bootstrap.servers group.id 必须配置
+
+
+auto.commit.interval.ms 是指多久commit一次offset, 太长的话有可能造成数据重复消费,太短的话可能会对kafka千万太大压力.
+
+max.partition.fetch.bytes 是指kafka client一次从kafka server读取多少数据,默认是10MB
+
+更多配置参见 [https://github.com/childe/healer/blob/dev/config.go#L40](https://github.com/childe/healer/blob/dev/config.go#L40)
 
 ## OUTPUT
+
+### Stdout
+
+```
+Stdout:
+    if:
+        - '{{if .error}}y{{end}}'
+```
+
+输出到标准输出
+
+### Elasticsearch
+
+```
+Elasticsearch:
+    hosts:
+        - http://10.0.0.100:9200
+        - http://10.0.0.101:9200
+    index: 'web-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
+    index_type: "logs"
+    bulk_actions: 5000
+    routing: [domain]
+    id: [orderid]
+    bulk_size: 20
+    flush_interval: 60
+    concurrent: 3
+    compress: false
+    retry_response_code: [401, 502]
+```
+
+#### bulk_actions
+
+多少次提交一次Bulk请求到ES集群. 默认 5000
+
+#### bulk_size
+
+单位是MB, 多少大写提交一次到ES. 默认 15MB
+
+#### flush_interval
+
+单位秒, 间隔多少时间提交一次到ES. 默认 30
+
+#### concurrent
+
+bulk 的goroutine 最大值, 默认1
+
+举例来说, 如果Bulk 1W条数据到ES需要5秒, 1W条数据从Input处理完所有Filters然后到Output也需要5秒. 那么把concurrent设置为1就合适, Bulk是异步的, 这5秒钟gohangout会去Filter接下来的数据.
+
+如果Bulk 1W条数据需要10秒, Filter只要5秒, 那么concurrent设置为2可以达到更大的吞吐量.
+
+#### routing
+
+默认为空, 不做routing
+
+#### id
+默认为空, 不设置id (文档id由ES生成)
+
+#### compress
+
+默认 true, http请求时做zip压缩
+
+#### retry_response_code
+
+默认 [401, 502] , 当Bulk请求的返回码是401或者502时, 会重试.
+
+#### 两个额外的配置
+
+```
+source_field: _source
+bytes_source_field: _source
+```
+
+没有这个配置的时候, 会把日志做 json.dump, 拿到dump后的[]byte写ES. 如果source_field或者bytes_source_field配置了, 则直接把配置的字段(上面的例子是 `_source` 字段)做为[]byte写到ES.
+
+bytes_source_field优先级高于source_field.  bytes_source_field是指字段是[]byte类型, source_field是指字段是string类型
+
+增加这个配置的来由是这样的. 上游数据源已经是 json.dump之后的[]byte数据, 做一次json.parse, 然后再json.dump, 耗费了大量CPU做无用功.
 
 ## FILTER
 
