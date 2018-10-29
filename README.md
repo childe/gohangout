@@ -1,4 +1,4 @@
-之前因为[logstash](https://www.elastic.co/products/logstash)处理数据的效率比较低, 用java模仿Logstash写了一个java版本的 [https://github.com/childe/hangout](https://github.com/childe/hangout).  **不知道现在Logstash** 效率怎么样了, 很久不用了.
+之前因为 [logstash](https://www.elastic.co/products/logstash) 处理数据的效率比较低, 用 java 模仿 Logstash 写了一个java版本的 [https://github.com/childe/hangout](https://github.com/childe/hangout).  不知道现在 Logstash 效率怎么样了, 很久不用了.
 
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
 
