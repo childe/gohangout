@@ -2,6 +2,25 @@
 
 gohangout --config config.yml
 
+### 日志
+
+日志模块使用 github.com/golang/glog , 几个常用参数如下:
+
+- -logtostderr
+日志打印出标准错误
+
+-  -v 5
+设置日志级别.  我这边一般设置到 5 , 数字越大, 日志级别越详细.
+
+### pprof debug
+
+- -pprof=true
+默认不开启 pprof
+
+- -pprof-address 127.0.0.1:8899
+pprof 的http地址
+
+
 ## 一个简单的配置
 
 ```
@@ -372,11 +391,40 @@ LinkMetric:
 
 和 LinkMetric 类似, 但最后一个字段需要是数字类型, 对它进行统计.
 
+举例:
+
+```
+- LinkStatsMetric:
+    fieldsLink: 'domain->serverip->status_code->response_time'
+    timestamp: '@timestamp'
+    reserveWindow: 1800
+    batchWindow: 60
+    accumulateMode: separate
+```
+
 ### Lowercase
+
+```
+Lowercase:
+  fields: ['domain', 'url']
+```
 
 ### Remove
 
+```
+Remove:
+  fields: ['domain', 'url']
+```
+
 ### Rename
+
+```
+Rename:
+  fields:
+    host: hostname
+    serverIP: server_ip
+```
+
 
 ### Split
 
@@ -416,4 +464,21 @@ sep: "\x01"
 
 如果分割后的某字段为空, 刚不放后 event 中, 默认 true
 
+### Translate
+
+字段翻译. 字典使用 yaml 格式. 配置例子如下:
+
+```
+Translate:
+    dictionary_path: http://git.corp.com/childe/dict/raw/master/ip2appid.yml
+    refresh_interval: 3600
+    source: server_ip
+    target: app_id
+```
+
 ### Uppercase
+
+```
+Uppercase:
+  fields: ['loglevel']
+```
