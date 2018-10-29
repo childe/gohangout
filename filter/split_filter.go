@@ -32,7 +32,7 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 		maxSplit:    -1,
 	}
 
-	if ignoreBlank, ok := config["ignoreBlank"]; ok {
+	if ignoreBlank, ok := config["ignore_blank"]; ok {
 		plugin.ignoreBlank = ignoreBlank.(bool)
 	}
 
