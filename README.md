@@ -82,7 +82,7 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
 例:
 
 ```
-- Grok:
+Grok:
     src: message
     match:
         - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
@@ -92,7 +92,7 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
       grok_result: 'ok'
 ```
 
-当Filter执行成功时, 可以添加一些字段. 如果Filter失败, 则忽略.
+当Filter执行成功时, 可以添加一些字段. 如果Filter失败, 则忽略. 下面具体的Filter说明中, 提到的"返回false", 就是指Filter失败
 
 #### remove_fields
 
@@ -103,7 +103,7 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
 当Filter执行失败时, 可以添加内容到 `tags` 字段. 如果Filter成功, 则忽略. 如果 tags 字段已经存在, 则将 tags 设置为数组并添加新的数据.
 
 ```
-- Grok:
+Grok:
     src: message
     match:
         - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
@@ -187,6 +187,8 @@ Date:
     remove_fields: ["logtime"]
 ```
 
+如果源字段不存在, 返回 false. 如果所有 formats 都匹配失败, 返回 false
+
 #### src
 
 源字段, 必须配置.
@@ -226,21 +228,21 @@ Drop:
 目的是为了一个 if 条件后跟多个Filter
 
 ```
-  - Filters:
-      if:
-          - '{{if eq .name "childe"}}y{{end}}'
-      filters:
-          - Add:
-              fields:
-                  a: 'xyZ'
-          - Lowercase:
-              fields: ['url', 'domain']
+Filters:
+    if:
+        - '{{if eq .name "childe"}}y{{end}}'
+    filters:
+        - Add:
+            fields:
+                a: 'xyZ'
+        - Lowercase:
+            fields: ['url', 'domain']
 ```
 
 ### Grok
 
 ```
-- Grok:
+Grok:
     src: message
     match:
         - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
@@ -249,13 +251,126 @@ Drop:
     remove_fields: ['message']
 ```
 
+源字段不存在, 返回 false. 所有格式不匹配, 返回 false
+
+#### src
+
+源字段, 默认 message
+
+#### match
+
+依次匹配, 直到有一个成功.
+
+#### ignore_blank
+
+默认 true. 如果匹配到的字段为空字符串, 则忽略这个字段. 如果 ignore_blank: false , 则添加此字段, 其值为空字符串.
+
 ### IPIP
+
+根据 IP 信息补充地址信息, 会生成如下字段.
+
+country_name province_name city_name 
+
+下面四个字段视情况生成, 可能会缺失. latitude longitude location country_code
+
+如果没有源字段, 或者寻找失败, 返回 false
+
+```
+IPIP:
+    src: clientip
+    target: geoip
+    database: /opt/gohangout/mydata4vipday2.datx
+```
+
+#### database
+
+数据库地址. 数据可以在 [https://www.ipip.net/](https://www.ipip.net/) 下载
+
+#### src
+
+源字段, 必须设置
+
+#### target
+
+目标字段, 如果不设置, 则将IPIP Filter生成的所有字段写入到根一层.
+
 
 ### Json
 
+如果源字段不存在, 或者Json.parse 失败, 返回 false
+
+```
+Json:
+    field: request
+    target: request_fields
+```
+
+#### field
+
+源字段
+
+#### target
+
+目标字段, 如果不设置, 则将Json Filter生成的所有字段写入到根一层.
+
 ### LinkMetric
 
+做简单的流式统计, 统计多个字段之间的聚合数据.
+
+```
+LinkMetric:
+    fieldsLink: 'domain->serverip->status_code'
+    timestamp: '@timestamp'
+    reserveWindow: 1800
+    batchWindow: 600
+    windowOffset: 0
+    accumulateMode: cumulative
+    drop_original_event: false
+```
+
+每600s输出一次, 输出结果形式如下:
+
+```
+{"@timestamp":1540794825600,"domain":"www.ctrip.com","serverip":"10.0.0.100","status_code":"200",count:10}
+{"@timestamp":1540794825600,"domain":"www.ctrip.com","serverip":"10.0.0.200","status_code":"404",count:1}
+...
+```
+
+#### fieldsLink
+
+字段以 `->` 间隔, 统计一定时间内的聚合信息
+
+#### timestamp
+
+使用哪个字段做时间戳. 这个字段必须是通过 Date Filter 生成的(保证是 time.Time 类型)
+
+#### batchWindow
+
+多长时间内的数据聚合在一起, 单独是秒. 每隔X秒输出一次. 如果设置为1800 (半小时), 那么延时半小时以上的数据会被丢弃.
+
+#### reserveWindow
+
+保留多久的数据, 单独是秒. 因为数据可能会有延时, 所以需要额外保存一定时间的数据在内存中.
+
+#### accumulateMode
+
+两种聚合模式. 
+
+1. cumulative 累加模式. 假设batchWindow 是300, reserveWindow 是 1800. 在每5分钟时, 会输出过去5分钟的一批聚合数据, 同时因为延时的存在, 可能还会有(过去10分钟-过去5分钟)之间的一批数据. cumulative 配置下, 会保留(过去10分钟-过去5分钟)之前count值的内存中, 新的数据进来时, 累加到一起, 下个5分钟时, 输出一个累加值.
+
+2. separate 独立模式. 每个5分钟输出之后, 把各时间段的值清为0, 从头计数.
+
+#### windowOffset
+
+延时输出, 默认为0. 如果设置 windowOffset 为1 , 那么每个5分钟输出时, 最近的一个window数据保留不会输出.
+
+#### drop_original_event
+
+是否丢弃原始数据, 默认为 false. 如果设置为true, 则丢弃原始数据, 只输出聚合统计数据.
+
 ### LinkStatsMetric
+
+和 LinkMetric 类似, 但最后一个字段需要是数字类型, 对它进行统计.
 
 ### Lowercase
 
