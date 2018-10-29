@@ -1,5 +1,6 @@
 ## RUN
 
+<<<<<<< HEAD
 gohangout --config config.yml
 
 ## 一个简单的配置
@@ -37,12 +38,17 @@ outputs:
         flush_interval: 60
 ```
 
+=======
+## 一个简单的配置
+
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
 ## 字段格式约定
 
 以 Add Filter 举例
 
 ```
 fields:
+<<<<<<< HEAD
     type: 'weblog'
     hostname: '[host]'
     name: '{{.firstname}}.{{.lastname}}'
@@ -65,6 +71,14 @@ fields:
 Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就是字面值.
 
 
+=======
+    xxx: xxx
+    yyy: '[client]'
+    zzz: '[stored][message]'
+    '[a][b]': '[stored][message]'
+```
+
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
 ## INPUT
 
 ### 
@@ -79,6 +93,7 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
 
 #### add_fields
 
+<<<<<<< HEAD
 例:
 
 ```
@@ -113,6 +128,12 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
       grok_result: 'ok'
     failTag: grokfail
 
+=======
+#### remove_fields
+
+#### failTag
+
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
 #### overwrite
 
 配置的新字段要不要覆盖之前已有的字段, 默认 true
@@ -124,14 +145,22 @@ Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就�
 Add:
   overwrite: true
   fields:
+<<<<<<< HEAD
       name: childe
+=======
+      name: liujia
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
       hostname: '[host]'
       logtime: '{{.date}} {{.{time}}
       message: '[stored][message]'
       '[a][b]': '[stored][message]'
 ```
 
+<<<<<<< HEAD
 1. 增加 name 字段, 内容是 childe
+=======
+1. 增加 name 字段, 内容是 liujia
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
 2. 增加 hostname 字段, 内容是原 host 字段中的内容. (相当于改名)
 3. 增加 logtime 字段, 内容是 date 和 time 两个字段的拼接
 4. 增加 message 字段, 是 event.stored.message 中的内容
@@ -217,12 +246,17 @@ Date:
 Drop:
     if:
         - '{{if .name}}y{{end}}'
+<<<<<<< HEAD
         - '{{if eq .name "childe"}}y{{end}}'
+=======
+        - '{{if eq .name "liujia"}}y{{end}}'
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
         - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
 ```
 
 ### Filters
 
+<<<<<<< HEAD
 目的是为了一个 if 条件后跟多个Filter
 
 ```
@@ -249,6 +283,10 @@ Drop:
     remove_fields: ['message']
 ```
 
+=======
+### Grok
+
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
 ### IPIP
 
 ### Json
@@ -271,7 +309,11 @@ Split:
   sep: "\t"
   maxSplit: -1
   fields: ['logtime', 'hostname', 'uri', 'return_code']
+<<<<<<< HEAD
   ignore_blank: true
+=======
+  ignoreBlank: true
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
   overwrite: true
 ```
 
@@ -297,7 +339,11 @@ sep: "\x01"
 
 如果分割后的字符串数组长度与 fields 长度不一样, 返回false
 
+<<<<<<< HEAD
 #### ignore_blank
+=======
+#### ignoreBlank
+>>>>>>> 042582bffa7582ac24b223f13d0690699821ec5b
 
 如果分割后的某字段为空, 刚不放后 event 中, 默认 true
 
