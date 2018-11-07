@@ -126,6 +126,7 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 	timestamp, parse_timestamp_err := strconv.ParseInt(string(getHeaderProperties(value[offset:offset+headerLength], "APP.@timestamp")), 10, 64)
 
 	if parse_timestamp_err == nil {
+		value = value[offset+headerLength : len(value)-hd.CRC_LENGTH]
 		return map[string]interface{}{
 			"@timestamp": timestamp,
 			"_source":    value,
