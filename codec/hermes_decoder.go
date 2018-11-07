@@ -123,13 +123,16 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 	//bodyLength := binary.BigEndian.Uint32(value[offset:])
 	offset += 4
 
-	codecType := getCodecType(value[offset : offset+headerLength])
 	timestamp, parse_timestamp_err := strconv.ParseInt(string(getHeaderProperties(value[offset:offset+headerLength], "APP.@timestamp")), 10, 64)
 
-	offset += headerLength
+	if parse_timestamp_err == nil {
+		return map[string]interface{}{
+			"@timestamp": timestamp,
+			"_source":    value,
+		}
+	}
 
-	value = value[offset : len(value)-hd.CRC_LENGTH]
-
+	codecType := getCodecType(value[offset : offset+headerLength])
 	codeAndCompress := strings.SplitN(codecType, ",", 2)
 	if len(codeAndCompress) == 2 {
 		if codeAndCompress[1] == "gzip" {
@@ -154,12 +157,9 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 		}
 	}
 
-	if parse_timestamp_err == nil {
-		return map[string]interface{}{
-			"@timestamp": timestamp,
-			"_source":    value,
-		}
-	}
+	offset += headerLength
+
+	value = value[offset : len(value)-hd.CRC_LENGTH]
 
 	rst := make(map[string]interface{})
 	d := json.NewDecoder(bytes.NewReader(value))
