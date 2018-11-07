@@ -132,6 +132,8 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 		}
 	}
 
+	glog.Errorf("could not get timestamp: %s", parse_timestamp_err)
+
 	codecType := getCodecType(value[offset : offset+headerLength])
 	codeAndCompress := strings.SplitN(codecType, ",", 2)
 	if len(codeAndCompress) == 2 {
