@@ -69,7 +69,7 @@ func getHeaderProperties(header []byte, thekey string) []byte {
 
 		length = int(binary.BigEndian.Uint32(header[offset:]))
 		i += 4
-		value := header[i+offset : i+offset+length]
+		value := header[i+offset : i+offset+length-1]
 		i += length
 
 		if key == thekey {
