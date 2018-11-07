@@ -32,7 +32,7 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 		maxSplit:    -1,
 	}
 
-	if ignoreBlank, ok := config["ignoreBlank"]; ok {
+	if ignoreBlank, ok := config["ignore_blank"]; ok {
 		plugin.ignoreBlank = ignoreBlank.(bool)
 	}
 
@@ -52,10 +52,6 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 
 	if sep, ok := config["sep"]; ok {
 		plugin.sep = sep.(string)
-	}
-
-	if sepASCII, ok := config["sepASCII"]; ok {
-		plugin.sep = string(sepASCII.(int))
 	}
 
 	if plugin.sep == "" {

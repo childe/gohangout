@@ -87,6 +87,12 @@ func BuildFilter(filterType string, config map[interface{}]interface{}, nextFilt
 		f.BaseFilter.nextFilter = nextFilter
 		f.outputs = outputs
 		return f
+	case "Uppercase":
+		f := NewUppercaseFilter(config)
+		f.BaseFilter.filter = f
+		f.BaseFilter.nextFilter = nextFilter
+		f.outputs = outputs
+		return f
 	case "Split":
 		f := NewSplitFilter(config)
 		f.BaseFilter.filter = f

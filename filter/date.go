@@ -158,7 +158,7 @@ func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	if srcValue, ok := config["src"]; ok {
 		plugin.src = srcValue.(string)
 	} else {
-		plugin.src = "message"
+		glog.Fatal("src must be set in date filter plugin")
 	}
 	plugin.srcVR = value_render.GetValueRender2(plugin.src)
 
