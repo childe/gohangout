@@ -238,7 +238,47 @@ func (c *ContainsAnyCondition) Pass(event map[string]interface{}) bool {
 	return false
 }
 
+type MatchCondition struct {
+	pathes []string
+	regexp *regexp.Regexp
+}
+
+func NewMatchCondition(pathes []string, pattern string) *MatchCondition {
+	regexp, err := regexp.Compile(pattern)
+	if err != nil {
+		glog.Fatalf("could not build regexp from %s: %s", pattern, err)
+	}
+	return &MatchCondition{pathes, regexp}
+}
+
+func (c *MatchCondition) Pass(event map[string]interface{}) bool {
+	var (
+		o      map[string]interface{} = event
+		length int                    = len(c.pathes)
+	)
+
+	for _, path := range c.pathes[:length-1] {
+		if v, ok := o[path]; ok {
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				o = v.(map[string]interface{})
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	if v, ok := o[c.pathes[length-1]]; ok {
+		if reflect.TypeOf(v).Kind() == reflect.String {
+			return c.regexp.MatchString(v.(string))
+		}
+	}
+	return false
+}
+
 func NewCondition(c string) Condition {
+
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
 		return NewTemplateConditionFilter(c)
 	}
@@ -327,6 +367,18 @@ func NewCondition(c string) Condition {
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
 		return NewContainsAnyCondition(pathes, value)
+	}
+
+	// Match
+	if matched, _ := regexp.MatchString(`^Match\(.*\)$`, c); matched {
+		pathes := make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "Match("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value := pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+		return NewMatchCondition(pathes, value)
 	}
 
 	glog.Fatalf("could not build Condition from %s", c)
