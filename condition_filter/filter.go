@@ -1,10 +1,12 @@
 package condition_filter
 
 import (
+	"math/rand"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
@@ -277,6 +279,19 @@ func (c *MatchCondition) Pass(event map[string]interface{}) bool {
 	return false
 }
 
+type RandomCondition struct {
+	value int
+}
+
+func NewRandomCondition(value int) *RandomCondition {
+	rand.Seed(time.Now().UnixNano())
+	return &RandomCondition{value}
+}
+
+func (c *RandomCondition) Pass(event map[string]interface{}) bool {
+	return rand.Intn(c.value) == 0
+}
+
 func NewCondition(c string) Condition {
 
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
@@ -379,6 +394,16 @@ func NewCondition(c string) Condition {
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
 		return NewMatchCondition(pathes, value)
+	}
+
+	// Random
+	if matched, _ := regexp.MatchString(`^Random\(.*\)$`, c); matched {
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "Random("), ")")
+		value, err := strconv.ParseInt(c, 0, 32)
+		if err != nil {
+			glog.Fatalf("%s could not convert to int", c, err)
+		}
+		return NewRandomCondition(int(value) - 1)
 	}
 
 	glog.Fatalf("could not build Condition from %s", c)
