@@ -98,10 +98,82 @@ func (c *EQCondition) Pass(event map[string]interface{}) bool {
 	return false
 }
 
+type HasPrefixCondition struct {
+	pathes []string
+	prefix string
+}
+
+func NewHasPrefixCondition(pathes []string, prefix string) *HasPrefixCondition {
+	return &HasPrefixCondition{pathes, prefix}
+}
+
+func (c *HasPrefixCondition) Pass(event map[string]interface{}) bool {
+	var (
+		o      map[string]interface{} = event
+		length int                    = len(c.pathes)
+	)
+
+	for _, path := range c.pathes[:length-1] {
+		if v, ok := o[path]; ok {
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				o = v.(map[string]interface{})
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	if v, ok := o[c.pathes[length-1]]; ok {
+		if reflect.TypeOf(v).Kind() == reflect.String {
+			return strings.HasPrefix(v.(string), c.prefix)
+		}
+	}
+	return false
+}
+
+type HasSuffixCondition struct {
+	pathes []string
+	suffix string
+}
+
+func NewHasSuffixCondition(pathes []string, suffix string) *HasSuffixCondition {
+	return &HasSuffixCondition{pathes, suffix}
+}
+
+func (c *HasSuffixCondition) Pass(event map[string]interface{}) bool {
+	var (
+		o      map[string]interface{} = event
+		length int                    = len(c.pathes)
+	)
+
+	for _, path := range c.pathes[:length-1] {
+		if v, ok := o[path]; ok {
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				o = v.(map[string]interface{})
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	if v, ok := o[c.pathes[length-1]]; ok {
+		if reflect.TypeOf(v).Kind() == reflect.String {
+			return strings.HasSuffix(v.(string), c.suffix)
+		}
+	}
+	return false
+}
+
 func NewCondition(c string) Condition {
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
 		return NewTemplateConditionFilter(c)
 	}
+
+	// Exist
 	if matched, _ := regexp.MatchString(`^Exist\(.*\)$`, c); matched {
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "Exist("), ")")
 		pathes := make([]string, 0)
@@ -110,6 +182,8 @@ func NewCondition(c string) Condition {
 		}
 		return NewExistCondition(pathes)
 	}
+
+	// EQ
 	if matched, _ := regexp.MatchString(`^EQ\(.*\)$`, c); matched {
 		pathes := make([]string, 0)
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "EQ("), ")")
@@ -135,6 +209,30 @@ func NewCondition(c string) Condition {
 			glog.Fatalf("%s could not convert to int", value, err)
 		}
 		return NewEQCondition(pathes, int(s))
+	}
+
+	// HasPrefix
+	if matched, _ := regexp.MatchString(`^HasPrefix\(.*\)$`, c); matched {
+		pathes := make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "HasPrefix("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value := pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+		return NewHasPrefixCondition(pathes, value)
+	}
+
+	// HasSuffix
+	if matched, _ := regexp.MatchString(`^HasSuffix\(.*\)$`, c); matched {
+		pathes := make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "HasSuffix("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value := pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+		return NewHasSuffixCondition(pathes, value)
 	}
 
 	glog.Fatalf("could not build Condition from %s", c)
