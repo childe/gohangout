@@ -292,7 +292,48 @@ func (c *RandomCondition) Pass(event map[string]interface{}) bool {
 	return rand.Intn(c.value) == 0
 }
 
+type BeforeCondition struct {
+	d time.Duration
+}
+
+func NewBeforeCondition(value string) *BeforeCondition {
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		glog.Fatalf("could not parse %s to duration: %s", value, err)
+	}
+	return &BeforeCondition{d}
+}
+
+func (c *BeforeCondition) Pass(event map[string]interface{}) bool {
+	timestamp := event["@timestamp"]
+	if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
+		return false
+	}
+	return timestamp.(time.Time).Before(time.Now().Add(c.d))
+}
+
+type AfterCondition struct {
+	d time.Duration
+}
+
+func NewAfterCondition(value string) *AfterCondition {
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		glog.Fatalf("could not parse %s to duration: %s", value, err)
+	}
+	return &AfterCondition{d}
+}
+
+func (c *AfterCondition) Pass(event map[string]interface{}) bool {
+	timestamp := event["@timestamp"]
+	if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
+		return false
+	}
+	return timestamp.(time.Time).After(time.Now().Add(c.d))
+}
+
 func NewCondition(c string) Condition {
+	original_c := c
 
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
 		return NewTemplateConditionFilter(c)
@@ -406,7 +447,19 @@ func NewCondition(c string) Condition {
 		return NewRandomCondition(int(value) - 1)
 	}
 
-	glog.Fatalf("could not build Condition from %s", c)
+	// Before
+	if matched, _ := regexp.MatchString(`^Before\(.*\)$`, c); matched {
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "Before("), ")")
+		return NewBeforeCondition(c)
+	}
+
+	// After
+	if matched, _ := regexp.MatchString(`^After\(.*\)$`, c); matched {
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "After("), ")")
+		return NewAfterCondition(c)
+	}
+
+	glog.Fatalf("could not build Condition from %s", original_c)
 	return nil
 }
 
