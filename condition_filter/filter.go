@@ -3,9 +3,11 @@ package condition_filter
 import (
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/childe/gohangout/value_render"
+	"github.com/golang/glog"
 )
 
 type Condition interface {
@@ -63,17 +65,79 @@ func (c *ExistCondition) Pass(event map[string]interface{}) bool {
 	return false
 }
 
+type EQCondition struct {
+	pathes []string
+	value  interface{}
+}
+
+func NewEQCondition(pathes []string, value interface{}) *EQCondition {
+	return &EQCondition{pathes, value}
+}
+
+func (c *EQCondition) Pass(event map[string]interface{}) bool {
+	var (
+		o      map[string]interface{} = event
+		length int                    = len(c.pathes)
+	)
+
+	for _, path := range c.pathes[:length-1] {
+		if v, ok := o[path]; ok {
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				o = v.(map[string]interface{})
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	if v, ok := o[c.pathes[length-1]]; ok {
+		return v == c.value
+	}
+	return false
+}
+
 func NewCondition(c string) Condition {
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
 		return NewTemplateConditionFilter(c)
 	}
 	if matched, _ := regexp.MatchString(`^Exist\(.*\)$`, c); matched {
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "Exist("), ")")
 		pathes := make([]string, 0)
-		for _, p := range strings.Split(c[6:len(c)-1], ",") {
+		for _, p := range strings.Split(c, ",") {
 			pathes = append(pathes, strings.Trim(p, " "))
 		}
 		return NewExistCondition(pathes)
 	}
+	if matched, _ := regexp.MatchString(`^EQ\(.*\)$`, c); matched {
+		pathes := make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "EQ("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value := pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+
+		if value[0] == '"' && value[len(value)-1] == '"' {
+			value = value[1 : len(value)-1]
+			return NewEQCondition(pathes, value)
+		}
+		if strings.Contains(value, ".") {
+			s, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				glog.Fatalf("%s could not convert to float", value, err)
+			}
+			return NewEQCondition(pathes, s)
+		}
+		s, err := strconv.ParseInt(value, 0, 32)
+		if err != nil {
+			glog.Fatalf("%s could not convert to int", value, err)
+		}
+		return NewEQCondition(pathes, int(s))
+	}
+
+	glog.Fatalf("could not build Condition from %s", c)
 	return nil
 }
 
