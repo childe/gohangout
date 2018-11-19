@@ -168,6 +168,76 @@ func (c *HasSuffixCondition) Pass(event map[string]interface{}) bool {
 	return false
 }
 
+type ContainsCondition struct {
+	pathes    []string
+	substring string
+}
+
+func NewContainsCondition(pathes []string, substring string) *ContainsCondition {
+	return &ContainsCondition{pathes, substring}
+}
+
+func (c *ContainsCondition) Pass(event map[string]interface{}) bool {
+	var (
+		o      map[string]interface{} = event
+		length int                    = len(c.pathes)
+	)
+
+	for _, path := range c.pathes[:length-1] {
+		if v, ok := o[path]; ok {
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				o = v.(map[string]interface{})
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	if v, ok := o[c.pathes[length-1]]; ok {
+		if reflect.TypeOf(v).Kind() == reflect.String {
+			return strings.Contains(v.(string), c.substring)
+		}
+	}
+	return false
+}
+
+type ContainsAnyCondition struct {
+	pathes    []string
+	substring string
+}
+
+func NewContainsAnyCondition(pathes []string, substring string) *ContainsAnyCondition {
+	return &ContainsAnyCondition{pathes, substring}
+}
+
+func (c *ContainsAnyCondition) Pass(event map[string]interface{}) bool {
+	var (
+		o      map[string]interface{} = event
+		length int                    = len(c.pathes)
+	)
+
+	for _, path := range c.pathes[:length-1] {
+		if v, ok := o[path]; ok {
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				o = v.(map[string]interface{})
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+
+	if v, ok := o[c.pathes[length-1]]; ok {
+		if reflect.TypeOf(v).Kind() == reflect.String {
+			return strings.ContainsAny(v.(string), c.substring)
+		}
+	}
+	return false
+}
+
 func NewCondition(c string) Condition {
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
 		return NewTemplateConditionFilter(c)
@@ -233,6 +303,30 @@ func NewCondition(c string) Condition {
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
 		return NewHasSuffixCondition(pathes, value)
+	}
+
+	// Contains
+	if matched, _ := regexp.MatchString(`^Contains\(.*\)$`, c); matched {
+		pathes := make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "Contains("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value := pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+		return NewContainsCondition(pathes, value)
+	}
+
+	// ContainsAny
+	if matched, _ := regexp.MatchString(`^ContainsAny\(.*\)$`, c); matched {
+		pathes := make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "ContainsAny("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value := pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+		return NewContainsAnyCondition(pathes, value)
 	}
 
 	glog.Fatalf("could not build Condition from %s", c)
