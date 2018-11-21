@@ -226,6 +226,13 @@ func parseBoolTree(c string) (*OPNode, error) {
 					condition_start_pos = i
 					break
 				} else {
+					if len(node_stack) > 0 {
+						last_node := node_stack[len(node_stack)-1]
+						if last_node.op == OP_NONE {
+							return nil, fmt.Errorf("successive conditions: column %d", i)
+						}
+					}
+
 					state = PARSE_STATE_IN_ONE_CONDITION
 					condition_start_pos = i
 					break
