@@ -76,6 +76,49 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
+	// parse blank before !
+
+	condition = `EQ(name,first,"jia") && !EQ(name,last,"liu")`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	// successive !
+	condition = `EQ(name,first,"jia") && !!EQ(name,last,"liu")`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
 	// parse error
 
 	condition = `EQ(name,first,"jia") & EQ(name,last,"liu")`
@@ -91,6 +134,18 @@ func TestParseCondition(t *testing.T) {
 	}
 
 	condition = `EQ(name,first,"jia") && EQ(name,last,"liu)`
+	_, err = parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error: %s", condition, err)
+	}
+
+	condition = `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error: %s", condition, err)
+	}
+
+	condition = `EQ(name,first,"jia") && && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
 		t.Errorf("parse %s should has error: %s", condition, err)
