@@ -164,7 +164,6 @@ func parseBoolTree(c string) (*OPNode, error) {
 		condition_start_pos int       = 0
 		node_stack          []*OPNode = make([]*OPNode, 0)
 		err                 error
-		//last_element_type   int = OP_NONE
 	)
 
 	for i < length {
@@ -188,6 +187,12 @@ func parseBoolTree(c string) (*OPNode, error) {
 					if c[i+1] != '|' {
 						return nil, fmt.Errorf("column %d illegal |", i)
 					}
+
+					last_node := node_stack[len(node_stack)-1]
+					if last_node.left == nil && last_node.op != OP_NONE {
+						return nil, fmt.Errorf("Expecting condition: column %d", i)
+					}
+
 					op = OP_OR
 					n := &OPNode{
 						op:        op,
@@ -203,6 +208,12 @@ func parseBoolTree(c string) (*OPNode, error) {
 					if c[i+1] != '&' {
 						return nil, fmt.Errorf("column %d illegal &", i)
 					}
+
+					last_node := node_stack[len(node_stack)-1]
+					if last_node.left == nil && last_node.op != OP_NONE {
+						return nil, fmt.Errorf("Expecting condition: column %d", i)
+					}
+
 					op = OP_AND
 					n := &OPNode{
 						op:        op,
