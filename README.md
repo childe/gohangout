@@ -222,9 +222,9 @@ if 的语法如下
 ```
 Drop:
     if:
-        - '{{if .name}}y{{end}}'
-        - '{{if eq .name "childe"}}y{{end}}'
-        - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
+      - '{{if .name}}y{{end}}'
+      - '{{if eq .name "childe"}}y{{end}}'
+      - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
 ```
 
 if 数组中的条件是 AND 关系, 需要全部满足.
@@ -234,8 +234,8 @@ if 数组中的条件是 AND 关系, 需要全部满足.
 ```
 Drop:
     if:
-				- 'EQ(name,"childe")'
-				- 'Before(-24h) || After(24h)'
+      - 'EQ(name,"childe")'
+      - 'Before(-24h) || After(24h)'
 ```
 
 也支持括号, 像 `Exits(a) && (Exits(b) || Exits(c))`
