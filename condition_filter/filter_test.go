@@ -121,34 +121,60 @@ func TestParseCondition(t *testing.T) {
 
 	// parse error
 
+	// successive condition (no && || between them)
+	condition = `EQ(name,first,"jia") EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error: %s", condition)
+	}
+
+	// single &
 	condition = `EQ(name,first,"jia") & EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// 3 &
+	condition = `EQ(name,first,"jia") &&& EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error: %s", condition)
+	}
+
+	// unclose ()
 	condition = `EQ(name,first,"jia" && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// unclose ""
 	condition = `EQ(name,first,"jia") && EQ(name,last,"liu)`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// ! before &&
 	condition = `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// successive &&
 	condition = `EQ(name,first,"jia") && && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
+	}
+
+	// ( in "" this is correct
+	condition = `EQ(name,first,"ji()a") && EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
 	}
 
 	// || condition
@@ -195,6 +221,43 @@ func TestParseCondition(t *testing.T) {
 
 	event = make(map[string]interface{})
 	event["via"] = "akamai"
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	// ()
+	condition = `Exist(a) && (Exist(b) || Exist(c))`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = map[string]interface{}{"a": "", "b": "", "c": ""}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"a": "", "b": ""}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"a": "", "c": ""}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"b": "", "c": ""}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"a": ""}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)

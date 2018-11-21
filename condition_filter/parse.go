@@ -17,6 +17,7 @@ const (
 	PARSE_OUTSIDE_CONDITION = iota
 	PARSE_STATE_IN_ONE_CONDITION
 	PARSE_STATE_IN_STRING
+	PARSE_STATE_IN_PARENTHESIS
 )
 
 func process_node_stack(node_stack []*OPNode, force bool) ([]*OPNode, error) {
@@ -156,19 +157,56 @@ func parseBoolTree(c string) (*OPNode, error) {
 	}
 
 	var (
-		i                   int = 0
-		length              int = len(c)
-		state               int = PARSE_OUTSIDE_CONDITION
-		bracke_stack        int
-		op                  int       = OP_NONE
-		condition_start_pos int       = 0
-		node_stack          []*OPNode = make([]*OPNode, 0)
-		err                 error
+		i                        int       = 0
+		length                   int       = len(c)
+		state                    int       = PARSE_OUTSIDE_CONDITION
+		in_condition_parenthesis int       = 0
+		parenthesis              int       = 0
+		parenthesis_start_pos    int       = 0
+		op                       int       = OP_NONE
+		condition_start_pos      int       = 0
+		node_stack               []*OPNode = make([]*OPNode, 0)
+		err                      error
 	)
 
 	for i < length {
-		if state == PARSE_OUTSIDE_CONDITION {
+		if state == PARSE_STATE_IN_PARENTHESIS {
 			for ; i < length; i++ {
+				if c[i] == '"' {
+					state = PARSE_STATE_IN_STRING
+					i++
+					break
+				}
+				if c[i] == '(' {
+					parenthesis++
+				}
+				if c[i] == ')' {
+					parenthesis--
+					if parenthesis == 0 {
+						state = PARSE_OUTSIDE_CONDITION
+						n, err := parseBoolTree(c[parenthesis_start_pos:i])
+						if err != nil {
+							return nil, err
+						}
+						node_stack = append(node_stack, n)
+					}
+				}
+			}
+		} else if state == PARSE_OUTSIDE_CONDITION {
+			for ; i < length; i++ {
+				if c[i] == '(' {
+					if len(node_stack) > 0 {
+						last_node := node_stack[len(node_stack)-1]
+						if last_node.op == OP_NONE {
+							return nil, fmt.Errorf("successive conditions: column %d", i)
+						}
+					}
+					parenthesis = 1
+					parenthesis_start_pos = i + 1
+					state = PARSE_STATE_IN_PARENTHESIS
+					i++
+					break
+				}
 				if c[i] == ' ' {
 					continue
 				} else if c[i] == '!' {
@@ -226,6 +264,13 @@ func parseBoolTree(c string) (*OPNode, error) {
 					condition_start_pos = i
 					break
 				} else {
+					if len(node_stack) > 0 {
+						last_node := node_stack[len(node_stack)-1]
+						if last_node.op == OP_NONE {
+							return nil, fmt.Errorf("successive conditions: column %d", i)
+						}
+					}
+
 					state = PARSE_STATE_IN_ONE_CONDITION
 					condition_start_pos = i
 					break
@@ -247,11 +292,11 @@ func parseBoolTree(c string) (*OPNode, error) {
 					break
 				}
 				if c[i] == '(' {
-					bracke_stack++
+					in_condition_parenthesis++
 				}
 				if c[i] == ')' {
-					bracke_stack--
-					if bracke_stack == 0 {
+					in_condition_parenthesis--
+					if in_condition_parenthesis == 0 {
 						n := &OPNode{
 							op:        OP_NONE,
 							left:      nil,
