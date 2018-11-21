@@ -142,6 +142,8 @@ Stdout:
 
 输出到标准输出
 
+if的语法参考下面 [IF语法](#if)
+
 ### Elasticsearch
 
 ```
