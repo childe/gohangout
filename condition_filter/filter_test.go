@@ -28,6 +28,26 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
+	condition = `Match(user,name,^liu.*a$)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["user"] = map[string]interface{}{"name": "liujia"}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = make(map[string]interface{})
+	event["user"] = map[string]interface{}{"name": "lujia"}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
 	// ! Condition
 	condition = `!EQ(name,first,"jia")`
 	root, err = parseBoolTree(condition)
