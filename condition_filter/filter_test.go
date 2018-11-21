@@ -170,6 +170,13 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// ( in "" this is correct
+	condition = `EQ(name,first,"ji()a") && EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
 	// || condition
 	condition = `EQ(name,first,"jia") || EQ(name,last,"liu")`
 	root, err = parseBoolTree(condition)
