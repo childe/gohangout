@@ -14,7 +14,7 @@ const (
 )
 
 const (
-	PARSE_STATE_NORMAL = iota
+	PARSE_OUTSIDE_CONDITION = iota
 	PARSE_STATE_IN_ONE_CONDITION
 	PARSE_STATE_IN_STRING
 )
@@ -38,8 +38,6 @@ func process_node_stack(node_stack []*OPNode, force bool) ([]*OPNode, error) {
 	last_2_node := node_stack[length-2]
 	if last_node.op == OP_NONE || last_node.left != nil { // this is not pure oper node
 
-		fmt.Println(111)
-		fmt.Println(last_2_node.op)
 		switch last_2_node.op {
 		case OP_NOT:
 			last_2_node.left = last_node
@@ -53,7 +51,6 @@ func process_node_stack(node_stack []*OPNode, force bool) ([]*OPNode, error) {
 		case OP_NONE:
 			return node_stack, errors.New("2 successive condition (no && || between them) is illegal")
 		case OP_OR:
-			fmt.Println(force)
 			if !force {
 				return node_stack, nil
 			}
@@ -161,36 +158,22 @@ func parseBoolTree(c string) (*OPNode, error) {
 	var (
 		i                   int = 0
 		length              int = len(c)
-		state               int = PARSE_STATE_IN_ONE_CONDITION
+		state               int = PARSE_OUTSIDE_CONDITION
 		bracke_stack        int
 		op                  int       = OP_NONE
 		condition_start_pos int       = 0
 		node_stack          []*OPNode = make([]*OPNode, 0)
 		err                 error
+		//last_element_type   int = OP_NONE
 	)
 
-	if c[0] == '!' {
-		op = OP_NOT
-		i = 1
-		condition_start_pos = 1
-		n := &OPNode{
-			op:        op,
-			left:      nil,
-			right:     nil,
-			condition: nil,
-		}
-		node_stack = append(node_stack, n)
-	}
-
 	for i < length {
-		if state == PARSE_STATE_NORMAL {
+		if state == PARSE_OUTSIDE_CONDITION {
 			for ; i < length; i++ {
 				if c[i] == ' ' {
 					continue
-				}
-				if c[i] == '!' {
+				} else if c[i] == '!' {
 					op = OP_NOT
-					state = PARSE_STATE_IN_ONE_CONDITION
 					n := &OPNode{
 						op:        op,
 						left:      nil,
@@ -201,13 +184,11 @@ func parseBoolTree(c string) (*OPNode, error) {
 					i++
 					condition_start_pos = i
 					break
-				}
-				if c[i] == '|' {
+				} else if c[i] == '|' {
 					if c[i+1] != '|' {
 						return nil, fmt.Errorf("column %d illegal |", i)
 					}
 					op = OP_OR
-					state = PARSE_STATE_IN_ONE_CONDITION
 					n := &OPNode{
 						op:        op,
 						left:      nil,
@@ -218,13 +199,11 @@ func parseBoolTree(c string) (*OPNode, error) {
 					i += 2
 					condition_start_pos = i
 					break
-				}
-				if c[i] == '&' {
+				} else if c[i] == '&' {
 					if c[i+1] != '&' {
 						return nil, fmt.Errorf("column %d illegal &", i)
 					}
 					op = OP_AND
-					state = PARSE_STATE_IN_ONE_CONDITION
 					n := &OPNode{
 						op:        op,
 						left:      nil,
@@ -233,6 +212,10 @@ func parseBoolTree(c string) (*OPNode, error) {
 					}
 					node_stack = append(node_stack, n)
 					i += 2
+					condition_start_pos = i
+					break
+				} else {
+					state = PARSE_STATE_IN_ONE_CONDITION
 					condition_start_pos = i
 					break
 				}
@@ -265,7 +248,7 @@ func parseBoolTree(c string) (*OPNode, error) {
 							condition: NewCondition(c[condition_start_pos : i+1]),
 						}
 						node_stack = append(node_stack, n)
-						state = PARSE_STATE_NORMAL
+						state = PARSE_OUTSIDE_CONDITION
 						i++
 						break
 					}
@@ -273,41 +256,23 @@ func parseBoolTree(c string) (*OPNode, error) {
 			}
 		}
 
-		fmt.Println(c[:i])
-		for i, n := range node_stack {
-			fmt.Printf("%d: %d %#v\n", i, n.op, n)
-		}
 		if node_stack, err = process_node_stack(node_stack, false); err != nil {
 			return nil, err
 		}
 
 	}
 
-	fmt.Println("")
-	fmt.Println(c[:i])
-	for i, n := range node_stack {
-		fmt.Printf("%d: %d %#v\n", i, n.op, n)
-	}
-	fmt.Println("")
-
 	if len(node_stack) == 0 {
 		return nil, errors.New("unclosed condition")
 	}
 
-	if state != PARSE_STATE_NORMAL {
+	if state != PARSE_OUTSIDE_CONDITION {
 		return nil, errors.New("unclosed condition")
 	}
 
 	if node_stack, err = process_node_stack(node_stack, true); err != nil {
 		return nil, err
 	} else {
-		fmt.Println("")
-		fmt.Println(c[:i])
-		for i, n := range node_stack {
-			fmt.Printf("%d: %d %#v\n", i, n.op, n)
-		}
-		fmt.Println("")
-
 		return check_node_stack(node_stack)
 	}
 }
