@@ -1,7 +1,6 @@
 package condition_filter
 
 import (
-	"fmt"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -505,7 +504,6 @@ type OPNode struct {
 }
 
 func (root *OPNode) Pass(event map[string]interface{}) bool {
-	fmt.Printf("root: %#v\n", root)
 	if root.condition != nil {
 		return root.condition.Pass(event)
 	}
