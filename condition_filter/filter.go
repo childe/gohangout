@@ -341,6 +341,17 @@ func NewCondition(c string) Condition {
 		return NewTemplateConditionFilter(c)
 	}
 
+	if root, err := parseBoolTree(c); err != nil {
+		glog.Fatalf("could not build Condition from `%s`", original_c)
+		return nil
+	} else {
+		return root
+	}
+}
+
+func NewSingleCondition(c string) Condition {
+	original_c := c
+
 	// Exist
 	if matched, _ := regexp.MatchString(`^Exist\(.*\)$`, c); matched {
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "Exist("), ")")
@@ -461,7 +472,7 @@ func NewCondition(c string) Condition {
 		return NewAfterCondition(c)
 	}
 
-	glog.Fatalf("could not build Condition from %s", original_c)
+	glog.Fatalf("could not build Condition from `%s`", original_c)
 	return nil
 }
 

@@ -245,7 +245,7 @@ func parseBoolTree(c string) (*OPNode, error) {
 							op:        OP_NONE,
 							left:      nil,
 							right:     nil,
-							condition: NewCondition(c[condition_start_pos : i+1]),
+							condition: NewSingleCondition(c[condition_start_pos : i+1]),
 						}
 						node_stack = append(node_stack, n)
 						state = PARSE_OUTSIDE_CONDITION
