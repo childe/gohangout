@@ -1,7 +1,6 @@
 package condition_filter
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -215,6 +214,43 @@ func TestParseCondition(t *testing.T) {
 
 	event = make(map[string]interface{})
 	event["via"] = "akamai"
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	// ()
+	condition = `Exist(c) && (Exist(a) || Exist(b))`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = map[string]interface{}{"a": "", "b": "", "c": ""}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"a": "", "b": ""}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"a": "", "c": ""}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"b": "", "c": ""}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = map[string]interface{}{"a": ""}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
