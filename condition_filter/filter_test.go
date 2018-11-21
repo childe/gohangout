@@ -220,7 +220,7 @@ func TestParseCondition(t *testing.T) {
 	}
 
 	// ()
-	condition = `Exist(c) && (Exist(a) || Exist(b))`
+	condition = `Exist(a) && (Exist(b) || Exist(c))`
 	root, err = parseBoolTree(condition)
 	if err != nil {
 		t.Errorf("parse %s error: %s", condition, err)
