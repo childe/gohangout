@@ -1,6 +1,7 @@
 package condition_filter
 
 import (
+	"fmt"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -335,6 +336,8 @@ func (c *AfterCondition) Pass(event map[string]interface{}) bool {
 func NewCondition(c string) Condition {
 	original_c := c
 
+	c = strings.Trim(c, " ")
+
 	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
 		return NewTemplateConditionFilter(c)
 	}
@@ -492,4 +495,29 @@ func (f *ConditionFilter) Pass(event map[string]interface{}) bool {
 		}
 	}
 	return true
+}
+
+type OPNode struct {
+	op        int
+	left      *OPNode
+	right     *OPNode
+	condition Condition //leaf node has condition
+}
+
+func (root *OPNode) Pass(event map[string]interface{}) bool {
+	fmt.Printf("root: %#v\n", root)
+	if root.condition != nil {
+		return root.condition.Pass(event)
+	}
+
+	if root.op == OP_AND {
+		return root.left.Pass(event) && root.right.Pass(event)
+	}
+	if root.op == OP_OR {
+		return root.left.Pass(event) || root.right.Pass(event)
+	}
+	if root.op == OP_NOT {
+		return !root.left.Pass(event)
+	}
+	return false
 }
