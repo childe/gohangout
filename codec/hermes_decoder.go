@@ -137,6 +137,9 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 
 	codecType := getCodecType(value[offset : offset+headerLength])
 	codeAndCompress := strings.SplitN(codecType, ",", 2)
+
+	value = value[offset+headerLength : len(value)-hd.CRC_LENGTH]
+
 	if len(codeAndCompress) == 2 {
 		if codeAndCompress[1] == "gzip" {
 			reader, err := gzip.NewReader(bytes.NewReader(value))
@@ -159,10 +162,6 @@ func (hd *HermesDecoder) Decode(value []byte) map[string]interface{} {
 			glog.Fatalf("%s unknown codec type", codecType)
 		}
 	}
-
-	offset += headerLength
-
-	value = value[offset : len(value)-hd.CRC_LENGTH]
 
 	rst := make(map[string]interface{})
 	d := json.NewDecoder(bytes.NewReader(value))
