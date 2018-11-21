@@ -121,34 +121,53 @@ func TestParseCondition(t *testing.T) {
 
 	// parse error
 
+	// successive condition (no && || between them)
+	condition = `EQ(name,first,"jia") EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error: %s", condition)
+	}
+
+	// single &
 	condition = `EQ(name,first,"jia") & EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// 3 &
+	condition = `EQ(name,first,"jia") &&& EQ(name,last,"liu")`
+	_, err = parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error: %s", condition)
+	}
+
+	// unclose ()
 	condition = `EQ(name,first,"jia" && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// unclose ""
 	condition = `EQ(name,first,"jia") && EQ(name,last,"liu)`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// ! before &&
 	condition = `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
+	// successive &&
 	condition = `EQ(name,first,"jia") && && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
-		t.Errorf("parse %s should has error: %s", condition, err)
+		t.Errorf("parse %s should has error: %s", condition)
 	}
 
 	// || condition
