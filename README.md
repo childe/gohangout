@@ -215,6 +215,48 @@ bytes_source_field优先级高于source_field.  bytes_source_field是指字段�
 
 #### if
 
+if 的语法如下
+
+```
+Drop:
+    if:
+        - '{{if .name}}y{{end}}'
+        - '{{if eq .name "childe"}}y{{end}}'
+        - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
+```
+
+if 数组中的条件是 AND 关系, 需要全部满足.
+
+目前 if 支持两种语法, 一种是 golang 自带的 template 语法, 一种是我自己实现的一套简单的DSL, 实现的常用的一些功能, 性能远超 template , 我把上面的语法按自己的DSL翻译一下.
+
+```
+Drop:
+    if:
+				- 'EQ(name,"childe")'
+				- 'Before(-24h) || After(24h)'
+```
+
+目前支持的函数:
+
+- `Exits(user,name)` [user][name]存在
+
+- `EQ(user,age,20)` [user][age]存在并等于20
+
+- `EQ(user,age,"20")` [user][age]存在并等于"20" (字符串)
+
+- `HasPrefix(user,name,liu)` [user][name]存在并以 liu 开头
+
+- `HasSuffix(user,name,jia)` [user][name]存在并以 jia 结尾
+
+- `Contains(user,name,jia)` [user][name]存在并包含 jia
+
+- `Match(user,name,^liu.*a$)` [user][name]存在并能匹配正则 `^liu.*a$`
+
+- `Random(20)` 1/20 的概率返回 true
+
+- `Before(24h)`  *@timestamp* 字段存在, 并且是 time.Time 类型, 并且在`当前时间+24小时`之前
+- `After(-24h)`  *@timestamp* 字段存在, 并且是 time.Time 类型, 并且在`当前时间-24小时`之后
+
 #### add_fields
 
 例:
