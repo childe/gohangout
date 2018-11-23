@@ -30,6 +30,8 @@ func BuildOutputs(config map[string]interface{}) []Output {
 
 func BuildOutput(outputType string, config map[interface{}]interface{}) Output {
 	switch outputType {
+	case "Dot":
+		return NewDotOutput(config)
 	case "Stdout":
 		return NewStdoutOutput(config)
 	case "Kafka":
