@@ -6,6 +6,8 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime"
+	"runtime/pprof"
 	"sync"
 	"syscall"
 
@@ -18,9 +20,11 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var options = &struct {
-	config    string
-	pprof     bool
-	pprofAddr string
+	config     string
+	pprof      bool
+	pprofAddr  string
+	cpuprofile string
+	memprofile string
 }{}
 
 func init() {
@@ -28,6 +32,8 @@ func init() {
 
 	flag.BoolVar(&options.pprof, "pprof", false, "if pprof")
 	flag.StringVar(&options.pprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
+	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
+	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
 
 	flag.Parse()
 }
@@ -66,6 +72,28 @@ func main() {
 		go func() {
 			http.ListenAndServe(options.pprofAddr, nil)
 		}()
+	}
+	if options.cpuprofile != "" {
+		f, err := os.Create(options.cpuprofile)
+		if err != nil {
+			glog.Fatalf("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			glog.Fatalf("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	if options.memprofile != "" {
+		f, err := os.Create(options.memprofile)
+		if err != nil {
+			glog.Fatalf("could not create memory profile: ", err)
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			glog.Fatalf("could not write memory profile: ", err)
+		}
+		f.Close()
 	}
 
 	config, err := parseConfig(options.config)
