@@ -15,7 +15,7 @@ func NewDotOutput(config map[interface{}]interface{}) *DotOutput {
 }
 
 func (outputPlugin *DotOutput) Emit(event map[string]interface{}) {
-	fmt.Printf(".")
+	fmt.Print(".")
 }
 
 func (outputPlugin *DotOutput) Shutdown() {}
