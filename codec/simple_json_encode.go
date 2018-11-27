@@ -216,7 +216,7 @@ func (d *SimpleJsonDecoder) encodeArray(v []interface{}) error {
 	return nil
 }
 
-func (d *SimpleJsonDecoder) encode(e map[string]interface{}) ([]byte, error) {
+func (d *SimpleJsonDecoder) Encode(e map[string]interface{}) ([]byte, error) {
 	if err := d.encodeMap(e); err != nil {
 		return nil, err
 	}
