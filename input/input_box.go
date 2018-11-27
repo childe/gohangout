@@ -34,6 +34,8 @@ func (box *InputBox) Beat() {
 
 		box.input.GotoNext(event)
 	}
+
+	box.Shutdown()
 }
 
 func (box *InputBox) Shutdown() {
