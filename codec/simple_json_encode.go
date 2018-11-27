@@ -120,7 +120,8 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 	case reflect.Float64:
 		d.encodeFloat(v.(float64), 32)
 	case reflect.String:
-		d.string(v.(string))
+		// it could be either string or json.Number
+		d.string(reflect.ValueOf(v).String())
 	case reflect.Map:
 		return d.encodeMap(v.(map[string]interface{}))
 	case reflect.Slice:
