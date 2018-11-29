@@ -64,7 +64,7 @@ func (hd *HermesDecoder3) Decode(value []byte) map[string]interface{} {
 		}
 	}
 
-	rst := make(map[string]interface{})
+	rst := map[string]interface{}{"@timestamp": time.Now()}
 	d := json.NewDecoder(bytes.NewReader(value))
 	d.UseNumber()
 	err := d.Decode(&rst)

@@ -64,8 +64,7 @@ func (hd *HermesDecoder2) Decode(value []byte) map[string]interface{} {
 		}
 	}
 
-	rst := make(map[string]interface{})
-	rst["@timestamp"] = time.Now().UnixNano() / 1000000
+	rst := map[string]interface{}{"@timestamp": time.Now()}
 
 	// value is created by json.dumps(json.dumps(JosnEvent)). OMG
 	var ss string
