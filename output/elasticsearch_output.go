@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/simplejson"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -40,7 +40,7 @@ func (action *Action) Encode() []byte {
 		err error
 	)
 	if action.rawSource == nil {
-		d := &codec.SimpleJsonDecoder{}
+		d := &simplejson.SimpleJsonDecoder{}
 		buf, err = d.Encode(action.event)
 		if err != nil {
 			glog.Errorf("could marshal event(%v):%s", action.event, err)

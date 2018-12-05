@@ -1,4 +1,4 @@
-package codec
+package simplejson
 
 /**
 MOST CODE IS COPYED FROM GOLANG JSON PACKAGE!
@@ -102,6 +102,11 @@ func (d *SimpleJsonDecoder) string(s string) int {
 }
 
 func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
+	if v == nil {
+		d.WriteString("null")
+		return nil
+	}
+
 	switch reflect.TypeOf(v).Kind() {
 	case reflect.Bool:
 		if v.(bool) {
