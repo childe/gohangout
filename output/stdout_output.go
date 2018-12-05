@@ -1,9 +1,9 @@
 package output
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/childe/gohangout/simplejson"
 	"github.com/golang/glog"
 )
 
@@ -20,7 +20,8 @@ func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
 }
 
 func (outputPlugin *StdoutOutput) Emit(event map[string]interface{}) {
-	buf, err := json.Marshal(event)
+	d := &simplejson.SimpleJsonDecoder{}
+	buf, err := d.Encode(event)
 	if err != nil {
 		glog.Errorf("marshal %v error:%s", event, err)
 	}
