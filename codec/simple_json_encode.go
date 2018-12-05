@@ -1,5 +1,10 @@
 package codec
 
+/**
+MOST CODE IS COPYED FROM GOLANG JSON PACKAGE!
+since gohangout event has limited data type(int/float/map/array/time/string, NO struct), so we can use a simple way to do json encode
+**/
+
 import (
 	"bytes"
 	"fmt"
