@@ -328,6 +328,12 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 	} else {
 		req, err = http.NewRequest(p.requestMethod, url, bytes.NewBuffer(br.readBuf()))
 	}
+
+	if err != nil {
+		glog.Errorf("create request error: %s", err)
+		return false, shouldRetry, noRetry, nil
+	}
+
 	for k, v := range p.headers {
 		req.Header.Set(k, v)
 	}
