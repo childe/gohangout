@@ -111,7 +111,6 @@ func main() {
 			<-c
 			signal.Stop(c)
 			for _, box := range boxes {
-				glog.Info(box)
 				box.Shutdown()
 			}
 			os.Exit(0)
@@ -125,7 +124,6 @@ func main() {
 	for _, box := range boxes {
 		go func() {
 			defer wg.Done()
-			glog.Info(box)
 			box.Beat()
 		}()
 	}
