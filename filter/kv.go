@@ -19,8 +19,6 @@ type KVFilter struct {
 	value_split string
 	trim        string
 	trim_key    string
-
-	overwrite bool
 }
 
 func NewKVFilter(config map[interface{}]interface{}) *KVFilter {
@@ -28,7 +26,6 @@ func NewKVFilter(config map[interface{}]interface{}) *KVFilter {
 		BaseFilter: NewBaseFilter(config),
 		config:     config,
 		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
-		overwrite:  true,
 	}
 
 	if src, ok := config["src"]; ok {
@@ -66,11 +63,6 @@ func NewKVFilter(config map[interface{}]interface{}) *KVFilter {
 	} else {
 		plugin.trim_key = ""
 	}
-
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
-	}
-
 	return plugin
 }
 
