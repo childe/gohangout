@@ -23,7 +23,7 @@ func TestConvertFilter(t *testing.T) {
 	}
 	t.Log(event)
 
-	event, ok := f.Process(event)
+	event, ok := f.Filter(event)
 	t.Log(event)
 
 	if ok == false {
@@ -43,7 +43,7 @@ func TestConvertFilter(t *testing.T) {
 	}
 	t.Log(event)
 
-	event, ok = f.Process(event)
+	event, ok = f.Filter(event)
 	t.Log(event)
 
 	if ok == false {

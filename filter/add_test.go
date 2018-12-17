@@ -18,7 +18,7 @@ func TestAddFilter(t *testing.T) {
 	event["last"] = "liu"
 	t.Log(event)
 
-	event, ok := f.Process(event)
+	event, ok := f.Filter(event)
 	t.Log(event)
 
 	if ok == false {
