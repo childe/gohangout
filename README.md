@@ -479,6 +479,42 @@ IPIP:
 
 目标字段, 如果不设置, 则将IPIP Filter生成的所有字段写入到根一层.
 
+### KV
+将 a=1&b=2, 或者name=app id=123 type=nginx 这样的字符串拆分成{a:1,b:2}  {name:app, id:123, type:nginx} 等多个字段, 放到日志里面去.
+
+配置如下
+
+如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.  
+trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.   
+trimkey和trim类似, 处理的是字段名称.
+
+```
+KV:
+  src: msg
+  target: kv
+  field_split: ','
+  value_split: '='
+  trim: '\t "'
+  trimkey: '"'
+  tag_on_failure: "KVfail"
+  remove_fields: ['msg']
+```
+
+#### src
+
+源字段, 必须设置
+
+#### target
+
+目标字段, 如果不设置, 则将IPIP Filter生成的所有字段写入到根一层.
+
+#### field_split
+
+各字段&值之间以什么分割, 一般都是逗号或者空格之类. 必须设置
+
+#### value_split
+
+字段名和值之间以什么连接, 一般是等号. 必须设置
 
 ### Json
 
