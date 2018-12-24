@@ -238,11 +238,11 @@ Drop:
       - 'Before(-24h) || After(24h)'
 ```
 
-也支持括号, 像 `Exits(a) && (Exits(b) || Exits(c))`
+也支持括号, 像 `Exist(a) && (Exist(b) || Exist(c))`
 
 目前支持的函数:
 
-- `Exits(user,name)` [user][name]存在
+- `Exist(user,name)` [user][name]存在
 
 - `EQ(user,age,20)` [user][age]存在并等于20
 
