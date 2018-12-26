@@ -211,6 +211,44 @@ bytes_source_field优先级高于source_field.  bytes_source_field是指字段�
 
 增加这个配置的来由是这样的. 上游数据源已经是 json.dump之后的[]byte数据, 做一次json.parse, 然后再json.dump, 耗费了大量CPU做无用功.
 
+### clickhouse
+
+```
+Clickhouse:
+    table: 'hotel.weblog'
+    hosts:
+    - 'tcp://10.100.0.101:9000'
+    - 'tcp://10.100.0.102:9000'
+    fields: ['datetime', 'appid', 'c_ip', 'domain', 'cs_method', 'cs_uri', 's_ip', 'sc_status', 'time_taken']
+    bulk_actions: 1000
+	flush_interval: 30
+	concurrent: 1
+```
+
+#### table
+
+表名. 必须配置
+
+#### hosts
+
+clickhouse 节点列表. 必须配置
+
+#### fields
+
+字段名. 必须配置
+
+#### bulk_actions
+
+多少次提交一次Bulk请求到ES集群. 默认 1000
+
+#### flush_interval
+
+单位秒, 间隔多少时间提交一次到ES. 默认 30
+
+#### concurrent
+
+bulk 的goroutine 最大值, 默认1
+
 ## FILTER
 
 ### 通用字段
