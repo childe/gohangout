@@ -1,15 +1,12 @@
 package output
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"math/rand"
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 
 	"github.com/golang/glog"
 
@@ -32,13 +29,13 @@ type ClickhouseOutput struct {
 	fieldsLength int
 	query        string
 
+	bulkChan chan []map[string]interface{}
+
 	events []map[string]interface{}
 
 	db *sql.DB
 
-	mux       sync.Mutex
-	wg        sync.WaitGroup
-	semaphore *semaphore.Weighted
+	wg sync.WaitGroup
 }
 
 func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
@@ -102,10 +99,19 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		}
 	}
 
+	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
-		p.semaphore = semaphore.NewWeighted(int64(v.(int)))
-	} else {
-		p.semaphore = semaphore.NewWeighted(1)
+		concurrent = v.(int)
+	}
+
+	p.bulkChan = make(chan []map[string]interface{}, concurrent)
+	for i := 0; i < concurrent; i++ {
+		go func() {
+			for {
+				events := <-p.bulkChan
+				p.innerFlush(events)
+			}
+		}()
 	}
 
 	if v, ok := config["bulk_actions"]; ok {
@@ -130,10 +136,14 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 }
 
 func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
-	glog.Infof("write %d docs to clickhouse", len(events))
 	if len(events) == 0 {
 		return
 	}
+
+	glog.Infof("write %d docs to clickhouse", len(events))
+
+	p.wg.Add(1)
+	defer p.wg.Done()
 
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -172,24 +182,20 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 }
 
 func (p *ClickhouseOutput) Flush() {
-	defer p.wg.Done()
-	defer p.semaphore.Release(1)
-	defer p.mux.Unlock()
-
-	p.mux.Lock()
-	p.semaphore.Acquire(context.TODO(), 1)
-	p.wg.Add(1)
-
 	events := p.events
 	p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-	p.innerFlush(events)
+	if len(events) > 0 {
+		p.bulkChan <- events
+	}
 }
 
 func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
 	p.events = append(p.events, event)
 
 	if len(p.events) >= p.bulk_actions {
-		p.Flush()
+		events := p.events
+		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
+		p.bulkChan <- events
 	}
 }
 
@@ -219,6 +225,7 @@ func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
 		p.wg.Done()
 	}()
 }
+
 func (p *ClickhouseOutput) Shutdown() {
 	p.awaitclose(30 * time.Second)
 }
