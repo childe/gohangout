@@ -8,12 +8,14 @@ import (
 type InputBox struct {
 	input   Input
 	outputs []output.Output
+	stop    bool
 }
 
 func NewInputBox(input Input, outputs []output.Output) *InputBox {
 	return &InputBox{
 		input:   input,
 		outputs: outputs,
+		stop:    false,
 	}
 }
 
@@ -22,23 +24,23 @@ func (box *InputBox) Beat() {
 		event map[string]interface{}
 	)
 
-	for {
+	for !box.stop {
 		event = box.input.readOneEvent()
 		if event == nil {
 			glog.Info("receive nil message. shutdown...")
 			break
 		}
-		//if typeValue, ok := box.config["type"]; ok {
-		//event["type"] = typeValue
-		//}
-
 		box.input.GotoNext(event)
 	}
 
-	box.Shutdown()
+	box.shutdown()
 }
 
 func (box *InputBox) Shutdown() {
+	box.stop = true
+}
+
+func (box *InputBox) shutdown() {
 	glog.Infof("try to shutdown input %T", box.input)
 	box.input.Shutdown()
 	for _, o := range box.outputs {
