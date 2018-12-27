@@ -91,7 +91,7 @@ type ElasticsearchOutput struct {
 	bulkProcessor BulkProcessor
 }
 
-func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest BulkRequest) ([]int, []int, BulkRequest) {
+func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkRequest) ([]int, []int, BulkRequest) {
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 
@@ -137,8 +137,8 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest BulkRequ
 	return retry, noRetry, newbulkRequest
 }
 
-func buildRetryBulkRequest(shouldRetry, noRetry []int, bulkRequest BulkRequest) BulkRequest {
-	esBulkRequest := bulkRequest.(*ESBulkRequest)
+func buildRetryBulkRequest(shouldRetry, noRetry []int, bulkRequest *BulkRequest) BulkRequest {
+	esBulkRequest := (*bulkRequest).(*ESBulkRequest)
 	if len(noRetry) > 0 {
 		b, err := json.Marshal(esBulkRequest.events[noRetry[0]].(*Action).event)
 		if err != nil {
@@ -327,6 +327,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		}
 	}
 }
+
 func (outputPlugin *ElasticsearchOutput) Shutdown() {
 	outputPlugin.bulkProcessor.awaitclose(30 * time.Second)
 }
