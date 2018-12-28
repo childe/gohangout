@@ -26,9 +26,11 @@ type ClickhouseOutput struct {
 	hosts        []string
 	fields       []string
 	table        string
+	username     string
+	password     string
+
 	fieldsLength int
 	query        string
-
 	desc         map[string]string      // columnName -> Type
 	defaultValue map[string]interface{} // column -> defaultValue
 
@@ -36,7 +38,7 @@ type ClickhouseOutput struct {
 
 	events []map[string]interface{}
 
-	db *sql.DB
+	dbs []*sql.DB
 
 	wg sync.WaitGroup
 }
@@ -113,6 +115,14 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		glog.Fatalf("hosts must be set in clickhouse output")
 	}
 
+	if v, ok := config["username"]; ok {
+		p.username = v.(string)
+	}
+
+	if v, ok := config["password"]; ok {
+		p.password = v.(string)
+	}
+
 	if v, ok := config["fields"]; ok {
 		for _, f := range v.([]interface{}) {
 			p.fields = append(p.fields, f.(string))
@@ -136,24 +146,29 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
 	glog.V(5).Infof("query: %s", p.query)
 
-	n := rand.Int() % len(p.hosts)
-	host := p.hosts[n]
-	db, err := sql.Open("clickhouse", host)
-	if err == nil {
-		p.db = db
-	} else {
-		glog.Fatalf("open %s error: %s", host, err)
+	p.dbs = make([]*sql.DB, 0)
+	for _, host := range p.hosts {
+		dataSourceName := fmt.Sprintf("%s?username=%s&password=%s", host, username, password)
+		if db, err := sql.Open("clickhouse", dataSourceName); err == nil {
+			if err := db.Ping(); err != nil {
+				if exception, ok := err.(*clickhouse.Exception); ok {
+					glog.Errorf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+				} else {
+					glog.Errorf("clickhouse ping error: %s", err)
+				}
+			} else {
+				p.dbs = append(p.dbs, db)
+			}
+		} else {
+			glog.Error("open %s error: %s", host, err)
+		}
+	}
+
+	if len(p.dbs) == 0 {
+		glog.Fatal("no available host")
 	}
 
 	p.setColumnDefault()
-
-	if err := db.Ping(); err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			glog.Fatalf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
-		} else {
-			glog.Fatalf("clickhouse ping error: %s", err)
-		}
-	}
 
 	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
