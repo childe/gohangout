@@ -29,6 +29,9 @@ type ClickhouseOutput struct {
 	fieldsLength int
 	query        string
 
+	desc         map[string]string      // columnName -> Type
+	defaultValue map[string]interface{} // column -> defaultValue
+
 	bulkChan chan []map[string]interface{}
 
 	events []map[string]interface{}
@@ -36,6 +39,57 @@ type ClickhouseOutput struct {
 	db *sql.DB
 
 	wg sync.WaitGroup
+}
+
+func (c *ClickhouseOutput) setTableDesc() {
+	c.desc = make(map[string]string)
+
+	query := fmt.Sprintf("desc `%s`", c.table)
+	rows, err := c.db.Query(query)
+	if err != nil {
+		glog.Fatalf("query %q error: %s", query, err)
+	}
+	defer rows.Close()
+
+	var (
+		column string
+		typ    string
+		def    string
+		exp    string
+	)
+	for rows.Next() {
+
+		if err := rows.Scan(&column, &typ, &def, &exp); err != nil {
+			glog.Fatalf("scan rows error: %s", err)
+		}
+		glog.V(5).Infof("%q %q %q %q", column, typ, def, exp)
+
+		c.desc[column] = typ
+	}
+}
+
+func (c *ClickhouseOutput) setColumnDefault() {
+	c.setTableDesc()
+
+	c.defaultValue = make(map[string]interface{})
+
+	for columnName, typ := range c.desc {
+		switch typ {
+		case "String":
+			c.defaultValue[columnName] = ""
+		case "Date", "DateTime":
+			c.defaultValue[columnName] = time.Unix(0, 0)
+		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
+			c.defaultValue[columnName] = 0
+		case "Float32", "Float64":
+			c.defaultValue[columnName] = 0.0
+		case "Array(String)":
+			c.defaultValue[columnName] = []string{}
+		default:
+			glog.Errorf("column: %s, type: %s. unsupported column type, ignore", columnName, typ)
+			continue
+		}
+	}
 }
 
 func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
@@ -90,6 +144,8 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	} else {
 		glog.Fatalf("open %s error: %s", host, err)
 	}
+
+	p.setColumnDefault()
 
 	if err := db.Ping(); err != nil {
 		if exception, ok := err.(*clickhouse.Exception); ok {
@@ -150,6 +206,8 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		glog.Errorf("db begin to create transaction error: %s", err)
 		return
 	}
+	defer tx.Rollback()
+
 	stmt, err := tx.Prepare(p.query)
 	if err != nil {
 		glog.Errorf("transaction prepare statement error: %s", err)
@@ -162,7 +220,11 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		for i, field := range p.fields {
 			if v, ok := event[field]; ok {
 				if v == nil {
-					args[i] = ""
+					if vv, ok := p.defaultValue[field]; ok {
+						args[i] = vv
+					} else {
+						args[i] = ""
+					}
 				} else {
 					args[i] = v
 				}
