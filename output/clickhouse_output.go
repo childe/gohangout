@@ -46,14 +46,21 @@ type ClickhouseOutput struct {
 func (c *ClickhouseOutput) setTableDesc() {
 	c.desc = make(map[string]string)
 
-	query := fmt.Sprintf("desc `%s`", c.table)
+	query := fmt.Sprintf("desc table %s", c.table)
+	glog.V(5).Info(query)
 
 	for {
-		db := c.dbSelector.next().(*sql.DB)
+		nextdb := c.dbSelector.next()
+		if nextdb == nil {
+			glog.Fatalf("could not get desc from %s", c.table)
+		}
+
+		db := nextdb.(*sql.DB)
 
 		rows, err := db.Query(query)
 		if err != nil {
 			glog.Errorf("query %q error: %s", query, err)
+			c.dbSelector.reduceWeight()
 			continue
 		}
 		defer rows.Close()
@@ -77,8 +84,6 @@ func (c *ClickhouseOutput) setTableDesc() {
 
 		return
 	}
-
-	glog.Fatalf("could not get desc from %s", c.table)
 }
 
 func (c *ClickhouseOutput) setColumnDefault() {
