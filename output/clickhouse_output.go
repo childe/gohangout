@@ -95,6 +95,7 @@ func (c *ClickhouseOutput) checkColumnDefault() {
 			continue
 		}
 
+		// TODO default expression should be supported
 		switch d.defaultWay {
 		case "MATERIALIZED", "ALIAS", "DEFAULT":
 			glog.Fatal("MATERIALIZED, ALIAS, DEFAULT field not supported")
