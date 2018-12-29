@@ -38,7 +38,7 @@ type ClickhouseOutput struct {
 
 	events []map[string]interface{}
 
-	dbs []*sql.DB
+	dbSelector HostSelector
 
 	wg sync.WaitGroup
 }
@@ -47,27 +47,38 @@ func (c *ClickhouseOutput) setTableDesc() {
 	c.desc = make(map[string]string)
 
 	query := fmt.Sprintf("desc `%s`", c.table)
-	rows, err := c.db.Query(query)
-	if err != nil {
-		glog.Fatalf("query %q error: %s", query, err)
-	}
-	defer rows.Close()
 
-	var (
-		column string
-		typ    string
-		def    string
-		exp    string
-	)
-	for rows.Next() {
+	for {
+		db := c.dbSelector.next().(*sql.DB)
 
-		if err := rows.Scan(&column, &typ, &def, &exp); err != nil {
-			glog.Fatalf("scan rows error: %s", err)
+		rows, err := db.Query(query)
+		if err != nil {
+			glog.Errorf("query %q error: %s", query, err)
+			continue
 		}
-		glog.V(5).Infof("%q %q %q %q", column, typ, def, exp)
+		defer rows.Close()
 
-		c.desc[column] = typ
+		var (
+			column string
+			typ    string
+			def    string
+			exp    string
+		)
+		for rows.Next() {
+
+			if err := rows.Scan(&column, &typ, &def, &exp); err != nil {
+				glog.Errorf("scan rows error: %s", err)
+				continue
+			}
+			glog.V(5).Infof("%q %q %q %q", column, typ, def, exp)
+
+			c.desc[column] = typ
+		}
+
+		return
 	}
+
+	glog.Fatalf("could not get desc from %s", c.table)
 }
 
 func (c *ClickhouseOutput) setColumnDefault() {
@@ -146,9 +157,9 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
 	glog.V(5).Infof("query: %s", p.query)
 
-	p.dbs = make([]*sql.DB, 0)
+	dbs := make([]*sql.DB, 0)
 	for _, host := range p.hosts {
-		dataSourceName := fmt.Sprintf("%s?username=%s&password=%s", host, username, password)
+		dataSourceName := fmt.Sprintf("%s?username=%s&password=%s", host, p.username, p.password)
 		if db, err := sql.Open("clickhouse", dataSourceName); err == nil {
 			if err := db.Ping(); err != nil {
 				if exception, ok := err.(*clickhouse.Exception); ok {
@@ -157,16 +168,22 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 					glog.Errorf("clickhouse ping error: %s", err)
 				}
 			} else {
-				p.dbs = append(p.dbs, db)
+				dbs = append(dbs, db)
 			}
 		} else {
 			glog.Error("open %s error: %s", host, err)
 		}
 	}
 
-	if len(p.dbs) == 0 {
+	if len(dbs) == 0 {
 		glog.Fatal("no available host")
 	}
+
+	dbsI := make([]interface{}, len(dbs))
+	for i, h := range dbs {
+		dbsI[i] = h
+	}
+	p.dbSelector = NewRRHostSelector(dbsI, 3)
 
 	p.setColumnDefault()
 
@@ -216,42 +233,55 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	p.wg.Add(1)
 	defer p.wg.Done()
 
-	tx, err := p.db.Begin()
-	if err != nil {
-		glog.Errorf("db begin to create transaction error: %s", err)
-		return
-	}
-	defer tx.Rollback()
+	for {
+		nextdb := p.dbSelector.next()
+		if nextdb == nil {
+			glog.Info("no available db, wait for 30s")
+			time.Sleep(30 * time.Second)
+			continue
+		}
 
-	stmt, err := tx.Prepare(p.query)
-	if err != nil {
-		glog.Errorf("transaction prepare statement error: %s", err)
-		return
-	}
-	defer stmt.Close()
+		tx, err := nextdb.(*sql.DB).Begin()
+		if err != nil {
+			glog.Errorf("db begin to create transaction error: %s", err)
+			p.dbSelector.reduceWeight()
+			continue
+		}
+		defer tx.Rollback()
 
-	for _, event := range events {
-		args := make([]interface{}, p.fieldsLength)
-		for i, field := range p.fields {
-			if v, ok := event[field]; ok && v != nil {
-				args[i] = v
-			} else {
-				if vv, ok := p.defaultValue[field]; ok {
-					args[i] = vv
-				} else { // this should not happen
-					args[i] = ""
+		stmt, err := tx.Prepare(p.query)
+		if err != nil {
+			glog.Errorf("transaction prepare statement error: %s", err)
+			p.dbSelector.reduceWeight()
+			continue
+		}
+		defer stmt.Close()
+
+		for _, event := range events {
+			args := make([]interface{}, p.fieldsLength)
+			for i, field := range p.fields {
+				if v, ok := event[field]; ok && v != nil {
+					args[i] = v
+				} else {
+					if vv, ok := p.defaultValue[field]; ok {
+						args[i] = vv
+					} else { // this should not happen
+						args[i] = ""
+					}
 				}
 			}
+			if _, err := stmt.Exec(args...); err != nil {
+				glog.Errorf("exec clickhouse insert %v error: %s", event, err)
+			}
 		}
-		if _, err := stmt.Exec(args...); err != nil {
-			glog.Errorf("exec clickhouse insert %v error: %s", event, err)
-		}
-	}
 
-	if err := tx.Commit(); err != nil {
-		glog.Errorf("exec clickhouse commit error: %s", err)
+		if err := tx.Commit(); err != nil {
+			glog.Errorf("exec clickhouse commit error: %s", err)
+			p.dbSelector.reduceWeight()
+			continue
+		}
+		glog.Infof("%d docs has been committed to clickhouse", len(events))
 	}
-	glog.Infof("%d docs has been committed to clickhouse", len(events))
 }
 
 func (p *ClickhouseOutput) Flush() {

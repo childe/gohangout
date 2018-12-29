@@ -68,6 +68,10 @@ type HTTPBulkProcessor struct {
 }
 
 func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMethod string, retryResponseCode map[int]bool, bulk_size, bulk_actions, flush_interval, concurrent int, compress bool, newBulkRequestFunc NewBulkRequestFunc, getRetryEventsFunc GetRetryEventsFunc) *HTTPBulkProcessor {
+	hostsI := make([]interface{}, len(hosts))
+	for i, h := range hosts {
+		hostsI[i] = h
+	}
 	bulkProcessor := &HTTPBulkProcessor{
 		headers:            headers,
 		requestMethod:      requestMethod,
@@ -76,7 +80,7 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 		bulk_actions:       bulk_actions,
 		flush_interval:     flush_interval,
 		client:             &http.Client{},
-		hostSelector:       NewRRHostSelector(hosts, 3),
+		hostSelector:       NewRRHostSelector(hostsI, 3),
 		concurrent:         concurrent,
 		compress:           compress,
 		bulkRequest:        newBulkRequestFunc(),
@@ -143,12 +147,13 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 	eventCount := (*bulkRequest).eventCount()
 	glog.Infof("bulk %d docs with execution_id %d", eventCount, p.execution_id)
 	for {
-		host := p.hostSelector.selectOneHost()
-		if host == "" {
+		nexthost := p.hostSelector.next()
+		if nexthost == nil {
 			glog.Info("no available host, wait for 30s")
 			time.Sleep(30 * time.Second)
 			continue
 		}
+		host := nexthost.(string)
 
 		glog.Infof("try to bulk with host (%s)", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"))
 
@@ -158,10 +163,10 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 			_finishTime := float64(time.Now().UnixNano()/1000000) / 1000
 			timeTaken := _finishTime - _startTime
 			glog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, float64(eventCount)/timeTaken)
-			p.hostSelector.addWeight(host)
+			p.hostSelector.addWeight()
 		} else {
 			glog.Errorf("bulk failed with %s", url)
-			p.hostSelector.reduceWeight(host)
+			p.hostSelector.reduceWeight()
 			continue
 		}
 

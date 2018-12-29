@@ -6,20 +6,20 @@ import (
 )
 
 type HostSelector interface {
-	selectOneHost() string
-	reduceWeight(string)
-	addWeight(string)
+	next() interface{}
+	reduceWeight()
+	addWeight()
 }
 
 type RRHostSelector struct {
-	hosts      []string
+	hosts      []interface{}
 	initWeight int
 	weight     []int
 	index      int
 	hostsCount int
 }
 
-func NewRRHostSelector(hosts []string, weight int) *RRHostSelector {
+func NewRRHostSelector(hosts []interface{}, weight int) *RRHostSelector {
 	rand.Seed(time.Now().UnixNano())
 	hostsCount := len(hosts)
 	rst := &RRHostSelector{
@@ -36,7 +36,7 @@ func NewRRHostSelector(hosts []string, weight int) *RRHostSelector {
 	return rst
 }
 
-func (s *RRHostSelector) selectOneHost() string {
+func (s *RRHostSelector) next() interface{} {
 	// reset weight and return "" if all hosts are down
 	var hasAtLeastOneUp bool = false
 	for i := 0; i < s.hostsCount; i++ {
@@ -46,7 +46,7 @@ func (s *RRHostSelector) selectOneHost() string {
 	}
 	if !hasAtLeastOneUp {
 		s.resetWeight(s.initWeight)
-		return ""
+		return nil
 	}
 
 	s.index = (s.index + 1) % s.hostsCount
@@ -59,26 +59,15 @@ func (s *RRHostSelector) resetWeight(weight int) {
 	}
 }
 
-func (s *RRHostSelector) reduceWeight(host string) {
-	for i, h := range s.hosts {
-		if host == h {
-			s.weight[i] = s.weight[i] - 1
-			if s.weight[i] < 0 {
-				s.weight[i] = 0
-			}
-			return
-		}
+func (s *RRHostSelector) reduceWeight() {
+	if s.weight[s.index] > 0 {
+		s.weight[s.index]--
 	}
 }
 
-func (s *RRHostSelector) addWeight(host string) {
-	for i, h := range s.hosts {
-		if host == h {
-			s.weight[i] = s.weight[i] + 1
-			if s.weight[i] > s.initWeight {
-				s.weight[i] = s.initWeight
-			}
-			return
-		}
+func (s *RRHostSelector) addWeight() {
+	s.weight[s.index] = s.weight[s.index] + 1
+	if s.weight[s.index] > s.initWeight {
+		s.weight[s.index] = s.initWeight
 	}
 }
