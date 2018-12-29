@@ -6,9 +6,10 @@ import (
 )
 
 type HostSelector interface {
-	next() interface{}
-	reduceWeight()
-	addWeight()
+	Next() interface{}
+	ReduceWeight()
+	AddWeight()
+	Size() int
 }
 
 type RRHostSelector struct {
@@ -36,7 +37,7 @@ func NewRRHostSelector(hosts []interface{}, weight int) *RRHostSelector {
 	return rst
 }
 
-func (s *RRHostSelector) next() interface{} {
+func (s *RRHostSelector) Next() interface{} {
 	// reset weight and return "" if all hosts are down
 	var hasAtLeastOneUp bool = false
 	for i := 0; i < s.hostsCount; i++ {
@@ -59,15 +60,19 @@ func (s *RRHostSelector) resetWeight(weight int) {
 	}
 }
 
-func (s *RRHostSelector) reduceWeight() {
+func (s *RRHostSelector) ReduceWeight() {
 	if s.weight[s.index] > 0 {
 		s.weight[s.index]--
 	}
 }
 
-func (s *RRHostSelector) addWeight() {
+func (s *RRHostSelector) AddWeight() {
 	s.weight[s.index] = s.weight[s.index] + 1
 	if s.weight[s.index] > s.initWeight {
 		s.weight[s.index] = s.initWeight
 	}
+}
+
+func (s *RRHostSelector) Size() int {
+	return len(s.hosts)
 }

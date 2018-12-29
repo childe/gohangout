@@ -147,7 +147,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 	eventCount := (*bulkRequest).eventCount()
 	glog.Infof("bulk %d docs with execution_id %d", eventCount, p.execution_id)
 	for {
-		nexthost := p.hostSelector.next()
+		nexthost := p.hostSelector.Next()
 		if nexthost == nil {
 			glog.Info("no available host, wait for 30s")
 			time.Sleep(30 * time.Second)
@@ -163,10 +163,10 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 			_finishTime := float64(time.Now().UnixNano()/1000000) / 1000
 			timeTaken := _finishTime - _startTime
 			glog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, float64(eventCount)/timeTaken)
-			p.hostSelector.addWeight()
+			p.hostSelector.AddWeight()
 		} else {
 			glog.Errorf("bulk failed with %s", url)
-			p.hostSelector.reduceWeight()
+			p.hostSelector.ReduceWeight()
 			continue
 		}
 
