@@ -286,6 +286,7 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 			continue
 		}
 		glog.Infof("%d docs has been committed to clickhouse", len(events))
+		break
 	}
 }
 
