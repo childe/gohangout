@@ -233,18 +233,14 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	for _, event := range events {
 		args := make([]interface{}, p.fieldsLength)
 		for i, field := range p.fields {
-			if v, ok := event[field]; ok {
-				if v == nil {
-					if vv, ok := p.defaultValue[field]; ok {
-						args[i] = vv
-					} else {
-						args[i] = ""
-					}
-				} else {
-					args[i] = v
-				}
+			if v, ok := event[field]; ok && v != nil {
+				args[i] = v
 			} else {
-				args[i] = ""
+				if vv, ok := p.defaultValue[field]; ok {
+					args[i] = vv
+				} else { // this should not happen
+					args[i] = ""
+				}
 			}
 		}
 		if _, err := stmt.Exec(args...); err != nil {
