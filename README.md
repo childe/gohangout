@@ -365,21 +365,19 @@ overwrite: true 的情况下, 这些新字段会覆盖老字段(如果有的话)
 ### Convert
 
 ```
-- Convert:
-    remove_if_fail: false
-    setto_if_fail: 0
+Convert:
     fields:
         time_taken:
+			remove_if_fail: false
+			setto_if_fail: 0
             to: float
         sc_bytes:
             to: int
-
-- Convert:
-    remove_if_fail: false
-    setto_if_fail: true
-    fields:
+			remove_if_fail: true
         status:
             to: bool
+			remove_if_fail: false
+			setto_if_fail: true
 ```
 
 #### remove_if_fail
