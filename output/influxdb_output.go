@@ -96,7 +96,7 @@ type InfluxdbOutput struct {
 	bulkProcessor BulkProcessor
 }
 
-func influxdbGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest BulkRequest) ([]int, []int, BulkRequest) {
+func influxdbGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkRequest) ([]int, []int, BulkRequest) {
 	return nil, nil, nil
 }
 

@@ -3,15 +3,11 @@ package output
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"regexp"
 	"sync"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 
 	"github.com/golang/glog"
 )
@@ -29,84 +25,6 @@ var (
 	REMOVE_HTTP_AUTH_REGEXP = regexp.MustCompile(`^(?i)(http(s?)://)[^:]+:[^@]+@`)
 )
 
-type HostSelector interface {
-	selectOneHost() string
-	reduceWeight(string)
-	addWeight(string)
-}
-
-type RRHostSelector struct {
-	hosts      []string
-	initWeight int
-	weight     []int
-	index      int
-	hostsCount int
-}
-
-func NewRRHostSelector(hosts []string, weight int) *RRHostSelector {
-	rand.Seed(time.Now().UnixNano())
-	hostsCount := len(hosts)
-	rst := &RRHostSelector{
-		hosts:      hosts,
-		index:      int(rand.Int31n(int32(hostsCount))),
-		hostsCount: hostsCount,
-		initWeight: weight,
-	}
-	rst.weight = make([]int, hostsCount)
-	for i := 0; i < hostsCount; i++ {
-		rst.weight[i] = weight
-	}
-
-	return rst
-}
-
-func (s *RRHostSelector) selectOneHost() string {
-	// reset weight and return "" if all hosts are down
-	var hasAtLeastOneUp bool = false
-	for i := 0; i < s.hostsCount; i++ {
-		if s.weight[i] > 0 {
-			hasAtLeastOneUp = true
-		}
-	}
-	if !hasAtLeastOneUp {
-		s.resetWeight(s.initWeight)
-		return ""
-	}
-
-	s.index = (s.index + 1) % s.hostsCount
-	return s.hosts[s.index]
-}
-
-func (s *RRHostSelector) resetWeight(weight int) {
-	for i := range s.weight {
-		s.weight[i] = weight
-	}
-}
-
-func (s *RRHostSelector) reduceWeight(host string) {
-	for i, h := range s.hosts {
-		if host == h {
-			s.weight[i] = s.weight[i] - 1
-			if s.weight[i] < 0 {
-				s.weight[i] = 0
-			}
-			return
-		}
-	}
-}
-
-func (s *RRHostSelector) addWeight(host string) {
-	for i, h := range s.hosts {
-		if host == h {
-			s.weight[i] = s.weight[i] + 1
-			if s.weight[i] > s.initWeight {
-				s.weight[i] = s.initWeight
-			}
-			return
-		}
-	}
-}
-
 type Event interface {
 	Encode() []byte
 }
@@ -121,11 +39,11 @@ type NewBulkRequestFunc func() BulkRequest
 
 type BulkProcessor interface {
 	add(Event)
-	bulk(BulkRequest, int)
+	bulk()
 	awaitclose(time.Duration)
 }
 
-type GetRetryEventsFunc func(*http.Response, []byte, BulkRequest) ([]int, []int, BulkRequest)
+type GetRetryEventsFunc func(*http.Response, []byte, *BulkRequest) ([]int, []int, BulkRequest)
 
 type HTTPBulkProcessor struct {
 	headers           map[string]string
@@ -140,7 +58,8 @@ type HTTPBulkProcessor struct {
 	client            *http.Client
 	mux               sync.Mutex
 	wg                sync.WaitGroup
-	semaphore         *semaphore.Weighted
+
+	bulkChan chan *BulkRequest
 
 	hostSelector       HostSelector
 	bulkRequest        BulkRequest
@@ -149,6 +68,10 @@ type HTTPBulkProcessor struct {
 }
 
 func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMethod string, retryResponseCode map[int]bool, bulk_size, bulk_actions, flush_interval, concurrent int, compress bool, newBulkRequestFunc NewBulkRequestFunc, getRetryEventsFunc GetRetryEventsFunc) *HTTPBulkProcessor {
+	hostsI := make([]interface{}, len(hosts))
+	for i, h := range hosts {
+		hostsI[i] = h
+	}
 	bulkProcessor := &HTTPBulkProcessor{
 		headers:            headers,
 		requestMethod:      requestMethod,
@@ -157,31 +80,29 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 		bulk_actions:       bulk_actions,
 		flush_interval:     flush_interval,
 		client:             &http.Client{},
-		hostSelector:       NewRRHostSelector(hosts, 3),
+		hostSelector:       NewRRHostSelector(hostsI, 3),
 		concurrent:         concurrent,
 		compress:           compress,
 		bulkRequest:        newBulkRequestFunc(),
 		newBulkRequestFunc: newBulkRequestFunc,
 		getRetryEventsFunc: getRetryEventsFunc,
+		bulkChan:           make(chan *BulkRequest, concurrent),
 	}
-	bulkProcessor.semaphore = semaphore.NewWeighted(int64(concurrent))
+	for i := 0; i < concurrent; i++ {
+		go func() {
+			for {
+				bulkRequest := <-bulkProcessor.bulkChan
+				bulkProcessor.wg.Add(1)
+				bulkProcessor.innerBulk(bulkRequest)
+				bulkProcessor.wg.Done()
+			}
+		}()
+	}
 
 	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
 	go func() {
 		for range ticker.C {
-			bulkProcessor.semaphore.Acquire(context.TODO(), 1)
-			bulkProcessor.mux.Lock()
-			if bulkProcessor.bulkRequest.eventCount() == 0 {
-				bulkProcessor.mux.Unlock()
-				bulkProcessor.semaphore.Release(1)
-				continue
-			}
-			bulkRequest := bulkProcessor.bulkRequest
-			bulkProcessor.bulkRequest = newBulkRequestFunc()
-			bulkProcessor.execution_id++
-			execution_id := bulkProcessor.execution_id
-			bulkProcessor.mux.Unlock()
-			bulkProcessor.bulk(bulkRequest, execution_id)
+			bulkProcessor.bulk()
 		}
 	}()
 
@@ -193,81 +114,46 @@ func (p *HTTPBulkProcessor) add(event Event) {
 
 	// TODO bulkRequest passed to bulk may be empty, but execution_id has ++
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.eventCount() >= p.bulk_actions {
-		p.semaphore.Acquire(context.TODO(), 1)
 		p.mux.Lock()
-		if p.bulkRequest.eventCount() == 0 {
-			p.mux.Unlock()
-			p.semaphore.Release(1)
-			return
+		defer p.mux.Unlock()
+		if p.bulkRequest.eventCount() > 0 {
+			bulkRequest := p.bulkRequest
+			p.bulkRequest = p.newBulkRequestFunc()
+			p.bulkChan <- &bulkRequest
 		}
-		bulkRequest := p.bulkRequest
-		p.bulkRequest = p.newBulkRequestFunc()
-		p.execution_id++
-		execution_id := p.execution_id
-		p.mux.Unlock()
-		go p.bulk(bulkRequest, execution_id)
 	}
 }
 
-func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
-	c := make(chan bool)
-	defer func() {
-		select {
-		case <-c:
-			glog.Info("all bulk job done. return")
-			return
-		case <-time.After(timeout):
-			glog.Info("await timeout. return")
-			return
-		}
-	}()
-
-	defer func() {
-		go func() {
-			p.wg.Wait()
-			c <- true
-		}()
-	}()
-
+func (p *HTTPBulkProcessor) bulk() {
 	p.mux.Lock()
+	defer p.mux.Unlock()
+
 	if p.bulkRequest.eventCount() == 0 {
-		p.mux.Unlock()
 		return
 	}
+
 	bulkRequest := p.bulkRequest
 	p.bulkRequest = p.newBulkRequestFunc()
+	p.bulkChan <- &bulkRequest
+}
+
+func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
+	p.mux.Lock()
 	p.execution_id++
 	execution_id := p.execution_id
 	p.mux.Unlock()
 
-	p.wg.Add(1)
-	go func() {
-		p.innerBulk(bulkRequest, execution_id)
-		p.wg.Done()
-	}()
-}
-
-func (p *HTTPBulkProcessor) bulk(bulkRequest BulkRequest, execution_id int) {
-	defer p.wg.Done()
-	defer p.semaphore.Release(1)
-	p.wg.Add(1)
-	if bulkRequest.eventCount() == 0 {
-		return
-	}
-	p.innerBulk(bulkRequest, execution_id)
-}
-
-func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int) {
 	_startTime := float64(time.Now().UnixNano()/1000000) / 1000
-	eventCount := bulkRequest.eventCount()
-	glog.Infof("bulk %d docs with execution_id %d", eventCount, execution_id)
+	eventCount := (*bulkRequest).eventCount()
+	glog.Infof("bulk %d docs with execution_id %d", eventCount, p.execution_id)
 	for {
-		host := p.hostSelector.selectOneHost()
-		if host == "" {
+		nexthost := p.hostSelector.Next()
+		if nexthost == nil {
 			glog.Info("no available host, wait for 30s")
 			time.Sleep(30 * time.Second)
 			continue
 		}
+		host := nexthost.(string)
 
 		glog.Infof("try to bulk with host (%s)", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"))
 
@@ -277,10 +163,10 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int)
 			_finishTime := float64(time.Now().UnixNano()/1000000) / 1000
 			timeTaken := _finishTime - _startTime
 			glog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, float64(eventCount)/timeTaken)
-			p.hostSelector.addWeight(host)
+			p.hostSelector.AddWeight()
 		} else {
 			glog.Errorf("bulk failed with %s", url)
-			p.hostSelector.reduceWeight(host)
+			p.hostSelector.ReduceWeight()
 			continue
 		}
 
@@ -289,20 +175,16 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest BulkRequest, execution_id int)
 		}
 
 		if len(shouldRetry) > 0 {
-			p.mux.Lock()
-			p.execution_id++
-			execution_id := p.execution_id
-			p.mux.Unlock()
-			p.innerBulk(newBulkRequest, execution_id)
+			p.innerBulk(&newBulkRequest)
 		}
 
 		return // only success will go to here
 	}
 }
 
-func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int, []int, BulkRequest) {
-	glog.V(5).Infof("request size:%d", br.bufSizeByte())
-	glog.V(20).Infof("%s", br.readBuf())
+func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int, []int, BulkRequest) {
+	glog.V(5).Infof("request size:%d", (*br).bufSizeByte())
+	glog.V(20).Infof("%s", (*br).readBuf())
 
 	var (
 		shouldRetry    = make([]int, 0)
@@ -315,7 +197,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 	if p.compress {
 		var buf bytes.Buffer
 		g := gzip.NewWriter(&buf)
-		if _, err = g.Write(br.readBuf()); err != nil {
+		if _, err = g.Write((*br).readBuf()); err != nil {
 			glog.Errorf("gzip bulk buf error: %s", err)
 			return false, shouldRetry, noRetry, nil
 		}
@@ -326,7 +208,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 		req, err = http.NewRequest(p.requestMethod, url, &buf)
 		req.Header.Set("Content-Encoding", "gzip")
 	} else {
-		req, err = http.NewRequest(p.requestMethod, url, bytes.NewBuffer(br.readBuf()))
+		req, err = http.NewRequest(p.requestMethod, url, bytes.NewBuffer((*br).readBuf()))
 	}
 
 	if err != nil {
@@ -362,4 +244,39 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br BulkRequest) (bool, []int,
 	shouldRetry, noRetry, newBulkRequest = p.getRetryEventsFunc(resp, respBody, br)
 
 	return true, shouldRetry, noRetry, newBulkRequest
+}
+
+func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
+	c := make(chan bool)
+	defer func() {
+		select {
+		case <-c:
+			glog.Info("all bulk job done. return")
+			return
+		case <-time.After(timeout):
+			glog.Info("await timeout. return")
+			return
+		}
+	}()
+
+	defer func() {
+		go func() {
+			p.wg.Wait()
+			c <- true
+		}()
+	}()
+
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	if p.bulkRequest.eventCount() == 0 {
+		return
+	}
+	bulkRequest := p.bulkRequest
+	p.bulkRequest = p.newBulkRequestFunc()
+
+	p.wg.Add(1)
+	go func() {
+		p.innerBulk(&bulkRequest)
+		p.wg.Done()
+	}()
 }

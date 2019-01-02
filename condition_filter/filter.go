@@ -379,13 +379,13 @@ func NewSingleCondition(c string) Condition {
 		if strings.Contains(value, ".") {
 			s, err := strconv.ParseFloat(value, 64)
 			if err != nil {
-				glog.Fatalf("%s could not convert to float", value, err)
+				glog.Fatalf("%s could not convert to float: %s", value, err)
 			}
 			return NewEQCondition(pathes, s)
 		}
 		s, err := strconv.ParseInt(value, 0, 32)
 		if err != nil {
-			glog.Fatalf("%s could not convert to int", value, err)
+			glog.Fatalf("%s could not convert to int: %s", value, err)
 		}
 		return NewEQCondition(pathes, int(s))
 	}
@@ -455,7 +455,7 @@ func NewSingleCondition(c string) Condition {
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "Random("), ")")
 		value, err := strconv.ParseInt(c, 0, 32)
 		if err != nil {
-			glog.Fatalf("%s could not convert to int", c, err)
+			glog.Fatalf("%s could not convert to int: %s", c, err)
 		}
 		return NewRandomCondition(int(value) - 1)
 	}

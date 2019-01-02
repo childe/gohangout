@@ -88,7 +88,7 @@ func TestLinkMetricFilter(t *testing.T) {
 	f = NewLinkMetricFilter(config)
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
-		f.Process(event)
+		f.Filter(event)
 	}
 
 	t.Logf("metric: %v", f.metric)
@@ -223,7 +223,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
-		f.Process(event)
+		f.Filter(event)
 	}
 
 	t.Logf("metric: %v", f.metric)
@@ -399,11 +399,11 @@ func TestLinkMetricFilterCumulativeMode(t *testing.T) {
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
-		f.Process(event)
+		f.Filter(event)
 	}
 	f.swap_Metric_MetricToEmit()
 	for _, event := range createLinkMetricEvents(now) {
-		f.Process(event)
+		f.Filter(event)
 	}
 
 	f.swap_Metric_MetricToEmit()
@@ -435,11 +435,11 @@ func TestLinkMetricFilterSeparateMode(t *testing.T) {
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
-		f.Process(event)
+		f.Filter(event)
 	}
 	f.swap_Metric_MetricToEmit()
 	for _, event := range createLinkMetricEvents(now) {
-		f.Process(event)
+		f.Filter(event)
 	}
 
 	f.swap_Metric_MetricToEmit()

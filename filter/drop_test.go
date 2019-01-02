@@ -22,7 +22,7 @@ func TestDropFilter(t *testing.T) {
 	event["first"] = "dehua"
 	event["last"] = "liu"
 
-	event, ok = f.Process(event)
+	event, ok = f.Filter(event)
 
 	if ok == false {
 		t.Error("drop filter fail")

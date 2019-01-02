@@ -31,10 +31,10 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 	}
 }
 
-func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {
+func (p *StdinInput) readOneEvent() map[string]interface{} {
 	var text []byte = nil
 	for {
-		line, isPrefix, err := inputPlugin.reader.ReadLine()
+		line, isPrefix, err := p.reader.ReadLine()
 		if err != nil {
 			if err == io.EOF {
 				return nil
@@ -51,7 +51,7 @@ func (inputPlugin *StdinInput) readOneEvent() map[string]interface{} {
 			break
 		}
 	}
-	return inputPlugin.decoder.Decode(text)
+	return p.decoder.Decode(text)
 }
 
-func (inputPlugin *StdinInput) Shutdown() {}
+func (p *StdinInput) Shutdown() {}

@@ -76,10 +76,10 @@ func main() {
 	if options.cpuprofile != "" {
 		f, err := os.Create(options.cpuprofile)
 		if err != nil {
-			glog.Fatalf("could not create CPU profile: ", err)
+			glog.Fatalf("could not create CPU profile: %s", err)
 		}
 		if err := pprof.StartCPUProfile(f); err != nil {
-			glog.Fatalf("could not start CPU profile: ", err)
+			glog.Fatalf("could not start CPU profile: %s", err)
 		}
 		defer pprof.StopCPUProfile()
 	}
@@ -87,11 +87,11 @@ func main() {
 	if options.memprofile != "" {
 		f, err := os.Create(options.memprofile)
 		if err != nil {
-			glog.Fatalf("could not create memory profile: ", err)
+			glog.Fatalf("could not create memory profile: %s", err)
 		}
 		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			glog.Fatalf("could not write memory profile: ", err)
+			glog.Fatalf("could not write memory profile: %s", err)
 		}
 		f.Close()
 	}
@@ -113,7 +113,6 @@ func main() {
 			for _, box := range boxes {
 				box.Shutdown()
 			}
-			os.Exit(0)
 		}
 	}()
 

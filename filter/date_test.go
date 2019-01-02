@@ -17,7 +17,7 @@ func TestDateFilter(t *testing.T) {
 	event["@timestamp"] = time.Now().Unix()
 	t.Log(event)
 
-	event, ok := f.Process(event)
+	event, ok := f.Filter(event)
 	t.Log(event)
 
 	if ok == false {
@@ -27,7 +27,7 @@ func TestDateFilter(t *testing.T) {
 	event["@timestamp"] = strconv.Itoa((int)(time.Now().Unix()))
 	t.Log(event)
 
-	event, ok = f.Process(event)
+	event, ok = f.Filter(event)
 	t.Log(event)
 
 	if ok == false {
@@ -37,7 +37,7 @@ func TestDateFilter(t *testing.T) {
 	event["@timestamp"] = "2018-01-23T17:06:05+08:00"
 	t.Log(event)
 
-	event, ok = f.Process(event)
+	event, ok = f.Filter(event)
 	t.Log(event)
 
 	if ok == false {
@@ -50,7 +50,7 @@ func TestDateFilter(t *testing.T) {
 	event["@timestamp"] = "2018-01-23T17:06:05"
 	t.Log(event)
 
-	event, ok = f.Process(event)
+	event, ok = f.Filter(event)
 	t.Log(event)
 
 	if ok == false {

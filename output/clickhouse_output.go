@@ -1,15 +1,12 @@
 package output
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"math/rand"
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 
 	"github.com/golang/glog"
 
@@ -29,16 +26,109 @@ type ClickhouseOutput struct {
 	hosts        []string
 	fields       []string
 	table        string
+	username     string
+	password     string
+
 	fieldsLength int
 	query        string
+	desc         map[string]*RowDesc
+	defaultValue map[string]interface{} // column -> defaultValue
+
+	bulkChan chan []map[string]interface{}
 
 	events []map[string]interface{}
 
-	db *sql.DB
+	dbSelector HostSelector
 
-	mux       sync.Mutex
-	wg        sync.WaitGroup
-	semaphore *semaphore.Weighted
+	wg sync.WaitGroup
+}
+
+type RowDesc struct {
+	column            string
+	typ               string
+	defaultWay        string
+	defaultExpression string
+}
+
+func (c *ClickhouseOutput) setTableDesc() {
+	c.desc = make(map[string]*RowDesc)
+
+	query := fmt.Sprintf("desc table %s", c.table)
+	glog.V(5).Info(query)
+
+	for i := 0; i < c.dbSelector.Size(); i++ {
+		nextdb := c.dbSelector.Next()
+
+		db := nextdb.(*sql.DB)
+
+		rows, err := db.Query(query)
+		if err != nil {
+			glog.Errorf("query %q error: %s", query, err)
+			continue
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			rowDesc := RowDesc{}
+
+			if err := rows.Scan(&rowDesc.column, &rowDesc.typ, &rowDesc.defaultWay, &rowDesc.defaultExpression); err != nil {
+				glog.Errorf("scan rows error: %s", err)
+				continue
+			}
+			glog.V(5).Infof("%v", rowDesc)
+
+			c.desc[rowDesc.column] = &rowDesc
+		}
+
+		return
+	}
+}
+
+func (c *ClickhouseOutput) checkColumnDefault() {
+	fields := make(map[string]bool)
+	for _, f := range c.fields {
+		fields[f] = true
+	}
+
+	for column, d := range c.desc {
+		if _, ok := fields[column]; !ok {
+			continue
+		}
+
+		// TODO default expression should be supported
+		switch d.defaultWay {
+		case "MATERIALIZED", "ALIAS", "DEFAULT":
+			glog.Fatal("MATERIALIZED, ALIAS, DEFAULT field not supported")
+		}
+	}
+}
+
+func (c *ClickhouseOutput) setColumnDefault() {
+	c.setTableDesc()
+
+	c.defaultValue = make(map[string]interface{})
+
+	for columnName, d := range c.desc {
+		if d.defaultWay != "" {
+			c.defaultValue[columnName] = d.defaultExpression
+			continue
+		}
+		switch d.typ {
+		case "String":
+			c.defaultValue[columnName] = ""
+		case "Date", "DateTime":
+			c.defaultValue[columnName] = time.Unix(0, 0)
+		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
+			c.defaultValue[columnName] = 0
+		case "Float32", "Float64":
+			c.defaultValue[columnName] = 0.0
+		case "Array(String)":
+			c.defaultValue[columnName] = []string{}
+		default:
+			glog.Errorf("column: %s, type: %s. unsupported column type, ignore", columnName, d.typ)
+			continue
+		}
+	}
 }
 
 func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
@@ -60,6 +150,14 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		}
 	} else {
 		glog.Fatalf("hosts must be set in clickhouse output")
+	}
+
+	if v, ok := config["username"]; ok {
+		p.username = v.(string)
+	}
+
+	if v, ok := config["password"]; ok {
+		p.password = v.(string)
 	}
 
 	if v, ok := config["fields"]; ok {
@@ -85,27 +183,51 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
 	glog.V(5).Infof("query: %s", p.query)
 
-	n := rand.Int() % len(p.hosts)
-	host := p.hosts[n]
-	db, err := sql.Open("clickhouse", host)
-	if err == nil {
-		p.db = db
-	} else {
-		glog.Fatalf("open %s error: %s", host, err)
-	}
-
-	if err := db.Ping(); err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			glog.Fatalf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+	dbs := make([]*sql.DB, 0)
+	for _, host := range p.hosts {
+		dataSourceName := fmt.Sprintf("%s?username=%s&password=%s", host, p.username, p.password)
+		if db, err := sql.Open("clickhouse", dataSourceName); err == nil {
+			if err := db.Ping(); err != nil {
+				if exception, ok := err.(*clickhouse.Exception); ok {
+					glog.Errorf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+				} else {
+					glog.Errorf("clickhouse ping error: %s", err)
+				}
+			} else {
+				dbs = append(dbs, db)
+			}
 		} else {
-			glog.Fatalf("clickhouse ping error: %s", err)
+			glog.Error("open %s error: %s", host, err)
 		}
 	}
 
+	glog.V(5).Infof("%d available clickhouse hosts", len(dbs))
+	if len(dbs) == 0 {
+		glog.Fatal("no available host")
+	}
+
+	dbsI := make([]interface{}, len(dbs))
+	for i, h := range dbs {
+		dbsI[i] = h
+	}
+	p.dbSelector = NewRRHostSelector(dbsI, 3)
+
+	p.checkColumnDefault()
+	p.setColumnDefault()
+
+	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
-		p.semaphore = semaphore.NewWeighted(int64(v.(int)))
-	} else {
-		p.semaphore = semaphore.NewWeighted(1)
+		concurrent = v.(int)
+	}
+
+	p.bulkChan = make(chan []map[string]interface{}, concurrent)
+	for i := 0; i < concurrent; i++ {
+		go func() {
+			for {
+				events := <-p.bulkChan
+				p.innerFlush(events)
+			}
+		}()
 	}
 
 	if v, ok := config["bulk_actions"]; ok {
@@ -130,66 +252,83 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 }
 
 func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
-	glog.Infof("write %d docs to clickhouse", len(events))
 	if len(events) == 0 {
 		return
 	}
 
-	tx, err := p.db.Begin()
-	if err != nil {
-		glog.Errorf("db begin to create transaction error: %s", err)
-		return
-	}
-	stmt, err := tx.Prepare(p.query)
-	if err != nil {
-		glog.Errorf("transaction prepare statement error: %s", err)
-		return
-	}
-	defer stmt.Close()
+	glog.Infof("write %d docs to clickhouse", len(events))
 
-	for _, event := range events {
-		args := make([]interface{}, p.fieldsLength)
-		for i, field := range p.fields {
-			if v, ok := event[field]; ok {
-				if v == nil {
-					args[i] = ""
-				} else {
+	p.wg.Add(1)
+	defer p.wg.Done()
+
+	for {
+		nextdb := p.dbSelector.Next()
+
+		/*** not ReduceWeight for now , so this should not happen
+		if nextdb == nil {
+			glog.Info("no available db, wait for 30s")
+			time.Sleep(30 * time.Second)
+			continue
+		}
+		****/
+
+		tx, err := nextdb.(*sql.DB).Begin()
+		if err != nil {
+			glog.Errorf("db begin to create transaction error: %s", err)
+			continue
+		}
+		defer tx.Rollback()
+
+		stmt, err := tx.Prepare(p.query)
+		if err != nil {
+			glog.Errorf("transaction prepare statement error: %s", err)
+			return
+		}
+		defer stmt.Close()
+
+		for _, event := range events {
+			args := make([]interface{}, p.fieldsLength)
+			for i, field := range p.fields {
+				if v, ok := event[field]; ok && v != nil {
 					args[i] = v
+				} else {
+					if vv, ok := p.defaultValue[field]; ok {
+						args[i] = vv
+					} else { // this should not happen
+						args[i] = ""
+					}
 				}
-			} else {
-				args[i] = ""
+			}
+			if _, err := stmt.Exec(args...); err != nil {
+				glog.Errorf("exec clickhouse insert %v error: %s", event, err)
+				return
 			}
 		}
-		if _, err := stmt.Exec(args...); err != nil {
-			glog.Errorf("exec clickhouse insert %v error: %s", event, err)
-		}
-	}
 
-	if err := tx.Commit(); err != nil {
-		glog.Errorf("exec clickhouse commit error: %s", err)
+		if err := tx.Commit(); err != nil {
+			glog.Errorf("exec clickhouse commit error: %s", err)
+			return
+		}
+		glog.Infof("%d docs has been committed to clickhouse", len(events))
+		return
 	}
-	glog.Infof("%d docs has been committed to clickhouse", len(events))
 }
 
 func (p *ClickhouseOutput) Flush() {
-	defer p.wg.Done()
-	defer p.semaphore.Release(1)
-	defer p.mux.Unlock()
-
-	p.mux.Lock()
-	p.semaphore.Acquire(context.TODO(), 1)
-	p.wg.Add(1)
-
 	events := p.events
 	p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-	p.innerFlush(events)
+	if len(events) > 0 {
+		p.bulkChan <- events
+	}
 }
 
 func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
 	p.events = append(p.events, event)
 
 	if len(p.events) >= p.bulk_actions {
-		p.Flush()
+		events := p.events
+		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
+		p.bulkChan <- events
 	}
 }
 
@@ -219,6 +358,7 @@ func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
 		p.wg.Done()
 	}()
 }
+
 func (p *ClickhouseOutput) Shutdown() {
 	p.awaitclose(30 * time.Second)
 }

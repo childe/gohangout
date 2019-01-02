@@ -15,7 +15,7 @@ func TestGrokFilter(t *testing.T) {
 	event := make(map[string]interface{})
 	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
 
-	event, ok := f.Process(event)
+	event, ok := f.Filter(event)
 	t.Log(event)
 
 	if ok == false {
