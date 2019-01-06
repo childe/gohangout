@@ -1,6 +1,13 @@
 inputs:
-    - Stdin:
+    #- Stdin:
+        #codec: json
+    - Kafka:
+        assign:
+            healer.test: [0]
         codec: json
+        consumer_settings:
+            bootstrap.servers: "10.1.1.100:9092"
+            group.id: gohangout.test
 filters:
     - Add:
         fields:

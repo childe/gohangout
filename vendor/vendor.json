@@ -15,10 +15,10 @@
 			"revisionTime": "2016-09-24T22:28:19Z"
 		},
 		{
-			"checksumSHA1": "nuvhXBZ+giobTvjUb7eF5wGlzIw=",
+			"checksumSHA1": "qbDbrjfBJpx09g10GDT9PxPUteU=",
 			"path": "github.com/childe/healer",
-			"revision": "459ceb7008a1e17f8617edd97fdd8fb5fd7b1dc7",
-			"revisionTime": "2018-12-17T05:36:44Z"
+			"revision": "8c4ead0e58d0e63c5cd19d4b882d7feeb01d5f43",
+			"revisionTime": "2019-01-06T05:25:26Z"
 		},
 		{
 			"checksumSHA1": "WHl96RVZlOOdF4Lb1OOadMpw8ls=",
@@ -103,18 +103,6 @@
 			"path": "github.com/modern-go/reflect2",
 			"revision": "94122c33edd36123c84d5368cfb2b69df93a0ec8",
 			"revisionTime": "2018-07-18T01:23:57Z"
-		},
-		{
-			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
-			"path": "golang.org/x/net/context",
-			"revision": "6a513affb38dc9788b449d59ffed099b8de18fa0",
-			"revisionTime": "2016-07-26T08:19:14Z"
-		},
-		{
-			"checksumSHA1": "vcN67ZjTbGpLLwSghHCbAEvmzMo=",
-			"path": "golang.org/x/sync/semaphore",
-			"revision": "fd80eb99c8f653c847d294a001bdf2a3a6f768f5",
-			"revisionTime": "2017-11-01T19:49:15Z"
 		},
 		{
 			"checksumSHA1": "ZSWoOPUNRr5+3dhkLK3C4cZAQPk=",
