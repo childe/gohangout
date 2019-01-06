@@ -78,7 +78,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	if v, ok := config["from_beginning"]; ok {
 		kafkaInput.fromBeginning = v.(bool)
 	} else {
-		kafkaInput.fromBeginning = true
+		kafkaInput.fromBeginning = false
 	}
 
 	consumerConfig, err := healer.GetConsumerConfig(consumer_settings)
