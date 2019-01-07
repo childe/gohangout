@@ -128,7 +128,7 @@ Kafka:
 
 #### assign
 
-assign 配置用来只消费特定的partition, 和 `topic` 配置是冲突的, 只能选择一个. 后面使用的不是 Group Consumer
+assign 配置用来只消费特定的partition, 和 `topic` 配置是冲突的, 只能选择一个.
 
 
 bootstrap.servers group.id 必须配置

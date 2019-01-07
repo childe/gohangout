@@ -113,6 +113,7 @@ func main() {
 			for _, box := range boxes {
 				box.Shutdown()
 			}
+			os.Exit(0)
 		}
 	}()
 

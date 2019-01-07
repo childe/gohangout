@@ -1,6 +1,8 @@
 package input
 
 import (
+	"sync"
+
 	"github.com/childe/gohangout/output"
 	"github.com/golang/glog"
 )
@@ -9,6 +11,7 @@ type InputBox struct {
 	input   Input
 	outputs []output.Output
 	stop    bool
+	wg      sync.WaitGroup
 }
 
 func NewInputBox(input Input, outputs []output.Output) *InputBox {
@@ -24,20 +27,23 @@ func (box *InputBox) Beat() {
 		event map[string]interface{}
 	)
 
+	defer box.wg.Wait()
 	for !box.stop {
 		event = box.input.readOneEvent()
 		if event == nil {
 			glog.Info("receive nil message. shutdown...")
-			break
+			box.shutdown()
+			return
 		}
 		box.input.GotoNext(event)
 	}
-
-	box.shutdown()
 }
 
 func (box *InputBox) Shutdown() {
+	box.wg.Add(1)
+	defer box.wg.Done()
 	box.stop = true
+	box.shutdown()
 }
 
 func (box *InputBox) shutdown() {
