@@ -11,8 +11,7 @@ import (
 type KafkaInput struct {
 	BaseInput
 
-	config        map[interface{}]interface{}
-	fromBeginning bool
+	config map[interface{}]interface{}
 
 	messages chan *healer.FullMessage
 
@@ -75,12 +74,6 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		decoder: codec.NewDecoder(codertype),
 	}
 
-	if v, ok := config["from_beginning"]; ok {
-		kafkaInput.fromBeginning = v.(bool)
-	} else {
-		kafkaInput.fromBeginning = false
-	}
-
 	consumerConfig, err := healer.GetConsumerConfig(consumer_settings)
 	if err != nil {
 		glog.Fatalf("error in consumer settings: %s", err)
@@ -96,7 +89,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 				}
 				kafkaInput.consumers = append(kafkaInput.consumers, c)
 
-				_, err = c.Consume(kafkaInput.fromBeginning, kafkaInput.messages)
+				_, err = c.Consume(kafkaInput.messages)
 				if err != nil {
 					glog.Fatalf("try to consumer error: %s", err)
 				}
@@ -110,7 +103,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 
 		c.Assign(assign)
 
-		kafkaInput.messages, err = c.Consume(kafkaInput.fromBeginning)
+		kafkaInput.messages, err = c.Consume()
 		if err != nil {
 			glog.Fatalf("try to consume error: %s", err)
 		}
