@@ -89,10 +89,12 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 				}
 				kafkaInput.consumers = append(kafkaInput.consumers, c)
 
-				_, err = c.Consume(kafkaInput.messages)
-				if err != nil {
-					glog.Fatalf("try to consumer error: %s", err)
-				}
+				go func() {
+					_, err = c.Consume(kafkaInput.messages)
+					if err != nil {
+						glog.Fatalf("try to consumer error: %s", err)
+					}
+				}()
 			}
 		}
 	} else {
@@ -103,10 +105,12 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 
 		c.Assign(assign)
 
-		kafkaInput.messages, err = c.Consume()
-		if err != nil {
-			glog.Fatalf("try to consume error: %s", err)
-		}
+		go func() {
+			kafkaInput.messages, err = c.Consume()
+			if err != nil {
+				glog.Fatalf("try to consume error: %s", err)
+			}
+		}()
 	}
 
 	return kafkaInput
