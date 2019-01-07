@@ -111,22 +111,33 @@ Stdin:
 Kafka:
     topic:
         weblog: 1
+    #assign:
+    #   weblog: [0,9]
     codec: json
     consumer_settings:
         bootstrap.servers: "10.0.0.100:9092,10.0.0.101:9092"
         group.id: gohangout.weblog
         max.partition.fetch.bytes: 10485760
         auto.commit.interval.ms: 5000
+		from.beginning: true
 ```
+
+#### topic
 
 `weblog: 1` 是指开一个goroutine去消费 weblog 这个topic. 可以配置多个topic, 多个goroutine, 但我这边在实践中都是使用多进程(docker), 而不是多goroutine.
 
-bootstrap.servers group.id 必须配置
+#### assign
 
+assign 配置用来只消费特定的partition, 和 `topic` 配置是冲突的, 只能选择一个. 后面使用的不是 Group Consumer
+
+
+bootstrap.servers group.id 必须配置
 
 auto.commit.interval.ms 是指多久commit一次offset, 太长的话有可能造成数据重复消费,太短的话可能会对kafka千万太大压力.
 
 max.partition.fetch.bytes 是指kafka client一次从kafka server读取多少数据,默认是10MB
+
+from.beginning 如果第一次消费此topic, 或者是offset已经失效, 是从头消费还是从最新消费. 默认是 false 
 
 更多配置参见 [https://github.com/childe/healer/blob/dev/config.go#L40](https://github.com/childe/healer/blob/dev/config.go#L40)
 
