@@ -206,7 +206,12 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 			return false, shouldRetry, noRetry, nil
 		}
 		req, err = http.NewRequest(p.requestMethod, url, &buf)
-		req.Header.Set("Content-Encoding", "gzip")
+		if err != nil {
+			glog.Errorf("create request error: %s", err)
+			return false, shouldRetry, noRetry, nil
+		} else {
+			req.Header.Set("Content-Encoding", "gzip")
+		}
 	} else {
 		req, err = http.NewRequest(p.requestMethod, url, bytes.NewBuffer((*br).readBuf()))
 	}
