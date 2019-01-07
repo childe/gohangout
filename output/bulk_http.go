@@ -57,6 +57,7 @@ type HTTPBulkProcessor struct {
 	execution_id      int
 	client            *http.Client
 	mux               sync.Mutex
+	executionIDmux    sync.Mutex
 	wg                sync.WaitGroup
 
 	bulkChan chan *BulkRequest
@@ -115,33 +116,40 @@ func (p *HTTPBulkProcessor) add(event Event) {
 	// TODO bulkRequest passed to bulk may be empty, but execution_id has ++
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.eventCount() >= p.bulk_actions {
 		p.mux.Lock()
-		defer p.mux.Unlock()
-		if p.bulkRequest.eventCount() > 0 {
-			bulkRequest := p.bulkRequest
-			p.bulkRequest = p.newBulkRequestFunc()
-			p.bulkChan <- &bulkRequest
+
+		if p.bulkRequest.eventCount() == 0 {
+			p.mux.Unlock()
+			return
 		}
+
+		bulkRequest := p.bulkRequest
+		p.bulkRequest = p.newBulkRequestFunc()
+		p.mux.Unlock()
+
+		p.bulkChan <- &bulkRequest
 	}
 }
 
 func (p *HTTPBulkProcessor) bulk() {
 	p.mux.Lock()
-	defer p.mux.Unlock()
 
 	if p.bulkRequest.eventCount() == 0 {
+		p.mux.Unlock()
 		return
 	}
 
 	bulkRequest := p.bulkRequest
 	p.bulkRequest = p.newBulkRequestFunc()
+	p.mux.Unlock()
+
 	p.bulkChan <- &bulkRequest
 }
 
 func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
-	p.mux.Lock()
+	p.executionIDmux.Lock()
 	p.execution_id++
 	execution_id := p.execution_id
-	p.mux.Unlock()
+	p.executionIDmux.Unlock()
 
 	_startTime := float64(time.Now().UnixNano()/1000000) / 1000
 	eventCount := (*bulkRequest).eventCount()

@@ -165,8 +165,8 @@ Elasticsearch:
     index: 'web-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
     index_type: "logs"
     bulk_actions: 5000
-    routing: [domain]
-    id: [orderid]
+    routing: '[domain]'
+    id: '[orderid]'
     bulk_size: 20
     flush_interval: 60
     concurrent: 3
