@@ -106,7 +106,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	glog.V(20).Infof("%v", bulkResponse)
 
 	if bulkResponse["errors"] == nil {
-		glog.Infof("could NOT get errors in response:%v", bulkResponse)
+		glog.Infof("could NOT get errors in response:%s", string(respBody))
 		return retry, noRetry, nil
 	}
 
