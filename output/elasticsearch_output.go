@@ -2,7 +2,6 @@ package output
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -12,9 +11,12 @@ import (
 )
 
 const (
-	DEFAULT_INDEX_TYPE     = "logs"
-	META_FORMAT_WITH_ID    = `{"%s":{"_index":"%s","_type":"%s","_id":"%s","routing":"%s"}}` + "\n"
-	META_FORMAT_WITHOUT_ID = `{"%s":{"_index":"%s","_type":"%s","routing":"%s"}}` + "\n"
+	DEFAULT_INDEX_TYPE = "logs"
+)
+
+var (
+	META_WITH_ID    = map[string]interface{}{"_index": "", "_type": "", "_id": "", "routing": ""}
+	META_WITHOUT_ID = map[string]interface{}{"_index": "", "_type": "", "routing": ""}
 )
 
 type Action struct {
@@ -28,17 +30,34 @@ type Action struct {
 }
 
 func (action *Action) Encode() []byte {
-	var meta []byte
+	var (
+		meta []byte
+		buf  []byte
+		err  error
+	)
 	if action.id != "" {
-		meta = []byte(fmt.Sprintf(META_FORMAT_WITH_ID, action.op, action.index, action.index_type, action.id, action.routing))
+		META_WITH_ID["_index"] = action.index
+		META_WITH_ID["_type"] = action.index_type
+		META_WITH_ID["routing"] = action.routing
+		META_WITH_ID["_id"] = action.id
+		d := &simplejson.SimpleJsonDecoder{}
+		meta, err = d.Encode(map[string]interface{}{action.op: META_WITH_ID})
+		if err != nil {
+			glog.Errorf("marshal meta error : %s", META_WITH_ID, err)
+			return nil
+		}
 	} else {
-		meta = []byte(fmt.Sprintf(META_FORMAT_WITHOUT_ID, action.op, action.index, action.index_type, action.routing))
+		META_WITHOUT_ID["_index"] = action.index
+		META_WITHOUT_ID["_type"] = action.index_type
+		META_WITHOUT_ID["routing"] = action.routing
+		d := &simplejson.SimpleJsonDecoder{}
+		meta, err = d.Encode(map[string]interface{}{action.op: META_WITHOUT_ID})
+		if err != nil {
+			glog.Errorf("marshal meta error : %s", META_WITHOUT_ID, err)
+			return nil
+		}
 	}
 
-	var (
-		buf []byte
-		err error
-	)
 	if action.rawSource == nil {
 		d := &simplejson.SimpleJsonDecoder{}
 		buf, err = d.Encode(action.event)
@@ -50,8 +69,9 @@ func (action *Action) Encode() []byte {
 		buf = action.rawSource
 	}
 
-	bulk_buf := make([]byte, 0, len(meta)+len(buf)+1)
+	bulk_buf := make([]byte, 0, len(meta)+len(buf)+2)
 	bulk_buf = append(bulk_buf, meta...)
+	bulk_buf = append(bulk_buf, '\n')
 	bulk_buf = append(bulk_buf, buf...)
 	bulk_buf = append(bulk_buf, '\n')
 	return bulk_buf
