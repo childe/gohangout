@@ -2,6 +2,26 @@
 
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
 
+
+## 安装
+
+### 从源码安装
+
+1. 下载依赖包
+
+  使用 govender 管理依赖.
+
+   > govender sync
+
+2. 编译
+
+  > make
+
+### 下载编译后二进制文件
+
+[https://github.com/childe/gohangout/releases](https://github.com/childe/gohangout/releases) 直接下载
+
+
 ## RUN
 
 gohangout --config config.yml
