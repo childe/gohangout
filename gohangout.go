@@ -41,8 +41,8 @@ func init() {
 func buildPluginLink(config map[string]interface{}) []*input.InputBox {
 	boxes := make([]*input.InputBox, 0)
 
-	var inputPlugin input.Input
 	for input_idx, inputI := range config["inputs"].([]interface{}) {
+		var inputPlugin input.Input
 		outputs := output.BuildOutputs(config)
 		filters := filter.BuildFilters(config, nil, outputs)
 
@@ -121,10 +121,10 @@ func main() {
 	wg.Add(len(boxes))
 	defer wg.Wait()
 
-	for _, box := range boxes {
-		go func() {
+	for i, _ := range boxes {
+		go func(i int) {
 			defer wg.Done()
-			box.Beat()
-		}()
+			boxes[i].Beat()
+		}(i)
 	}
 }
