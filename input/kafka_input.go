@@ -69,7 +69,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		BaseInput: BaseInput{},
 
 		config:   config,
-		messages: make(chan *healer.FullMessage, 100),
+		messages: make(chan *healer.FullMessage, 10),
 
 		decoder: codec.NewDecoder(codertype),
 	}
@@ -106,7 +106,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		c.Assign(assign)
 
 		go func() {
-			kafkaInput.messages, err = c.Consume()
+			_, err = c.Consume(kafkaInput.messages)
 			if err != nil {
 				glog.Fatalf("try to consume error: %s", err)
 			}
