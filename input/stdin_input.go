@@ -2,7 +2,6 @@ package input
 
 import (
 	"bufio"
-	"io"
 	"os"
 
 	"github.com/childe/gohangout/codec"
@@ -15,6 +14,9 @@ type StdinInput struct {
 	config  map[interface{}]interface{}
 	reader  *bufio.Reader
 	decoder codec.Decoder
+
+	scanner  *bufio.Scanner
+	messages chan []byte
 }
 
 func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
@@ -22,34 +24,31 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
 	}
-	return &StdinInput{
+	p := &StdinInput{
 		BaseInput: BaseInput{},
 
-		config:  config,
-		reader:  bufio.NewReader(os.Stdin),
-		decoder: codec.NewDecoder(codertype),
+		config:   config,
+		reader:   bufio.NewReader(os.Stdin),
+		decoder:  codec.NewDecoder(codertype),
+		scanner:  bufio.NewScanner(os.Stdin),
+		messages: make(chan []byte, 10),
 	}
+
+	go func() {
+		for p.scanner.Scan() {
+			t := p.scanner.Text()
+			p.messages <- []byte(t)
+		}
+		glog.Errorf("%s", p.scanner.Err())
+		p.messages <- nil
+	}()
+	return p
 }
 
 func (p *StdinInput) readOneEvent() map[string]interface{} {
-	var text []byte = nil
-	for {
-		line, isPrefix, err := p.reader.ReadLine()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			glog.Errorf("readline error:%s", err)
-			return nil
-		}
-		if text == nil {
-			text = line
-		} else {
-			text = append(text, line...)
-		}
-		if !isPrefix {
-			break
-		}
+	text := <-p.messages
+	if text == nil {
+		return nil
 	}
 	return p.decoder.Decode(text)
 }
