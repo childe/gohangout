@@ -27,6 +27,10 @@ var options = &struct {
 	memprofile string
 }{}
 
+var (
+	worker = flag.Int("worker", 1, "worker thread count")
+)
+
 func init() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
 
@@ -124,7 +128,7 @@ func main() {
 	for i, _ := range boxes {
 		go func(i int) {
 			defer wg.Done()
-			boxes[i].Beat()
+			boxes[i].Beat(*worker)
 		}(i)
 	}
 }

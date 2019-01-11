@@ -8,10 +8,11 @@ import (
 )
 
 type InputBox struct {
-	input   Input
-	outputs []output.Output
-	stop    bool
-	wg      sync.WaitGroup
+	input      Input
+	outputs    []output.Output
+	stop       bool
+	shutdownWG sync.WaitGroup
+	workerWG   sync.WaitGroup
 }
 
 func NewInputBox(input Input, outputs []output.Output) *InputBox {
@@ -22,12 +23,13 @@ func NewInputBox(input Input, outputs []output.Output) *InputBox {
 	}
 }
 
-func (box *InputBox) Beat() {
+func (box *InputBox) beat() {
+	defer box.workerWG.Done()
+
 	var (
 		event map[string]interface{}
 	)
 
-	defer box.wg.Wait()
 	for !box.stop {
 		event = box.input.readOneEvent()
 		if event == nil {
@@ -39,11 +41,14 @@ func (box *InputBox) Beat() {
 	}
 }
 
-func (box *InputBox) Shutdown() {
-	box.wg.Add(1)
-	defer box.wg.Done()
-	box.stop = true
-	box.shutdown()
+func (box *InputBox) Beat(worker int) {
+	defer box.workerWG.Wait()
+	defer box.shutdownWG.Wait() // wait shutdown
+
+	for i := 0; i < worker; i++ {
+		box.workerWG.Add(1)
+		go box.beat()
+	}
 }
 
 func (box *InputBox) shutdown() {
@@ -53,4 +58,11 @@ func (box *InputBox) shutdown() {
 		glog.Infof("try to shutdown output %T", o)
 		o.Shutdown()
 	}
+}
+
+func (box *InputBox) Shutdown() {
+	box.shutdownWG.Add(1)
+	defer box.shutdownWG.Done()
+	box.stop = true
+	box.shutdown()
 }
