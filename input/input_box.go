@@ -8,11 +8,12 @@ import (
 )
 
 type InputBox struct {
-	input      Input
-	outputs    []output.Output
-	stop       bool
-	shutdownWG sync.WaitGroup
-	workerWG   sync.WaitGroup
+	input       Input
+	outputs     []output.Output
+	stop        bool
+	shutdownWG  sync.WaitGroup
+	workerWG    sync.WaitGroup
+	shutdownMux sync.Mutex
 }
 
 func NewInputBox(input Input, outputs []output.Output) *InputBox {
@@ -52,6 +53,14 @@ func (box *InputBox) Beat(worker int) {
 }
 
 func (box *InputBox) shutdown() {
+	box.shutdownMux.Lock()
+	defer box.shutdownMux.Unlock()
+
+	if box.stop {
+		return
+	}
+
+	box.stop = true
 	glog.Infof("try to shutdown input %T", box.input)
 	box.input.Shutdown()
 	for _, o := range box.outputs {
@@ -63,6 +72,5 @@ func (box *InputBox) shutdown() {
 func (box *InputBox) Shutdown() {
 	box.shutdownWG.Add(1)
 	defer box.shutdownWG.Done()
-	box.stop = true
 	box.shutdown()
 }
