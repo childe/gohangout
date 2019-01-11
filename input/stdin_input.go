@@ -39,8 +39,10 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 			t := p.scanner.Text()
 			p.messages <- []byte(t)
 		}
-		glog.Errorf("%s", p.scanner.Err())
-		p.messages <- nil
+		if err := p.scanner.Err(); err != nil {
+			glog.Errorf("%s", err)
+		}
+		close(p.messages)
 	}()
 	return p
 }
