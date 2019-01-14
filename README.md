@@ -2,6 +2,26 @@
 
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
 
+
+## 安装
+
+### 从源码安装
+
+1. 下载依赖包
+
+  使用 govender 管理依赖.
+
+   > govender sync
+
+2. 编译
+
+  > make
+
+### 下载编译后二进制文件
+
+[https://github.com/childe/gohangout/releases](https://github.com/childe/gohangout/releases) 直接下载
+
+
 ## RUN
 
 gohangout --config config.yml
@@ -119,7 +139,10 @@ Kafka:
         group.id: gohangout.weblog
         max.partition.fetch.bytes: 10485760
         auto.commit.interval.ms: 5000
-		from.beginning: true
+        from.beginning: true
+        # sasl.mechanism: PLAIN
+        # sasl.user: admin
+        # sasl.password: admin-secret
 ```
 
 #### topic
@@ -130,6 +153,7 @@ Kafka:
 
 assign 配置用来只消费特定的partition, 和 `topic` 配置是冲突的, 只能选择一个.
 
+#### consumer_settings
 
 bootstrap.servers group.id 必须配置
 
@@ -137,7 +161,13 @@ auto.commit.interval.ms 是指多久commit一次offset, 太长的话有可能造
 
 max.partition.fetch.bytes 是指kafka client一次从kafka server读取多少数据,默认是10MB
 
-from.beginning 如果第一次消费此topic, 或者是offset已经失效, 是从头消费还是从最新消费. 默认是 false 
+from.beginning 如果第一次消费此topic, 或者是offset已经失效, 是从头消费还是从最新消费. 默认是 false. 但是如果已经有过commit offset, 会接着之前的消费.
+
+sasl.mechanism 认证方式, 目前还只支持 PLAIN 一种
+
+sasl.user sasl认证的用户名
+
+sasl.password sasl认证的密码
 
 更多配置参见 [https://github.com/childe/healer/blob/dev/config.go#L40](https://github.com/childe/healer/blob/dev/config.go#L40)
 
