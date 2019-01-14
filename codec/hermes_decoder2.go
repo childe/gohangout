@@ -75,7 +75,7 @@ func (hd *HermesDecoder2) Decode(value []byte) map[string]interface{} {
 		d := json.NewDecoder(strings.NewReader(ss))
 		d.UseNumber()
 		err := d.Decode(&rst)
-		if err != nil {
+		if err != nil || d.More() {
 			rst["message"] = string(value)
 		}
 	}

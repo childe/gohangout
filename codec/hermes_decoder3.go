@@ -68,7 +68,7 @@ func (hd *HermesDecoder3) Decode(value []byte) map[string]interface{} {
 	d := json.NewDecoder(bytes.NewReader(value))
 	d.UseNumber()
 	err := d.Decode(&rst)
-	if err != nil {
+	if err != nil || d.More() {
 		rst["@timestamp"] = time.Now().UnixNano() / 1000000
 		rst["message"] = string(value)
 	}
