@@ -139,8 +139,6 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 }
 
 type GrokFilter struct {
-	*BaseFilter
-
 	config    map[interface{}]interface{}
 	overwrite bool
 	groks     []*Grok
@@ -170,10 +168,9 @@ func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	}
 
 	gf := &GrokFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		groks:      groks,
-		overwrite:  true,
+		config:    config,
+		groks:     groks,
+		overwrite: true,
 	}
 
 	if overwrite, ok := config["overwrite"]; ok {

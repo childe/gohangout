@@ -1,14 +1,12 @@
 package filter
 
 type DropFilter struct {
-	*BaseFilter
 	config map[interface{}]interface{}
 }
 
 func NewDropFilter(config map[interface{}]interface{}) *DropFilter {
 	plugin := &DropFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
+		config: config,
 	}
 	return plugin
 }

@@ -9,8 +9,6 @@ import (
 )
 
 type StdinInput struct {
-	BaseInput
-
 	config  map[interface{}]interface{}
 	reader  *bufio.Reader
 	decoder codec.Decoder
@@ -25,7 +23,6 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 		codertype = v.(string)
 	}
 	p := &StdinInput{
-		BaseInput: BaseInput{},
 
 		config:   config,
 		reader:   bufio.NewReader(os.Stdin),

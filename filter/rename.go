@@ -3,17 +3,14 @@ package filter
 import "github.com/golang/glog"
 
 type RenameFilter struct {
-	*BaseFilter
-
 	config map[interface{}]interface{}
 	fields map[string]string
 }
 
 func NewRenameFilter(config map[interface{}]interface{}) *RenameFilter {
 	plugin := &RenameFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[string]string),
+		config: config,
+		fields: make(map[string]string),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {

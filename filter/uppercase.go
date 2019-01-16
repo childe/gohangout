@@ -10,17 +10,14 @@ import (
 )
 
 type UppercaseFilter struct {
-	*BaseFilter
-
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
 func NewUppercaseFilter(config map[interface{}]interface{}) *UppercaseFilter {
 	plugin := &UppercaseFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
+		config: config,
+		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {

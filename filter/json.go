@@ -9,8 +9,6 @@ import (
 )
 
 type JsonFilter struct {
-	*BaseFilter
-
 	field     string
 	target    string
 	overwrite bool
@@ -18,9 +16,8 @@ type JsonFilter struct {
 
 func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
 	plugin := &JsonFilter{
-		BaseFilter: NewBaseFilter(config),
-		overwrite:  true,
-		target:     "",
+		overwrite: true,
+		target:    "",
 	}
 
 	if field, ok := config["field"]; ok {

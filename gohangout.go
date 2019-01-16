@@ -11,9 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/input"
-	"github.com/childe/gohangout/output"
 	"github.com/golang/glog"
 	"github.com/json-iterator/go"
 )
@@ -47,8 +45,6 @@ func buildPluginLink(config map[string]interface{}) []*input.InputBox {
 
 	for input_idx, inputI := range config["inputs"].([]interface{}) {
 		var inputPlugin input.Input
-		outputs := output.BuildOutputs(config)
-		filters := filter.BuildFilters(config, nil, outputs)
 
 		i := inputI.(map[interface{}]interface{})
 		glog.Infof("input[%d] %v", input_idx+1, i)
@@ -58,13 +54,9 @@ func buildPluginLink(config map[string]interface{}) []*input.InputBox {
 			inputType := inputTypeI.(string)
 			inputConfig := inputConfigI.(map[interface{}]interface{})
 
-			if len(filters) > 0 {
-				inputPlugin = input.GetInput(inputType, inputConfig, filters[0], nil)
-			} else {
-				inputPlugin = input.GetInput(inputType, inputConfig, nil, outputs)
-			}
+			inputPlugin = input.GetInput(inputType, inputConfig)
 
-			box := input.NewInputBox(inputPlugin, outputs)
+			box := input.NewInputBox(inputPlugin, config)
 			boxes = append(boxes, box)
 		}
 	}
