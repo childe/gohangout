@@ -14,11 +14,6 @@ const (
 	DEFAULT_INDEX_TYPE = "logs"
 )
 
-var (
-	META_WITH_ID    = map[string]interface{}{"_index": "", "_type": "", "_id": "", "routing": ""}
-	META_WITHOUT_ID = map[string]interface{}{"_index": "", "_type": "", "routing": ""}
-)
-
 type Action struct {
 	op         string
 	index      string
@@ -36,6 +31,7 @@ func (action *Action) Encode() []byte {
 		err  error
 	)
 	if action.id != "" {
+		META_WITH_ID := map[string]interface{}{"_index": "", "_type": "", "_id": "", "routing": ""}
 		META_WITH_ID["_index"] = action.index
 		META_WITH_ID["_type"] = action.index_type
 		META_WITH_ID["routing"] = action.routing
@@ -47,6 +43,7 @@ func (action *Action) Encode() []byte {
 			return nil
 		}
 	} else {
+		META_WITHOUT_ID := map[string]interface{}{"_index": "", "_type": "", "routing": ""}
 		META_WITHOUT_ID["_index"] = action.index
 		META_WITHOUT_ID["_type"] = action.index_type
 		META_WITHOUT_ID["routing"] = action.routing
