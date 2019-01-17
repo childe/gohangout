@@ -342,7 +342,7 @@ func NewCondition(c string) Condition {
 	}
 
 	if root, err := parseBoolTree(c); err != nil {
-		glog.Fatalf("could not build Condition from `%s`", original_c)
+		glog.Fatalf("could not build Condition from `%s` : %s", original_c, err)
 		return nil
 	} else {
 		return root
