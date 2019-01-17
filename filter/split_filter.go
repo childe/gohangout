@@ -9,8 +9,6 @@ import (
 )
 
 type SplitFilter struct {
-	*BaseFilter
-
 	config       map[interface{}]interface{}
 	fields       []field_setter.FieldSetter
 	fieldsLength int
@@ -23,7 +21,6 @@ type SplitFilter struct {
 
 func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 	plugin := &SplitFilter{
-		BaseFilter:  NewBaseFilter(config),
 		config:      config,
 		fields:      make([]field_setter.FieldSetter, 0),
 		overwrite:   true,

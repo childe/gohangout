@@ -11,186 +11,158 @@ import (
 	"github.com/golang/glog"
 )
 
-type Filter interface {
-	Pass(map[string]interface{}) bool
-	Filter(map[string]interface{}) (map[string]interface{}, bool)
+type Nexter interface {
 	Process(map[string]interface{})
-	PostProcess(map[string]interface{}, bool) map[string]interface{}
 }
 
-func BuildFilters(config map[string]interface{}, nextFilter Filter, outputs []output.Output) []Filter {
-	var (
-		rst []Filter
-	)
+type FilterNexter struct {
+	Next *FilterBox
+}
 
-	if fsI, ok := config["filters"]; ok {
-		filtersI := fsI.([]interface{})
+func (n *FilterNexter) Process(event map[string]interface{}) {
+	n.Next.Process(event)
+}
 
-		rst = make([]Filter, len(filtersI))
+type OutputNexter struct {
+	Next output.Output
+}
 
-		// build last filter plugin, pass outputs to it
-		for filterTypeI, filterConfigI := range filtersI[len(filtersI)-1].(map[interface{}]interface{}) {
+func (n *OutputNexter) Process(event map[string]interface{}) {
+	n.Next.Emit(event)
+}
+
+type OutputsNexter struct {
+	Next []output.Output
+}
+
+func (n *OutputsNexter) Process(event map[string]interface{}) {
+	for _, o := range n.Next {
+		o.Emit(event)
+	}
+}
+
+type Filter interface {
+	Filter(map[string]interface{}) (map[string]interface{}, bool)
+}
+
+func BuildFilterBoxes(config map[string]interface{}, outputs []output.Output) []*FilterBox {
+	if _, ok := config["filters"]; !ok {
+		return nil
+	}
+
+	filtersI := config["filters"].([]interface{})
+	filters := make([]Filter, len(filtersI))
+
+	for i := 0; i < len(filters); i++ {
+		for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
 			filterType := filterTypeI.(string)
 			glog.Infof("filter type: %s", filterType)
 			filterConfig := filterConfigI.(map[interface{}]interface{})
 			glog.Infof("filter config: %v", filterConfig)
 
-			nextFilter = BuildFilter(filterType, filterConfig, nextFilter, outputs)
+			filterPlugin := BuildFilter(filterType, filterConfig)
 
-			rst[len(filtersI)-1] = nextFilter
-			break // len(filtersI[-1]) is 1
+			filters[i] = filterPlugin
 		}
-
-		for i := len(filtersI) - 2; i >= 0; i-- {
-			for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
-				filterType := filterTypeI.(string)
-				glog.Infof("filter type: %s", filterType)
-				filterConfig := filterConfigI.(map[interface{}]interface{})
-				glog.Infof("filter config: %v", filterConfig)
-
-				filterPlugin := BuildFilter(filterType, filterConfig, nextFilter, nil)
-
-				rst[i] = filterPlugin
-				nextFilter = filterPlugin
-				break // len(filtersI[i]) is 1
-			}
-		}
-		return rst
-	} else {
-		return nil
 	}
+
+	boxes := make([]*FilterBox, len(filters))
+	for i := 0; i < len(filters); i++ {
+		for _, cfg := range filtersI[i].(map[interface{}]interface{}) {
+			boxes[i] = NewFilterBox(cfg.(map[interface{}]interface{}))
+			boxes[i].filter = filters[i]
+		}
+	}
+
+	for i := 0; i < len(filters)-1; i++ {
+		boxes[i].nexter = &FilterNexter{boxes[i+1]}
+	}
+
+	if len(outputs) == 1 {
+		boxes[len(boxes)-1].nexter = &OutputNexter{outputs[0]}
+	} else {
+		boxes[len(boxes)-1].nexter = &OutputsNexter{outputs}
+	}
+
+	return boxes
 }
 
-func BuildFilter(filterType string, config map[interface{}]interface{}, nextFilter Filter, outputs []output.Output) Filter {
+func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 	switch filterType {
 	case "Add":
 		f := NewAddFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Remove":
 		f := NewRemoveFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Rename":
 		f := NewRenameFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Lowercase":
 		f := NewLowercaseFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Uppercase":
 		f := NewUppercaseFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Split":
 		f := NewSplitFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Grok":
 		f := NewGrokFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Date":
 		f := NewDateFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Drop":
 		f := NewDropFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Json":
 		f := NewJsonFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Translate":
 		f := NewTranslateFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "Convert":
 		f := NewConvertFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "URLDecode":
 		f := NewURLDecodeFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "KV":
 		f := NewKVFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "IPIP":
 		f := NewIPIPFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "LinkMetric":
 		f := NewLinkMetricFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
 	case "LinkStatsMetric":
 		f := NewLinkStatsMetricFilter(config)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
 		return f
-	case "Filters":
-		f := NewFiltersFilter(config, nextFilter, outputs)
-		f.BaseFilter.filter = f
-		f.BaseFilter.nextFilter = nextFilter
-		f.outputs = outputs
-		return f
+		//case "Filters":
+		//f := NewFiltersFilter(config, nextFilter, outputs)
+		//return f
 	}
 	glog.Fatalf("could not build %s filter plugin", filterType)
 	return nil
 }
 
-type BaseFilter struct {
-	config          map[interface{}]interface{}
+type FilterBox struct {
+	filter Filter
+
+	nexter          Nexter
 	conditionFilter *condition_filter.ConditionFilter
+
+	config map[interface{}]interface{}
 
 	failTag      string
 	removeFields []field_deleter.FieldDeleter
 	addFields    map[field_setter.FieldSetter]value_render.ValueRender
-
-	filter     Filter
-	nextFilter Filter
-	outputs    []output.Output
 }
 
-func NewBaseFilter(config map[interface{}]interface{}) *BaseFilter {
-	f := BaseFilter{
+func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
+	f := FilterBox{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
 	}
@@ -225,14 +197,7 @@ func NewBaseFilter(config map[interface{}]interface{}) *BaseFilter {
 	return &f
 }
 
-func (f *BaseFilter) Pass(event map[string]interface{}) bool {
-	return f.conditionFilter.Pass(event)
-}
-
-func (f *BaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	return event, true
-}
-func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
+func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
 		if f.removeFields != nil {
 			for _, d := range f.removeFields {
@@ -259,24 +224,16 @@ func (f *BaseFilter) PostProcess(event map[string]interface{}, success bool) map
 	return event
 }
 
-func (b *BaseFilter) Process(event map[string]interface{}) {
+func (b *FilterBox) Process(event map[string]interface{}) {
 	var rst bool
 
-	if b.Pass(event) {
+	if b.conditionFilter.Pass(event) {
 		event, rst = b.filter.Filter(event)
 		if event == nil {
 			return
 		}
-		event = b.filter.PostProcess(event, rst)
+		event = b.PostProcess(event, rst)
 	}
 
-	if b.nextFilter != nil {
-		b.nextFilter.Process(event)
-	} else {
-		for _, outputPlugin := range b.outputs {
-			if outputPlugin.Pass(event) {
-				outputPlugin.Emit(event)
-			}
-		}
-	}
+	b.nexter.Process(event)
 }

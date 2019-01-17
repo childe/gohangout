@@ -9,8 +9,6 @@ import (
 )
 
 type IPIPFilter struct {
-	*BaseFilter
-
 	config    map[interface{}]interface{}
 	src       string
 	srcVR     value_render.ValueRender
@@ -22,10 +20,9 @@ type IPIPFilter struct {
 
 func NewIPIPFilter(config map[interface{}]interface{}) *IPIPFilter {
 	plugin := &IPIPFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		target:     "geoip",
-		overwrite:  true,
+		config:    config,
+		target:    "geoip",
+		overwrite: true,
 	}
 
 	if overwrite, ok := config["overwrite"]; ok {

@@ -7,8 +7,6 @@ import (
 )
 
 type AddFilter struct {
-	*BaseFilter
-
 	config    map[interface{}]interface{}
 	fields    map[field_setter.FieldSetter]value_render.ValueRender
 	overwrite bool
@@ -16,10 +14,9 @@ type AddFilter struct {
 
 func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	plugin := &AddFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
-		overwrite:  true,
+		config:    config,
+		fields:    make(map[field_setter.FieldSetter]value_render.ValueRender),
+		overwrite: true,
 	}
 
 	if overwrite, ok := config["overwrite"]; ok {

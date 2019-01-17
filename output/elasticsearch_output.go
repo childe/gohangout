@@ -11,12 +11,8 @@ import (
 )
 
 const (
-	DEFAULT_INDEX_TYPE = "logs"
-)
-
-var (
-	META_WITH_ID    = map[string]interface{}{"_index": "", "_type": "", "_id": "", "routing": ""}
-	META_WITHOUT_ID = map[string]interface{}{"_index": "", "_type": "", "routing": ""}
+	DEFAULT_INDEX_TYPE  = "logs"
+	META_FORMAT_WITH_ID = `{"%s":{"_index":%s,"_type":%s,"_id":%s,"routing":%s}}` + "\n"
 )
 
 type Action struct {
@@ -31,35 +27,37 @@ type Action struct {
 
 func (action *Action) Encode() []byte {
 	var (
-		meta []byte
+		meta []byte = make([]byte, 0, 1000)
 		buf  []byte
 		err  error
+		d    = &simplejson.SimpleJsonDecoder{}
 	)
+	meta = append(meta, `{"`+action.op+`":{"_index":`...)
+	index, _ := d.Encode(action.index)
+	meta = append(meta, index...)
+	d.Reset()
+
+	meta = append(meta, `,"_type":`...)
+	index_type, _ := d.Encode(action.index_type)
+	meta = append(meta, index_type...)
+	d.Reset()
+
 	if action.id != "" {
-		META_WITH_ID["_index"] = action.index
-		META_WITH_ID["_type"] = action.index_type
-		META_WITH_ID["routing"] = action.routing
-		META_WITH_ID["_id"] = action.id
-		d := &simplejson.SimpleJsonDecoder{}
-		meta, err = d.Encode(map[string]interface{}{action.op: META_WITH_ID})
-		if err != nil {
-			glog.Errorf("marshal meta error : %s", META_WITH_ID, err)
-			return nil
-		}
-	} else {
-		META_WITHOUT_ID["_index"] = action.index
-		META_WITHOUT_ID["_type"] = action.index_type
-		META_WITHOUT_ID["routing"] = action.routing
-		d := &simplejson.SimpleJsonDecoder{}
-		meta, err = d.Encode(map[string]interface{}{action.op: META_WITHOUT_ID})
-		if err != nil {
-			glog.Errorf("marshal meta error : %s", META_WITHOUT_ID, err)
-			return nil
-		}
+		meta = append(meta, `,"_id":`...)
+		doc_id, _ := d.Encode(action.id)
+		meta = append(meta, doc_id...)
+		d.Reset()
 	}
 
+	meta = append(meta, `,"routing":`...)
+	routing, _ := d.Encode(action.routing)
+	meta = append(meta, routing...)
+	d.Reset()
+
+	meta = append(meta, "}}\n"...)
+
 	if action.rawSource == nil {
-		d := &simplejson.SimpleJsonDecoder{}
+		d.Reset()
 		buf, err = d.Encode(action.event)
 		if err != nil {
 			glog.Errorf("could marshal event(%v):%s", action.event, err)
@@ -69,10 +67,9 @@ func (action *Action) Encode() []byte {
 		buf = action.rawSource
 	}
 
-	bulk_buf := make([]byte, 0, len(meta)+len(buf)+2)
+	bulk_buf := make([]byte, 0, len(meta)+len(buf)+1)
 	bulk_buf = append(bulk_buf, meta...)
-	bulk_buf = append(bulk_buf, '\n')
-	bulk_buf = append(bulk_buf, buf...)
+	bulk_buf = append(bulk_buf, buf[:len(buf)]...)
 	bulk_buf = append(bulk_buf, '\n')
 	return bulk_buf
 }

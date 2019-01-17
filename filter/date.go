@@ -132,8 +132,6 @@ func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 }
 
 type DateFilter struct {
-	*BaseFilter
-
 	config      map[interface{}]interface{}
 	dateParsers []DateParser
 	overwrite   bool
@@ -145,7 +143,6 @@ type DateFilter struct {
 
 func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	plugin := &DateFilter{
-		BaseFilter:  NewBaseFilter(config),
 		config:      config,
 		overwrite:   true,
 		dateParsers: make([]DateParser, 0),
