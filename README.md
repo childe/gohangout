@@ -47,7 +47,7 @@ pprof 的http地址
 
 ### 多线程处理
 
--w 4
+--worker 4
 使用四个线程(goroutine)处理数据. 每个线程拥有自己的filter, output. 比如说translate filter, 每个线程有自己的字典, 他们占用多份内存.  elasticsearch output也是一样的, 如果每个 elasticsearch 设置了2并发, 那一共就是8个并发.  默认是一个线程
 
 
