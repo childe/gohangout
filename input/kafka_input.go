@@ -9,17 +9,14 @@ import (
 )
 
 type KafkaInput struct {
-	BaseInput
-
 	config map[interface{}]interface{}
 
 	messages chan *healer.FullMessage
 
 	decoder codec.Decoder
 
-	consumers []*healer.GroupConsumer
-
-	simpleConsumers []*healer.SimpleConsumer // partitions config means we use simpleConsumers
+	groupConsumers []*healer.GroupConsumer
+	consumers      []*healer.Consumer
 }
 
 func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
@@ -66,7 +63,6 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	}
 
 	kafkaInput := &KafkaInput{
-		BaseInput: BaseInput{},
 
 		config:   config,
 		messages: make(chan *healer.FullMessage, 10),
@@ -87,7 +83,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 				if err != nil {
 					glog.Fatalf("could not init GroupConsumer: %s", err)
 				}
-				kafkaInput.consumers = append(kafkaInput.consumers, c)
+				kafkaInput.groupConsumers = append(kafkaInput.groupConsumers, c)
 
 				go func() {
 					_, err = c.Consume(kafkaInput.messages)
@@ -102,6 +98,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		if err != nil {
 			glog.Fatalf("could not init SimpleConsumer: %s", err)
 		}
+		kafkaInput.consumers = append(kafkaInput.consumers, c)
 
 		c.Assign(assign)
 
@@ -116,17 +113,24 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	return kafkaInput
 }
 
-func (inputPlugin *KafkaInput) readOneEvent() map[string]interface{} {
-	message := <-inputPlugin.messages
+func (p *KafkaInput) readOneEvent() map[string]interface{} {
+	message := <-p.messages
 
 	if message.Error != nil {
 		return nil
 	}
-	return inputPlugin.decoder.Decode(message.Message.Value)
+	return p.decoder.Decode(message.Message.Value)
 }
 
-func (inputPlugin *KafkaInput) Shutdown() {
-	for _, c := range inputPlugin.consumers {
-		c.AwaitClose(30 * time.Second)
+func (p *KafkaInput) Shutdown() {
+	if len(p.groupConsumers) > 0 {
+		for _, c := range p.groupConsumers {
+			c.AwaitClose(30 * time.Second)
+		}
+	}
+	if len(p.consumers) > 0 {
+		for _, c := range p.consumers {
+			c.AwaitClose(30 * time.Second)
+		}
 	}
 }

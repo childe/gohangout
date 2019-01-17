@@ -107,7 +107,8 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 		return nil
 	}
 
-	switch reflect.TypeOf(v).Kind() {
+	k := reflect.TypeOf(v).Kind()
+	switch k {
 	case reflect.Bool:
 		if v.(bool) {
 			d.WriteString("true")
@@ -227,8 +228,8 @@ func (d *SimpleJsonDecoder) encodeArray(v []interface{}) error {
 	return nil
 }
 
-func (d *SimpleJsonDecoder) Encode(e map[string]interface{}) ([]byte, error) {
-	if err := d.encodeMap(e); err != nil {
+func (d *SimpleJsonDecoder) Encode(e interface{}) ([]byte, error) {
+	if err := d.encodeV(e); err != nil {
 		return nil, err
 	}
 	return d.Bytes(), nil

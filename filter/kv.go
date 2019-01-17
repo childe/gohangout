@@ -9,8 +9,6 @@ import (
 )
 
 type KVFilter struct {
-	*BaseFilter
-
 	config      map[interface{}]interface{}
 	fields      map[field_setter.FieldSetter]value_render.ValueRender
 	src         value_render.ValueRender
@@ -23,9 +21,8 @@ type KVFilter struct {
 
 func NewKVFilter(config map[interface{}]interface{}) *KVFilter {
 	plugin := &KVFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
+		config: config,
+		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
 	if src, ok := config["src"]; ok {

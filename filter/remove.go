@@ -6,15 +6,12 @@ import (
 )
 
 type RemoveFilter struct {
-	*BaseFilter
-
 	config         map[interface{}]interface{}
 	fieldsDeleters []field_deleter.FieldDeleter
 }
 
 func NewRemoveFilter(config map[interface{}]interface{}) *RemoveFilter {
 	plugin := &RemoveFilter{
-		BaseFilter:     NewBaseFilter(config),
 		config:         config,
 		fieldsDeleters: make([]field_deleter.FieldDeleter, 0),
 	}

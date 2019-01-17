@@ -65,17 +65,14 @@ type ConveterAndRender struct {
 }
 
 type ConvertFilter struct {
-	*BaseFilter
-
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]ConveterAndRender
 }
 
 func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 	plugin := &ConvertFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[field_setter.FieldSetter]ConveterAndRender),
+		config: config,
+		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {

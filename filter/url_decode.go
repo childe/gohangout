@@ -10,17 +10,14 @@ import (
 )
 
 type URLDecodeFilter struct {
-	*BaseFilter
-
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
 func NewURLDecodeFilter(config map[interface{}]interface{}) *URLDecodeFilter {
 	plugin := &URLDecodeFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
+		config: config,
+		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {

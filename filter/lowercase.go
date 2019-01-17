@@ -10,17 +10,14 @@ import (
 )
 
 type LowercaseFilter struct {
-	*BaseFilter
-
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
 func NewLowercaseFilter(config map[interface{}]interface{}) *LowercaseFilter {
 	plugin := &LowercaseFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
-		fields:     make(map[field_setter.FieldSetter]value_render.ValueRender),
+		config: config,
+		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {

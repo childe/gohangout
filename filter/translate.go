@@ -14,8 +14,6 @@ import (
 )
 
 type TranslateFilter struct {
-	*BaseFilter
-
 	config          map[interface{}]interface{}
 	refreshInterval int
 	source          string
@@ -67,8 +65,7 @@ func (plugin *TranslateFilter) parseDict() error {
 
 func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 	plugin := &TranslateFilter{
-		BaseFilter: NewBaseFilter(config),
-		config:     config,
+		config: config,
 	}
 
 	if source, ok := config["source"]; ok {
