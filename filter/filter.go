@@ -28,7 +28,9 @@ type OutputNexter struct {
 }
 
 func (n *OutputNexter) Process(event map[string]interface{}) {
-	n.Next.Emit(event)
+	if n.Next.Pass(event) {
+		n.Next.Emit(event)
+	}
 }
 
 type OutputsNexter struct {
@@ -37,7 +39,9 @@ type OutputsNexter struct {
 
 func (n *OutputsNexter) Process(event map[string]interface{}) {
 	for _, o := range n.Next {
-		o.Emit(event)
+		if o.Pass(event) {
+			o.Emit(event)
+		}
 	}
 }
 
