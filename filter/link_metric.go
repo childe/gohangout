@@ -107,6 +107,7 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	go func() {
 		for range ticker.C {
 			plugin.swap_Metric_MetricToEmit()
+			plugin.emitMetrics()
 		}
 	}()
 	return plugin
@@ -191,12 +192,12 @@ func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	} else {
 		set[lastFieldValue] = 1
 	}
-
-	f.EmitMetrics()
 }
 
 func (f *LinkMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	f.updateMetric(event)
+	f.emitMetrics()
+
 	if f.dropOriginalEvent {
 		return nil, false
 	}
@@ -233,7 +234,7 @@ func (f *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, l
 	return events
 }
 
-func (f *LinkMetricFilter) EmitMetrics() {
+func (f *LinkMetricFilter) emitMetrics() {
 	if len(f.metricToEmit) == 0 {
 		return
 	}
@@ -245,7 +246,6 @@ func (f *LinkMetricFilter) EmitMetrics() {
 	for timestamp, metrics := range f.metricToEmit {
 		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[f.timestamp] = time.Unix(timestamp, 0)
-			//event = f.PostProcess(event, true)
 
 			f.nexter.Process(event)
 		}
