@@ -1,0 +1,13 @@
+inputs:
+    - Random:
+        from: 1
+        to: 100
+        max_messages: 1000
+    - Random:
+        from: 1
+        to: 100
+        max_messages: 1000
+
+outputs:
+    - Stdout: {}
+    - Stdout: {}

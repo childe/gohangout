@@ -1,0 +1,18 @@
+inputs:
+- Random:
+    from: 300
+    to: 1000
+    max_messages: 1000
+- Random:
+    from: 200
+    to: 299
+    max_messages: 1000
+
+filters:
+- Drop:
+    if:
+    - 'HasPrefix(message,2)'
+
+outputs:
+- Stdout: {}
+- Stdout: {}
