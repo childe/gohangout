@@ -32,7 +32,7 @@ func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 			plugin.fields[fieldSetter] = value_render.GetValueRender(v.(string))
 		}
 	} else {
-		glog.Fatal("fileds must be set in add filter plugin")
+		glog.Fatal("fields must be set in add filter plugin")
 	}
 	return plugin
 }
