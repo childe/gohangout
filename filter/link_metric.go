@@ -11,6 +11,7 @@ import (
 )
 
 type LinkMetricFilter struct {
+	nexter            Nexter
 	config            map[interface{}]interface{}
 	timestamp         string
 	batchWindow       int64
@@ -29,6 +30,10 @@ type LinkMetricFilter struct {
 	metricToEmit map[int64]interface{}
 
 	mutex sync.Locker
+}
+
+func (f *LinkMetricFilter) SetNexter(nexter Nexter) {
+	f.nexter = nexter
 }
 
 func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
@@ -236,24 +241,15 @@ func (f *LinkMetricFilter) EmitMetrics() {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
-	//var event map[string]interface{}
-	//for timestamp, metrics := range f.metricToEmit {
-	//for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
-	//event[f.timestamp] = time.Unix(timestamp, 0)
-	//event = f.PostProcess(event, true)
+	var event map[string]interface{}
+	for timestamp, metrics := range f.metricToEmit {
+		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
+			event[f.timestamp] = time.Unix(timestamp, 0)
+			//event = f.PostProcess(event, true)
 
-	//if f.BaseFilter.nextFilter != nil {
-	//f.BaseFilter.nextFilter.Process(event)
-	//} else {
-	//for _, outputPlugin := range f.BaseFilter.outputs {
-	//if outputPlugin.Pass(event) {
-	//outputPlugin.Emit(event)
-	//}
-	//}
-	//}
-
-	//}
-	//}
-	//f.metricToEmit = make(map[int64]interface{})
+			f.nexter.Process(event)
+		}
+	}
+	f.metricToEmit = make(map[int64]interface{})
 	return
 }

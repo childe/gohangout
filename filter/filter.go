@@ -88,6 +88,14 @@ func BuildFilterBoxes(config map[string]interface{}, outputs []output.Output) []
 		boxes[len(boxes)-1].nexter = &OutputsNexter{outputs}
 	}
 
+	for i, filter := range filters {
+		v := reflect.ValueOf(filter)
+		f := v.MethodByName("SetNexter")
+		if f.IsValid() {
+			f.Call([]reflect.Value{reflect.ValueOf(boxes[i].nexter)})
+		}
+	}
+
 	return boxes
 }
 
