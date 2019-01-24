@@ -12,37 +12,39 @@ import (
 )
 
 type Nexter interface {
-	Process(map[string]interface{})
+	Process(map[string]interface{}) map[string]interface{}
 }
 
 type FilterNexter struct {
 	Next *FilterBox
 }
 
-func (n *FilterNexter) Process(event map[string]interface{}) {
-	n.Next.Process(event)
+func (n *FilterNexter) Process(event map[string]interface{}) map[string]interface{} {
+	return n.Next.Process(event)
 }
 
 type OutputNexter struct {
 	Next output.Output
 }
 
-func (n *OutputNexter) Process(event map[string]interface{}) {
+func (n *OutputNexter) Process(event map[string]interface{}) map[string]interface{} {
 	if n.Next.Pass(event) {
 		n.Next.Emit(event)
 	}
+	return nil
 }
 
 type OutputsNexter struct {
 	Next []output.Output
 }
 
-func (n *OutputsNexter) Process(event map[string]interface{}) {
+func (n *OutputsNexter) Process(event map[string]interface{}) map[string]interface{} {
 	for _, o := range n.Next {
 		if o.Pass(event) {
 			o.Emit(event)
 		}
 	}
+	return nil
 }
 
 type Filter interface {
@@ -146,6 +148,9 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 	case "IPIP":
 		f := NewIPIPFilter(config)
 		return f
+	case "Filters":
+		f := NewFiltersFilter(config)
+		return f
 	case "LinkMetric":
 		f := NewLinkMetricFilter(config)
 		return f
@@ -236,16 +241,16 @@ func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[
 	return event
 }
 
-func (b *FilterBox) Process(event map[string]interface{}) {
+func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{} {
 	var rst bool
 
 	if b.conditionFilter.Pass(event) {
 		event, rst = b.filter.Filter(event)
 		if event == nil {
-			return
+			return nil
 		}
 		event = b.PostProcess(event, rst)
 	}
 
-	b.nexter.Process(event)
+	return b.nexter.Process(event)
 }
