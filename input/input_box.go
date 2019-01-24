@@ -29,8 +29,14 @@ func NewInputBox(input Input, config map[string]interface{}) *InputBox {
 func (box *InputBox) beat(workerIdx int) {
 	defer box.workerWG.Done()
 
+	var outputNexter filter.Nexter
 	outputs := output.BuildOutputs(box.config)
-	filterBoxes := filter.BuildFilterBoxes(box.config, outputs)
+	if len(outputs) == 1 {
+		outputNexter = &filter.OutputNexter{outputs[0]}
+	} else {
+		outputNexter = &filter.OutputsNexter{outputs}
+	}
+	filterBoxes := filter.BuildFilterBoxes(box.config, outputNexter)
 	box.outputsInAllWorker[workerIdx] = outputs
 
 	var nexter filter.Nexter

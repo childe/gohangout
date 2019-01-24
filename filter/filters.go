@@ -7,6 +7,13 @@ type FiltersFilter struct {
 	filterBoxes []*FilterBox
 }
 
+type NilNexter struct {
+}
+
+func (n *NilNexter) Process(event map[string]interface{}) map[string]interface{} {
+	return event
+}
+
 func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	f := &FiltersFilter{
 		config: config,
@@ -16,7 +23,7 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	for k, v := range config {
 		_config[k.(string)] = v
 	}
-	f.filterBoxes = BuildFilterBoxes(_config, nil)
+	f.filterBoxes = BuildFilterBoxes(_config, &NilNexter{})
 	if len(f.filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}

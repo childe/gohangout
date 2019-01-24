@@ -51,7 +51,7 @@ type Filter interface {
 	Filter(map[string]interface{}) (map[string]interface{}, bool)
 }
 
-func BuildFilterBoxes(config map[string]interface{}, outputs []output.Output) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}, nexter Nexter) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
@@ -84,11 +84,7 @@ func BuildFilterBoxes(config map[string]interface{}, outputs []output.Output) []
 		boxes[i].nexter = &FilterNexter{boxes[i+1]}
 	}
 
-	if len(outputs) == 1 {
-		boxes[len(boxes)-1].nexter = &OutputNexter{outputs[0]}
-	} else {
-		boxes[len(boxes)-1].nexter = &OutputsNexter{outputs}
-	}
+	boxes[len(boxes)-1].nexter = nexter
 
 	for i, filter := range filters {
 		v := reflect.ValueOf(filter)
