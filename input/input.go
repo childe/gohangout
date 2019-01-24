@@ -13,6 +13,9 @@ func GetInput(inputType string, config map[interface{}]interface{}) Input {
 	case "Kafka":
 		f := NewKafkaInput(config)
 		return f
+	case "Random":
+		f := NewRandomInput(config)
+		return f
 	}
 	return nil
 }
