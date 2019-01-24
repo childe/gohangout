@@ -195,3 +195,4 @@ then
     exit 255
 fi
 
+echo 'ok'
