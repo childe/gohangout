@@ -181,3 +181,17 @@ then
 	em_print  'raw should output 2000 docs!'
     exit 255
 fi
+
+em_print 'test LinkStatsMetrcik Filter'
+
+(build/gohangout-test --config test/itest-6.yml && sleep 1 && build/gohangout-test --config test/itest-6.yml && sleep 2) | build/gohangout-test --config test/itest-7-1.yml > test/gohangout-test.output.txt
+
+wcl=`grep count test/gohangout-test.output.txt | wc -l | awk '{print $1}'`
+echo  "$wcl metric lines in output"
+
+if [ "$wcl" != "20" ]
+then
+	em_print  'metric should output 20 docs!'
+    exit 255
+fi
+
