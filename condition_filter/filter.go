@@ -457,7 +457,7 @@ func NewSingleCondition(c string) Condition {
 		if err != nil {
 			glog.Fatalf("%s could not convert to int: %s", c, err)
 		}
-		return NewRandomCondition(int(value) - 1)
+		return NewRandomCondition(int(value))
 	}
 
 	// Before
