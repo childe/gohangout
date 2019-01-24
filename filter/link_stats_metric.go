@@ -102,6 +102,7 @@ func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetr
 	go func() {
 		for range ticker.C {
 			plugin.swap_Metric_MetricToEmit()
+			plugin.emitMetrics()
 		}
 	}()
 	return plugin
@@ -193,7 +194,7 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		set[f.lastField] = stats
 	}
 
-	f.EmitMetrics()
+	f.emitMetrics()
 }
 
 func (f *LinkStatsMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
@@ -236,7 +237,7 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 	return events
 }
 
-func (f *LinkStatsMetricFilter) EmitMetrics() {
+func (f *LinkStatsMetricFilter) emitMetrics() {
 	if len(f.metricToEmit) == 0 {
 		return
 	}
