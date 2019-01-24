@@ -1,0 +1,42 @@
+inputs:
+- Stdin:
+    codec: json
+
+filters:
+    - Date:
+        src: '@timestamp'
+        formats:
+        - 'RFC3339'
+    - Convert:
+        fields:
+            message:
+                to: float
+    - Rename:
+        fields:
+            message: size
+    - Add:
+        fields:
+            name: test1
+            age: '10'
+    - Add:
+        if:
+            - Random(2)
+        fields:
+            name: test2
+    - Add:
+        if:
+            - Random(2)
+        fields:
+            age: '20'
+
+    - LinkStatsMetric:
+        fieldsLink: 'name->age->size'
+        timestamp: '@timestamp'
+        batchWindow: 1
+        reserveWindow: 10
+        windowOffset: 1
+        drop_original_event: false
+        accumulateMode: cumulative
+
+outputs:
+- Stdout: {}

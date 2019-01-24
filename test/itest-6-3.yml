@@ -1,0 +1,36 @@
+inputs:
+- Stdin:
+    codec: json
+
+filters:
+    - Date:
+        src: '@timestamp'
+        formats:
+        - 'RFC3339'
+    - Convert:
+        fields:
+            message:
+                to: int
+    - Rename:
+        fields:
+            message: size
+    - Add:
+        fields:
+            name: test1
+    - Add:
+        if:
+            - Random(2)
+        fields:
+            name: test2
+
+    - LinkMetric:
+        fieldsLink: 'name->size'
+        timestamp: '@timestamp'
+        batchWindow: 1
+        reserveWindow: 1
+        windowOffset: 0
+        drop_original_event: false
+        accumulateMode: cumulative
+
+outputs:
+- Stdout: {}
