@@ -106,6 +106,21 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
+	// combinin conditions
+
+	condition = `!Exist(source) && (EQ(path,"/var/log/secure") || EQ(path,"/var/log/messages"))`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["path"] = "/var/log/messages"
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
 	// parse blank before !
 
 	condition = `EQ(name,first,"jia") && !EQ(name,last,"liu")`

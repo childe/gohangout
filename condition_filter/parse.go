@@ -279,7 +279,11 @@ func parseBoolTree(c string) (*OPNode, error) {
 		} else if state == PARSE_STATE_IN_STRING {
 			for ; i < length; i++ {
 				if c[i] == '"' {
-					state = PARSE_STATE_IN_ONE_CONDITION
+					if parenthesis > 0 {
+						state = PARSE_STATE_IN_PARENTHESIS
+					} else {
+						state = PARSE_STATE_IN_ONE_CONDITION
+					}
 					i++
 					break
 				}
