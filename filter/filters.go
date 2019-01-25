@@ -7,13 +7,6 @@ type FiltersFilter struct {
 	filterBoxes []*FilterBox
 }
 
-type NilNexter struct {
-}
-
-func (n *NilNexter) Process(event map[string]interface{}) map[string]interface{} {
-	return event
-}
-
 func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	f := &FiltersFilter{
 		config: config,

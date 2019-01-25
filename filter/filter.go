@@ -47,6 +47,13 @@ func (n *OutputsNexter) Process(event map[string]interface{}) map[string]interfa
 	return nil
 }
 
+type NilNexter struct {
+}
+
+func (n *NilNexter) Process(event map[string]interface{}) map[string]interface{} {
+	return event
+}
+
 type Filter interface {
 	Filter(map[string]interface{}) (map[string]interface{}, bool)
 }
