@@ -14,6 +14,36 @@ func TestParseCondition(t *testing.T) {
 		pass      bool
 	)
 
+	config := make(map[interface{}]interface{})
+	conditions := make([]interface{}, 3)
+	conditions[0] = "{{if .name}}y{{end}}"
+	conditions[1] = "{{if .name.first}}y{{end}}"
+	conditions[2] = `{{if eq .name.first "dehua"}}y{{end}}`
+	config["if"] = conditions
+	f := NewConditionFilter(config)
+
+	// should drop
+	event = make(map[string]interface{})
+	event["@timestamp"] = time.Now().Unix()
+	event["name"] = map[string]interface{}{"first": "dehua"}
+
+	pass = f.Pass(event)
+
+	if pass == false {
+		t.Error("should pass the conditions")
+	}
+
+	// should not drop
+	event = make(map[string]interface{})
+	event["@timestamp"] = time.Now().Unix()
+	event["name"] = map[string]interface{}{"last": "liu"}
+
+	pass = f.Pass(event)
+
+	if pass == true {
+		t.Error("should not pass the conditions")
+	}
+
 	// Single Condition
 	condition = `EQ(name,first,"jia")`
 	root, err = parseBoolTree(condition)
