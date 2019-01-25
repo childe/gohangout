@@ -86,6 +86,8 @@ func TestLinkMetricFilter(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkMetricFilter(config)
+	f.SetNexter(&NilNexter{})
+
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
 		f.Filter(event)
@@ -220,6 +222,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkMetricFilter(config)
+	f.SetNexter(&NilNexter{})
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
@@ -396,6 +399,7 @@ func TestLinkMetricFilterCumulativeMode(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkMetricFilter(config)
+	f.SetNexter(&NilNexter{})
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
@@ -432,6 +436,7 @@ func TestLinkMetricFilterSeparateMode(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkMetricFilter(config)
+	f.SetNexter(&NilNexter{})
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
