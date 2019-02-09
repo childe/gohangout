@@ -63,7 +63,8 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 		}
 		return time.Unix(t1, 0), nil
 	}
-	if reflect.TypeOf(t).Kind() == reflect.String {
+	switch reflect.TypeOf(t).Kind() {
+	case reflect.String:
 		t1, err := strconv.Atoi(t.(string))
 		if err != nil {
 			f, err := strconv.ParseFloat(t.(string), 64)
@@ -74,16 +75,15 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 			return time.Unix(int64(t1), int64(1000000000*(f-t1))), nil
 		}
 		return time.Unix(int64(t1), 0), nil
-	}
-	if reflect.TypeOf(t).Kind() == reflect.Int {
+	case reflect.Int:
 		t1 := int64(t.(int))
 		return time.Unix(t1, 0), nil
-	}
-	if reflect.TypeOf(t).Kind() == reflect.Int64 {
+	case reflect.Int64:
 		t1 := t.(int64)
 		return time.Unix(t1, 0), nil
+	default:
+		return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 	}
-	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 }
 
 type UnixMSParser struct{}
