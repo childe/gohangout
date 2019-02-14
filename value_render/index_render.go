@@ -20,15 +20,15 @@ func dateFormat(t interface{}, format string) (string, error) {
 		if err != nil {
 			return format, err
 		}
-		return time.Unix(t1/1000, t1%1000*1000000).Format(format), nil
+		return time.Unix(t1/1000, t1%1000*1000000).UTC().Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.Int {
 		t1 := int64(t.(int))
-		return time.Unix(t1/1000, t1%1000*1000000).Format(format), nil
+		return time.Unix(t1/1000, t1%1000*1000000).UTC().Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.Int64 {
 		t1 := t.(int64)
-		return time.Unix(t1/1000, t1%1000*1000000).Format(format), nil
+		return time.Unix(t1/1000, t1%1000*1000000).UTC().Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.String {
 		t1, e := time.Parse(time.RFC3339, t.(string))
