@@ -42,9 +42,12 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) Output {
 		return NewInfluxdbOutput(config)
 	case "Clickhouse":
 		return NewClickhouseOutput(config)
+	case "TCP":
+		return NewTCPOutput(config)
+	default:
+		glog.Fatalf("could not build %s output plugin", outputType)
+		return nil
 	}
-	glog.Fatalf("could not build %s output plugin", outputType)
-	return nil
 }
 
 type BaseOutput struct {

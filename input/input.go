@@ -16,6 +16,10 @@ func GetInput(inputType string, config map[interface{}]interface{}) Input {
 	case "Random":
 		f := NewRandomInput(config)
 		return f
+	case "TCP":
+		f := NewTCPInput(config)
+		return f
+	default:
+		return nil
 	}
-	return nil
 }
