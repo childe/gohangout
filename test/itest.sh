@@ -195,4 +195,11 @@ then
     exit 255
 fi
 
-echo 'ok'
+# test tcp input/output
+test/itest-tcp.sh
+if [ "$?" != "0" ]
+then
+    exit $?
+fi
+
+em_print 'ok'
