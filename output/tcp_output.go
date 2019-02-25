@@ -3,6 +3,7 @@ package output
 import (
 	"bufio"
 	"net"
+	"time"
 
 	"github.com/childe/gohangout/simplejson"
 	"github.com/golang/glog"
@@ -34,6 +35,24 @@ func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 	}
 	p.address = address
 
+	var d net.Dialer
+
+	if timeoutI, ok := config["dial.timeout"]; ok {
+		timeout, ok := timeoutI.(int)
+		if !ok {
+			glog.Fatal("dial.timeout must be integer")
+		}
+		d.Timeout = time.Second * time.Duration(timeout)
+	}
+
+	if keepaliveI, ok := config["keepalive"]; ok {
+		keepalive, ok := keepaliveI.(int)
+		if !ok {
+			glog.Fatal("keepalive must be integer")
+		}
+		d.KeepAlive = time.Second * time.Duration(keepalive)
+	}
+
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		glog.Fatal(err)
@@ -54,7 +73,7 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 	buf = append(buf, '\n')
 	n, err := p.writer.Write(buf)
 	if n != len(buf) {
-		glog.Errorf("write to %s error: %s", p.address, err)
+		glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
 	}
 	p.writer.Flush()
 }
