@@ -56,6 +56,7 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 	if n != len(buf) {
 		glog.Errorf("write to %s error: %s", p.address, err)
 	}
+	p.writer.Flush()
 }
 
 func (p *TCPOutput) Shutdown() {
