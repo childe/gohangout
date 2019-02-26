@@ -70,12 +70,31 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 		glog.Errorf("marshal %v error:%s", event, err)
 	}
 
-	buf = append(buf, '\n')
-	n, err := p.writer.Write(buf)
-	if n != len(buf) {
-		glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+	for len(buf) > 0 {
+		n, err := p.conn.Write(buf)
+		if err != nil {
+			glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+		}
+		buf = buf[n:]
 	}
-	p.writer.Flush()
+
+	buf = []byte{'\n'}
+	for len(buf) > 0 {
+		n, err := p.conn.Write(buf)
+		if n == 1 {
+			break
+		}
+		if err != nil {
+			glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+		}
+	}
+
+	//buf = append(buf, '\n')
+	//n, err := p.writer.Write(buf)
+	//if n != len(buf) {
+	//glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+	//}
+	//p.writer.Flush()
 }
 
 func (p *TCPOutput) Shutdown() {
