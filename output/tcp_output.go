@@ -1,8 +1,9 @@
 package output
 
 import (
-	"bufio"
 	"net"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/childe/gohangout/simplejson"
@@ -11,11 +12,16 @@ import (
 
 type TCPOutput struct {
 	BaseOutput
-	config  map[interface{}]interface{}
-	address string
+	config    map[interface{}]interface{}
+	network   string
+	address   string
+	timeout   time.Duration
+	keepalive time.Duration
 
-	writer *bufio.Writer
-	conn   net.Conn
+	//writer *bufio.Writer
+	conn net.Conn
+
+	dialLock sync.Mutex
 }
 
 func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
@@ -24,25 +30,20 @@ func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 		config:     config,
 	}
 
-	var address string
+	p.network = "tcp"
+	if network, ok := config["network"]; ok {
+		p.network = network.(string)
+	}
+
 	if addr, ok := config["address"]; ok {
-		address, ok = addr.(string)
-		if !ok {
-			glog.Fatal("address must be string")
-		}
+		p.address, ok = addr.(string)
 	} else {
 		glog.Fatal("address must be set in TCP output")
 	}
-	p.address = address
-
-	var d net.Dialer
 
 	if timeoutI, ok := config["dial.timeout"]; ok {
-		timeout, ok := timeoutI.(int)
-		if !ok {
-			glog.Fatal("dial.timeout must be integer")
-		}
-		d.Timeout = time.Second * time.Duration(timeout)
+		timeout := timeoutI.(int)
+		p.timeout = time.Second * time.Duration(timeout)
 	}
 
 	if keepaliveI, ok := config["keepalive"]; ok {
@@ -50,17 +51,60 @@ func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 		if !ok {
 			glog.Fatal("keepalive must be integer")
 		}
-		d.KeepAlive = time.Second * time.Duration(keepalive)
+		p.keepalive = time.Second * time.Duration(keepalive)
 	}
 
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		glog.Fatal(err)
-	}
-	p.conn = conn
-	p.writer = bufio.NewWriter(conn)
+	p.loopDial()
 
 	return p
+}
+
+func (p *TCPOutput) loopDial() {
+	p.dialLock.Lock()
+	defer p.dialLock.Unlock()
+	for {
+		if err := p.dial(); err != nil {
+			glog.Errorf("dial error: %s. sleep 10s", err)
+			time.Sleep(10 * time.Second)
+		} else {
+			return
+		}
+	}
+}
+
+func (p *TCPOutput) dial() error {
+	var d net.Dialer
+	d.Timeout = p.timeout
+	d.KeepAlive = p.keepalive
+
+	conn, err := net.Dial(p.network, p.address)
+	if err != nil {
+		return err
+	}
+	p.conn = conn
+	//p.writer = bufio.NewWriter(conn)
+
+	return nil
+}
+func (p *TCPOutput) write(buf []byte) error {
+	for len(buf) > 0 {
+		n, err := p.conn.Write(buf)
+		if err != nil {
+			glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+			str := err.Error()
+			switch {
+			case strings.Contains(str, "use of closed network connection"):
+				p.loopDial()
+				return err
+			case strings.Contains(str, "write: broken pipe"):
+				p.conn.Close()
+				p.loopDial()
+				return err
+			}
+		}
+		buf = buf[n:]
+	}
+	return nil
 }
 
 func (p *TCPOutput) Emit(event map[string]interface{}) {
@@ -70,23 +114,13 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 		glog.Errorf("marshal %v error:%s", event, err)
 	}
 
-	for len(buf) > 0 {
-		n, err := p.conn.Write(buf)
-		if err != nil {
-			glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
-		}
-		buf = buf[n:]
+	if err := p.write(buf); err != nil {
+		return
 	}
 
 	buf = []byte{'\n'}
-	for len(buf) > 0 {
-		n, err := p.conn.Write(buf)
-		if n == 1 {
-			break
-		}
-		if err != nil {
-			glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
-		}
+	if err := p.write(buf); err != nil {
+		return
 	}
 
 	//buf = append(buf, '\n')
@@ -98,6 +132,6 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 }
 
 func (p *TCPOutput) Shutdown() {
-	p.writer.Flush()
+	//p.writer.Flush()
 	p.conn.Close()
 }
