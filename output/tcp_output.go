@@ -112,6 +112,7 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 	buf, err := d.Encode(event)
 	if err != nil {
 		glog.Errorf("marshal %v error:%s", event, err)
+		return
 	}
 
 	p.write(buf) // always write \n, no matter if error occures here
