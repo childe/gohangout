@@ -177,11 +177,11 @@ func (f *LinkMetricFilter) swap_Metric_MetricToEmit() {
 }
 
 func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
-	var countInEvent int
+	var count int
 	var lastFieldValue interface{}
 	if f.reduce {
 		if c, ok := event["count"]; ok {
-			countInEvent = c.(int)
+			count = c.(int)
 		} else {
 			return
 		}
@@ -190,6 +190,7 @@ func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		if lastFieldValue, ok = event[f.lastField]; !ok || lastFieldValue == nil {
 			return
 		}
+		count = 1
 	}
 
 	var timestamp int64
@@ -232,18 +233,10 @@ func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 		}
 	}
 
-	if f.reduce {
-		if count, ok := set[lastFieldValue]; ok {
-			set[lastFieldValue] = countInEvent + count.(int)
-		} else {
-			set[lastFieldValue] = countInEvent
-		}
+	if c, ok := set[lastFieldValue]; ok {
+		set[lastFieldValue] = count + c.(int)
 	} else {
-		if count, ok := set[lastFieldValue]; ok {
-			set[lastFieldValue] = 1 + count.(int)
-		} else {
-			set[lastFieldValue] = 1
-		}
+		set[lastFieldValue] = count
 	}
 }
 
