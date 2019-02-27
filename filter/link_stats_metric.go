@@ -120,11 +120,11 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 
 	if level == f.fieldsLength-1 {
 		for _, statsI := range metrics {
-			stats := statsI.(map[string]float64)
+			stats := statsI.(map[string]interface{})
 			event := make(map[string]interface{})
-			event["count"] = int(stats["count"])
+			event["count"] = stats["count"]
 			event["sum"] = stats["sum"]
-			event["mean"] = stats["sum"] / stats["count"]
+			event["mean"] = stats["sum"].(float64) / float64(stats["count"].(int))
 			events = append(events, event)
 		}
 		return events
@@ -175,7 +175,7 @@ func (f *LinkStatsMetricFilter) swap_Metric_MetricToEmit() {
 func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	var value float64
 	var (
-		count float64
+		count int
 		sum   float64
 	)
 
@@ -183,7 +183,7 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		if c, ok := event["count"]; !ok {
 			return
 		} else {
-			count = c.(float64)
+			count = c.(int)
 		}
 		if s, ok := event["sum"]; !ok {
 			return
@@ -241,11 +241,11 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 
 	if statsI, ok := set[f.lastField]; ok {
-		stats := statsI.(map[string]float64)
-		stats["count"] = count + stats["count"]
-		stats["sum"] = sum + stats["sum"]
+		stats := statsI.(map[string]interface{})
+		stats["count"] = count + stats["count"].(int)
+		stats["sum"] = sum + stats["sum"].(float64)
 	} else {
-		stats := make(map[string]float64)
+		stats := make(map[string]interface{})
 		stats["count"] = count
 		stats["sum"] = sum
 		set[f.lastField] = stats
