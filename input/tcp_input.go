@@ -10,6 +10,7 @@ import (
 
 type TCPInput struct {
 	config  map[interface{}]interface{}
+	network string
 	address string
 
 	decoder codec.Decoder
@@ -43,18 +44,18 @@ func NewTCPInput(config map[interface{}]interface{}) *TCPInput {
 		messages: make(chan []byte, 10),
 	}
 
-	var address string
+	p.network = "tcp"
+	if network, ok := config["network"]; ok {
+		p.network = network.(string)
+	}
+
 	if addr, ok := config["address"]; ok {
-		address, ok = addr.(string)
-		if !ok {
-			glog.Fatal("address must be string")
-		}
+		p.address = addr.(string)
 	} else {
 		glog.Fatal("address must be set in TCP input")
 	}
-	p.address = address
 
-	l, err := net.Listen("tcp", address)
+	l, err := net.Listen(p.network, p.address)
 	if err != nil {
 		glog.Fatal(err)
 	}
