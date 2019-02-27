@@ -244,6 +244,7 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		stats := statsI.(map[string]interface{})
 		stats["count"] = count + stats["count"].(int)
 		stats["sum"] = sum + stats["sum"].(float64)
+		set[f.lastField] = stats
 	} else {
 		stats := make(map[string]interface{})
 		stats["count"] = count
