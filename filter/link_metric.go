@@ -177,8 +177,13 @@ func (f *LinkMetricFilter) swap_Metric_MetricToEmit() {
 }
 
 func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
-	var count int
 	var lastFieldValue interface{}
+	var ok bool
+	if lastFieldValue, ok = event[f.lastField]; !ok || lastFieldValue == nil {
+		return
+	}
+
+	var count int
 	if f.reduce {
 		if c, ok := event["count"]; ok {
 			count = c.(int)
@@ -186,10 +191,6 @@ func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 			return
 		}
 	} else {
-		var ok bool
-		if lastFieldValue, ok = event[f.lastField]; !ok || lastFieldValue == nil {
-			return
-		}
 		count = 1
 	}
 
