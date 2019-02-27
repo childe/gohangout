@@ -23,7 +23,8 @@ type TCPInput struct {
 func readLine(c net.Conn, messages chan<- []byte) {
 	scanner := bufio.NewScanner(c)
 	for scanner.Scan() {
-		messages <- scanner.Bytes()
+		t := scanner.Text()
+		messages <- []byte(t)
 	}
 
 	if err := scanner.Err(); err != nil {
