@@ -67,6 +67,7 @@ func (p *TCPOutput) loopDial() {
 			glog.Errorf("dial error: %s. sleep 10s", err)
 			time.Sleep(10 * time.Second)
 		} else {
+			glog.Infof("conn built to %s", p.conn.RemoteAddr())
 			return
 		}
 	}
