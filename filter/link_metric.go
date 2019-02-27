@@ -20,6 +20,7 @@ type LinkMetricFilter struct {
 	dropOriginalEvent bool
 	windowOffset      int64
 	accumulateMode    int
+	reduce            bool
 
 	fields            []string
 	fieldsWithoutLast []string
@@ -37,7 +38,7 @@ func (f *LinkMetricFilter) SetNexter(nexter Nexter) {
 }
 
 func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
-	plugin := &LinkMetricFilter{
+	p := &LinkMetricFilter{
 		config:       config,
 		overwrite:    true,
 		metric:       make(map[int64]interface{}),
@@ -46,71 +47,75 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	}
 
 	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
+		p.overwrite = overwrite.(bool)
 	}
 
 	if fieldsLink, ok := config["fieldsLink"]; ok {
-		plugin.fields = strings.Split(fieldsLink.(string), "->")
-		plugin.fieldsLength = len(plugin.fields)
-		plugin.fieldsWithoutLast = plugin.fields[:plugin.fieldsLength-1]
-		plugin.lastField = plugin.fields[plugin.fieldsLength-1]
+		p.fields = strings.Split(fieldsLink.(string), "->")
+		p.fieldsLength = len(p.fields)
+		p.fieldsWithoutLast = p.fields[:p.fieldsLength-1]
+		p.lastField = p.fields[p.fieldsLength-1]
 	} else {
 		glog.Fatal("fieldsLink must be set in linkmetric filter plugin")
 	}
 
 	if timestamp, ok := config["timestamp"]; ok {
-		plugin.timestamp = timestamp.(string)
+		p.timestamp = timestamp.(string)
 	} else {
-		plugin.timestamp = "@timestamp"
+		p.timestamp = "@timestamp"
 	}
 
 	if dropOriginalEvent, ok := config["drop_original_event"]; ok {
-		plugin.dropOriginalEvent = dropOriginalEvent.(bool)
+		p.dropOriginalEvent = dropOriginalEvent.(bool)
 	} else {
-		plugin.dropOriginalEvent = false
+		p.dropOriginalEvent = false
 	}
 
 	if batchWindow, ok := config["batchWindow"]; ok {
-		plugin.batchWindow = int64(batchWindow.(int))
+		p.batchWindow = int64(batchWindow.(int))
 	} else {
 		glog.Fatal("batchWindow must be set in linkmetric filter plugin")
 	}
 
 	if reserveWindow, ok := config["reserveWindow"]; ok {
-		plugin.reserveWindow = int64(reserveWindow.(int))
+		p.reserveWindow = int64(reserveWindow.(int))
 	} else {
 		glog.Fatal("reserveWindow must be set in linkmetric filter plugin")
+	}
+
+	if reduce, ok := config["reduce"]; ok {
+		p.reduce = reduce.(bool)
 	}
 
 	if accumulateModeI, ok := config["accumulateMode"]; ok {
 		accumulateMode := accumulateModeI.(string)
 		switch accumulateMode {
 		case "cumulative":
-			plugin.accumulateMode = 0
+			p.accumulateMode = 0
 		case "separate":
-			plugin.accumulateMode = 1
+			p.accumulateMode = 1
 		default:
 			glog.Errorf("invalid accumulateMode: %s. set to cumulative", accumulateMode)
-			plugin.accumulateMode = 0
+			p.accumulateMode = 0
 		}
 	} else {
-		plugin.accumulateMode = 0
+		p.accumulateMode = 0
 	}
 
 	if windowOffset, ok := config["windowOffset"]; ok {
-		plugin.windowOffset = (int64)(windowOffset.(int))
+		p.windowOffset = (int64)(windowOffset.(int))
 	} else {
-		plugin.windowOffset = 0
+		p.windowOffset = 0
 	}
 
-	ticker := time.NewTicker(time.Second * time.Duration(plugin.batchWindow))
+	ticker := time.NewTicker(time.Second * time.Duration(p.batchWindow))
 	go func() {
 		for range ticker.C {
-			plugin.swap_Metric_MetricToEmit()
-			plugin.emitMetrics()
+			p.swap_Metric_MetricToEmit()
+			p.emitMetrics()
 		}
 	}()
-	return plugin
+	return p
 }
 
 func (f *LinkMetricFilter) swap_Metric_MetricToEmit() {
