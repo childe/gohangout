@@ -2,7 +2,6 @@ package filter
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -118,97 +117,6 @@ func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	return p
 }
 
-func (f *LinkMetricFilter) swap_Metric_MetricToEmit() {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.metric) > 0 && len(f.metricToEmit) == 0 {
-		timestamp := time.Now().Unix()
-		timestamp -= timestamp % f.batchWindow
-
-		f.metricToEmit = make(map[int64]interface{})
-		for k, v := range f.metric {
-			if k <= timestamp-f.batchWindow*f.windowOffset {
-				f.metricToEmit[k] = v
-			}
-		}
-
-		if f.accumulateMode == 1 {
-			f.metric = make(map[int64]interface{})
-		} else {
-			newMetric := make(map[int64]interface{})
-			for k, v := range f.metric {
-				if k >= timestamp-f.reserveWindow {
-					newMetric[k] = v
-				}
-			}
-			f.metric = newMetric
-		}
-	}
-}
-
-func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
-	lastFieldValue := event[f.lastField]
-	if lastFieldValue == nil {
-		return
-	}
-
-	var timestamp int64
-	if v, ok := event[f.timestamp]; ok {
-		if reflect.TypeOf(v).String() != "time.Time" {
-			glog.V(10).Infof("timestamp must be time.Time, but it's %s", reflect.TypeOf(v).String())
-			return
-		}
-		timestamp = v.(time.Time).Unix()
-	} else {
-		glog.V(10).Infof("not timestamp in event. %s", event)
-		return
-	}
-
-	diff := time.Now().Unix() - timestamp
-	if diff > f.reserveWindow || diff < 0 {
-		return
-	}
-
-	timestamp -= timestamp % f.batchWindow
-	var set map[interface{}]interface{} = nil
-	if v, ok := f.metric[timestamp]; ok {
-		set = v.(map[interface{}]interface{})
-	} else {
-		set = make(map[interface{}]interface{})
-		f.metric[timestamp] = set
-	}
-
-	for _, field := range f.fieldsWithoutLast {
-		fieldValue := event[field]
-		if fieldValue == nil {
-			return
-		}
-		if v, ok := set[fieldValue]; ok {
-			set = v.(map[interface{}]interface{})
-		} else {
-			set[fieldValue] = make(map[interface{}]interface{})
-			set = set[fieldValue].(map[interface{}]interface{})
-		}
-	}
-
-	if count, ok := set[lastFieldValue]; ok {
-		set[lastFieldValue] = 1 + count.(int)
-	} else {
-		set[lastFieldValue] = 1
-	}
-}
-
-func (f *LinkMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	f.updateMetric(event)
-	f.emitMetrics()
-
-	if f.dropOriginalEvent {
-		return nil, false
-	}
-	return event, false
-}
-
 func (f *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, level int) []map[string]interface{} {
 	var (
 		fieldName string                   = f.fields[level]
@@ -239,6 +147,106 @@ func (f *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, l
 	return events
 }
 
+func (f *LinkMetricFilter) swap_Metric_MetricToEmit() {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.metric) > 0 && len(f.metricToEmit) == 0 {
+		timestamp := time.Now().Unix()
+		timestamp -= timestamp % f.batchWindow
+
+		f.metricToEmit = make(map[int64]interface{})
+		for k, v := range f.metric {
+			if k <= timestamp-f.batchWindow*f.windowOffset {
+				f.metricToEmit[k] = v
+			}
+		}
+
+		if f.accumulateMode == 1 {
+			f.metric = make(map[int64]interface{})
+		} else {
+			newMetric := make(map[int64]interface{})
+			for k, v := range f.metric {
+				if k >= timestamp-f.reserveWindow {
+					newMetric[k] = v
+				}
+			}
+			f.metric = newMetric
+		}
+	}
+}
+
+func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
+	var countInEvent int
+	var lastFieldValue interface{}
+	if f.reduce {
+		if c, ok := event["count"]; ok {
+			countInEvent = c.(int)
+		} else {
+			return
+		}
+	} else {
+		var ok bool
+		if lastFieldValue, ok = event[f.lastField]; !ok || lastFieldValue == nil {
+			return
+		}
+	}
+
+	var timestamp int64
+	if v, ok := event[f.timestamp]; ok {
+		if t, ok := v.(time.Time); !ok {
+			glog.V(20).Infof("timestamp is not time.Time type")
+			return
+		} else {
+			timestamp = t.Unix()
+		}
+	} else {
+		glog.V(20).Infof("no timestamp in event. %s", event)
+		return
+	}
+
+	diff := time.Now().Unix() - timestamp
+	if diff > f.reserveWindow || diff < 0 {
+		return
+	}
+
+	timestamp -= timestamp % f.batchWindow
+	var set map[interface{}]interface{} = nil
+	if v, ok := f.metric[timestamp]; ok {
+		set = v.(map[interface{}]interface{})
+	} else {
+		set = make(map[interface{}]interface{})
+		f.metric[timestamp] = set
+	}
+
+	for _, field := range f.fieldsWithoutLast {
+		fieldValue := event[field]
+		if fieldValue == nil {
+			return
+		}
+		if v, ok := set[fieldValue]; ok {
+			set = v.(map[interface{}]interface{})
+		} else {
+			set[fieldValue] = make(map[interface{}]interface{})
+			set = set[fieldValue].(map[interface{}]interface{})
+		}
+	}
+
+	if f.reduce {
+		if count, ok := set[lastFieldValue]; ok {
+			set[lastFieldValue] = countInEvent + count.(int)
+		} else {
+			set[lastFieldValue] = countInEvent
+		}
+	} else {
+		if count, ok := set[lastFieldValue]; ok {
+			set[lastFieldValue] = 1 + count.(int)
+		} else {
+			set[lastFieldValue] = 1
+		}
+	}
+}
+
 func (f *LinkMetricFilter) emitMetrics() {
 	if len(f.metricToEmit) == 0 {
 		return
@@ -257,4 +265,14 @@ func (f *LinkMetricFilter) emitMetrics() {
 	}
 	f.metricToEmit = make(map[int64]interface{})
 	return
+}
+
+func (f *LinkMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+	f.updateMetric(event)
+	f.emitMetrics()
+
+	if f.dropOriginalEvent {
+		return nil, false
+	}
+	return event, false
 }
