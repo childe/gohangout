@@ -1,6 +1,7 @@
 package output
 
 import (
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -83,10 +84,45 @@ func (p *TCPOutput) dial() error {
 		return err
 	}
 	p.conn = conn
+	go p.probe()
 	//p.writer = bufio.NewWriter(conn)
 
 	return nil
 }
+
+func (p *TCPOutput) probe() {
+	var b = make([]byte, 1)
+
+	p.conn.SetDeadline(time.Time{})
+	p.conn.SetReadDeadline(time.Time{})
+	_, err := p.conn.Read(b) // should block here
+	if err != nil && err == io.EOF {
+		glog.Infof("conn [%s] is closed by the server, close the conn.", p.conn.RemoteAddr())
+		p.conn.Close()
+	}
+}
+
+func (p *TCPOutput) Emit(event map[string]interface{}) {
+	d := &simplejson.SimpleJsonDecoder{}
+	buf, err := d.Encode(event)
+	if err != nil {
+		glog.Errorf("marshal %v error:%s", event, err)
+		return
+	}
+
+	p.write(buf) // always write \n, no matter if error occures here
+
+	buf = []byte{'\n'}
+	p.write(buf)
+
+	//buf = append(buf, '\n')
+	//n, err := p.writer.Write(buf)
+	//if n != len(buf) {
+	//glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+	//}
+	//p.writer.Flush()
+}
+
 func (p *TCPOutput) write(buf []byte) error {
 	for len(buf) > 0 {
 		n, err := p.conn.Write(buf)
@@ -106,29 +142,6 @@ func (p *TCPOutput) write(buf []byte) error {
 		buf = buf[n:]
 	}
 	return nil
-}
-
-func (p *TCPOutput) Emit(event map[string]interface{}) {
-	d := &simplejson.SimpleJsonDecoder{}
-	buf, err := d.Encode(event)
-	if err != nil {
-		glog.Errorf("marshal %v error:%s", event, err)
-		return
-	}
-
-	p.write(buf) // always write \n, no matter if error occures here
-
-	buf = []byte{'\n'}
-	if err := p.write(buf); err != nil {
-		return
-	}
-
-	//buf = append(buf, '\n')
-	//n, err := p.writer.Write(buf)
-	//if n != len(buf) {
-	//glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
-	//}
-	//p.writer.Flush()
 }
 
 func (p *TCPOutput) Shutdown() {
