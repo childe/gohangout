@@ -61,6 +61,7 @@ func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 }
 
 func (p *TCPOutput) loopDial() {
+	glog.Infof("%p loop dial", p)
 	p.dialLock.Lock()
 	defer p.dialLock.Unlock()
 	for {
@@ -110,10 +111,12 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 		return
 	}
 
+	buf = append(buf, '\n')
+
 	p.write(buf) // always write \n, no matter if error occures here
 
-	buf = []byte{'\n'}
-	p.write(buf)
+	//buf = []byte{'\n'}
+	//p.write(buf)
 
 	//buf = append(buf, '\n')
 	//n, err := p.writer.Write(buf)
@@ -129,6 +132,8 @@ func (p *TCPOutput) write(buf []byte) error {
 		if err != nil {
 			glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
 			str := err.Error()
+			glog.Info(str)
+			glog.Infof("%d %s", len(buf), string(buf))
 			switch {
 			case strings.Contains(str, "use of closed network connection"):
 				p.loopDial()
