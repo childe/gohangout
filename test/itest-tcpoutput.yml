@@ -1,0 +1,12 @@
+inputs:
+    - Random:
+        from: 1
+        to: 100
+        max_messages: 100000
+    - Random:
+        from: 1
+        to: 100
+        max_messages: 100000
+outputs:
+    - TCP:
+        address: 127.0.0.1:10000

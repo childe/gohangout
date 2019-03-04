@@ -15,7 +15,8 @@
 .glide/
 
 build/
-test/
 
 .ropeproject/
 vendor/
+
+!test/*.yml

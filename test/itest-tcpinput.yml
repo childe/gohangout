@@ -1,0 +1,6 @@
+inputs:
+    - TCP:
+        address: 0.0.0.0:10000
+        codec: json
+outputs:
+    - Stdout: {}
