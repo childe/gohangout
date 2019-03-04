@@ -251,8 +251,6 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		stats["sum"] = sum
 		set[f.lastField] = stats
 	}
-
-	f.emitMetrics()
 }
 
 func (f *LinkStatsMetricFilter) emitMetrics() {

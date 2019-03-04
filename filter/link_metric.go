@@ -263,7 +263,6 @@ func (f *LinkMetricFilter) emitMetrics() {
 
 func (f *LinkMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	f.updateMetric(event)
-	f.emitMetrics()
 
 	if f.dropOriginalEvent {
 		return nil, false
