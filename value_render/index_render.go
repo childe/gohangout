@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -40,26 +41,76 @@ func dateFormat(t interface{}, format string) (string, error) {
 	return format, fmt.Errorf("could not tell the type timestamp field belongs to")
 }
 
+type field struct {
+	literal bool
+	date    bool
+	value   string
+}
+
 type IndexRender struct {
-	dateFormat  string
-	valueFormat string
+	fields []*field
 }
 
 func NewIndexRender(t string) *IndexRender {
-	r, _ := regexp.Compile(`%{\+.*?}`)
-	loc := r.FindStringIndex(t)
-	return &IndexRender{
-		dateFormat:  t[loc[0]+3 : loc[1]-1],
-		valueFormat: t[:loc[0]] + "%s" + t[loc[1]:],
+	r, _ := regexp.Compile(`%{.*?}`)
+	fields := make([]*field, 0)
+	lastPos := 0
+	for _, loc := range r.FindAllStringIndex(t, -1) {
+		s, e := loc[0], loc[1]
+		fields = append(fields, &field{
+			literal: true,
+			value:   t[lastPos:s],
+		})
+
+		if t[s+2] == '+' {
+			fields = append(fields, &field{
+				literal: false,
+				date:    true,
+				value:   t[s+3 : e-1],
+			})
+		} else {
+			fields = append(fields, &field{
+				literal: false,
+				date:    false,
+				value:   t[s+2 : e-1],
+			})
+		}
+
+		lastPos = e
 	}
+
+	if lastPos < len(t) {
+		fields = append(fields, &field{
+			literal: true,
+			value:   t[lastPos:len(t)],
+		})
+	}
+	return &IndexRender{fields}
 }
 
 func (r *IndexRender) Render(event map[string]interface{}) interface{} {
-	var s string
-	if t, ok := event["@timestamp"]; ok {
-		s, _ = dateFormat(t, r.dateFormat)
-	} else {
-		s, _ = dateFormat(time.Now(), r.dateFormat)
+	fields := make([]string, len(r.fields))
+	for i, f := range r.fields {
+		if f.literal {
+			fields[i] = f.value
+			continue
+		}
+
+		if f.date {
+			if t, ok := event["@timestamp"]; ok {
+				fields[i], _ = dateFormat(t, f.value)
+			} else {
+				fields[i], _ = dateFormat(time.Now(), f.value)
+			}
+		} else {
+			if s, ok := event[f.value]; !ok {
+				fields[i] = "null"
+			} else {
+				if fields[i], ok = s.(string); !ok {
+					fields[i] = "null"
+				}
+			}
+		}
 	}
-	return fmt.Sprintf(r.valueFormat, s)
+	return strings.Join(fields, "")
 }
