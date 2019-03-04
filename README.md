@@ -79,7 +79,7 @@ outputs:
     - Elasticsearch:
         hosts:
             - http://127.0.0.1:9200
-        index: 'web-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
+        index: 'web-%{appid}-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
         index_type: "logs"
         bulk_actions: 5000
         bulk_size: 20
@@ -130,6 +130,28 @@ Stdin:
 
 - json 对数据做 json 解析, 如果解析失败, 则将整条数据写到 message 字段, 并添加当前时间到 `@timestamp` 字段. 如果解析成功而且数据中没有 `@timestamp` 字段, 则添加当前时间到 `@timestamp` 字段.
 - plain 将整条数据写到 message 字段, 并添加当前时间到 `@timestamp` 字段.
+
+### TCP
+
+```
+TCP:
+	network: tcp4
+	address: 0.0.0.0:10000
+	codec: plain
+```
+
+#### network
+
+默认为 tcp , 可以明确指定使用 tcp4 或者 tcp6
+
+#### address
+
+监听端口, 无默认值, 必须设置
+
+#### codec
+
+默认 plain
+
 
 ### Kafka
 
@@ -191,6 +213,28 @@ Stdout:
 
 if的语法参考下面 [IF语法](#if)
 
+### TCP
+
+```
+TCP:
+	network: tcp4
+	address: 127.0.0.1:10000
+	concurrent: 2
+```
+
+#### network
+
+默认为 tcp , 可以明确指定使用 tcp4 或者 tcp6
+
+#### address
+
+TCP 远端地址, 无默认值, 必须设置
+
+#### concurrent
+
+开几个 tcp 连接一起写, 默认1
+
+
 ### Elasticsearch
 
 ```
@@ -198,7 +242,7 @@ Elasticsearch:
     hosts:
         - http://10.0.0.100:9200
         - http://10.0.0.101:9200
-    index: 'web-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
+    index: 'web-%{appid}-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
     index_type: "logs"
     bulk_actions: 5000
     routing: '[domain]'
@@ -630,6 +674,7 @@ LinkMetric:
     windowOffset: 0
     accumulateMode: cumulative
     drop_original_event: false
+	reduce: false
 ```
 
 每600s输出一次, 输出结果形式如下:
@@ -671,6 +716,10 @@ LinkMetric:
 #### drop_original_event
 
 是否丢弃原始数据, 默认为 false. 如果设置为true, 则丢弃原始数据, 只输出聚合统计数据.
+
+#### reduce
+
+是否 reduce , 默认 false.  如果为true, 则会解析数据中的 `count`, `sum` 字段. 举例来说, 一个 topic 有10个 partitions, 有10个消费者做聚合, 聚合后的数据通过 tcp output 吐给另外一个进程R, 进程R对聚合数据进行 reduce 操作, 然后再把二次聚合后的数据吐到ES或者Influxdb, 这样最终写到ES或Influxdb的数据就是10个partitions的总的数据.
 
 ### LinkStatsMetric
 
