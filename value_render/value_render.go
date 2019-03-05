@@ -12,7 +12,7 @@ type ValueRender interface {
 func GetValueRender(template string) ValueRender {
 	matchp, _ := regexp.Compile(`^(\[.*?\])+$`)
 	matchGoTemp, _ := regexp.Compile(`{{.*}}`)
-	matchESIndex, _ := regexp.Compile(`%{\+.*?}`) //%{+YYYY.MM.dd}
+	matchESIndex, _ := regexp.Compile(`%{.*?}`) //%{+YYYY.MM.dd}
 
 	if matchp.Match([]byte(template)) {
 		findp, _ := regexp.Compile(`(\[(.*?)\])`)
