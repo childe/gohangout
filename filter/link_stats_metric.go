@@ -9,6 +9,11 @@ import (
 	"github.com/golang/glog"
 )
 
+type stats struct {
+	count int
+	sum   float64
+}
+
 type LinkStatsMetricFilter struct {
 	nexter            Nexter
 	config            map[interface{}]interface{}
@@ -120,11 +125,11 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 
 	if level == f.fieldsLength-1 {
 		for _, statsI := range metrics {
-			stats := statsI.(map[string]interface{})
+			s := statsI.(*stats)
 			event := make(map[string]interface{})
-			event["count"] = stats["count"]
-			event["sum"] = stats["sum"]
-			event["mean"] = stats["sum"].(float64) / float64(stats["count"].(int))
+			event["count"] = s.count
+			event["sum"] = s.sum
+			event["mean"] = s.sum / float64(s.count)
 			events = append(events, event)
 		}
 		return events
@@ -241,15 +246,12 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 
 	if statsI, ok := set[f.lastField]; ok {
-		stats := statsI.(map[string]interface{})
-		stats["count"] = count + stats["count"].(int)
-		stats["sum"] = sum + stats["sum"].(float64)
-		set[f.lastField] = stats
+		s := statsI.(*stats)
+		s.count = count + s.count
+		s.sum = sum + s.sum
+		set[f.lastField] = s
 	} else {
-		stats := make(map[string]interface{})
-		stats["count"] = count
-		stats["sum"] = sum
-		set[f.lastField] = stats
+		set[f.lastField] = &stats{count, sum}
 	}
 }
 
