@@ -244,7 +244,7 @@ func TestParseCondition(t *testing.T) {
 	}
 
 	// complex condition
-	condition = `!Exist(via) || !EQ(via,"akamai")`
+	condition = `!Exist(via) || !EQ(via,"ak")`
 	root, err = parseBoolTree(condition)
 	if err != nil {
 		t.Errorf("parse %s error: %s", condition, err)
@@ -258,14 +258,14 @@ func TestParseCondition(t *testing.T) {
 	}
 
 	event = make(map[string]interface{})
-	event["XXX"] = "akamai"
+	event["XXX"] = "ak"
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
 	event = make(map[string]interface{})
-	event["via"] = "akamai"
+	event["via"] = "ak"
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -349,4 +349,23 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
+	// """"
+	condition = `!Exist(via) || !EQ(via,""ak"")`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["via"] = `"ak"`
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+	event = make(map[string]interface{})
+	event["via"] = `ak`
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
 }
