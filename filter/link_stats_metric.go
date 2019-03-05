@@ -2,6 +2,7 @@ package filter
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +12,8 @@ import (
 
 type stats struct {
 	count int
+	min   float64
+	max   float64
 	sum   float64
 }
 
@@ -129,6 +132,8 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 			event := make(map[string]interface{})
 			event["count"] = s.count
 			event["sum"] = s.sum
+			event["min"] = s.min
+			event["max"] = s.max
 			event["mean"] = s.sum / float64(s.count)
 			events = append(events, event)
 		}
@@ -181,6 +186,8 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	var value float64
 	var (
 		count int
+		min   float64
+		max   float64
 		sum   float64
 	)
 
@@ -195,6 +202,16 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		} else {
 			sum = s.(float64)
 		}
+		if s, ok := event["min"]; !ok {
+			return
+		} else {
+			min = s.(float64)
+		}
+		if s, ok := event["max"]; !ok {
+			return
+		} else {
+			max = s.(float64)
+		}
 	} else {
 		fieldValueI := event[f.lastField]
 		if fieldValueI == nil {
@@ -202,7 +219,7 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		}
 		value = fieldValueI.(float64)
 
-		count, sum = 1, value
+		count, min, max, sum = 1, value, value, value
 	}
 
 	var timestamp int64
@@ -249,9 +266,11 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 		s := statsI.(*stats)
 		s.count = count + s.count
 		s.sum = sum + s.sum
+		s.min = math.Min(s.min, min)
+		s.max = math.Max(s.max, max)
 		set[f.lastField] = s
 	} else {
-		set[f.lastField] = &stats{count, sum}
+		set[f.lastField] = &stats{count, min, max, sum}
 	}
 }
 
