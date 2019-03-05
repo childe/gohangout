@@ -95,9 +95,9 @@ func BuildFilterBoxes(config map[string]interface{}, nexter Nexter) []*FilterBox
 
 	for i, filter := range filters {
 		v := reflect.ValueOf(filter)
-		f := v.MethodByName("SetNexter")
+		f := v.MethodByName("SetBelongTo")
 		if f.IsValid() {
-			f.Call([]reflect.Value{reflect.ValueOf(boxes[i].nexter)})
+			f.Call([]reflect.Value{reflect.ValueOf(boxes[i])})
 		}
 	}
 

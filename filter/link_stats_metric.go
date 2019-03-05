@@ -18,7 +18,7 @@ type stats struct {
 }
 
 type LinkStatsMetricFilter struct {
-	nexter            Nexter
+	box               *FilterBox
 	config            map[interface{}]interface{}
 	timestamp         string
 	batchWindow       int64
@@ -39,8 +39,8 @@ type LinkStatsMetricFilter struct {
 	mutex sync.Locker
 }
 
-func (f *LinkStatsMetricFilter) SetNexter(nexter Nexter) {
-	f.nexter = nexter
+func (f *LinkStatsMetricFilter) SetBelongTo(box *FilterBox) {
+	f.box = box
 }
 
 func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetricFilter {
@@ -286,7 +286,8 @@ func (f *LinkStatsMetricFilter) emitMetrics() {
 	for timestamp, metrics := range f.metricToEmit {
 		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[f.timestamp] = time.Unix(timestamp, 0)
-			f.nexter.Process(event)
+			f.box.PostProcess(event, true)
+			f.box.nexter.Process(event)
 		}
 	}
 	f.metricToEmit = make(map[int64]interface{})
