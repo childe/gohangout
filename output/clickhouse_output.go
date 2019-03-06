@@ -197,7 +197,7 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 				dbs = append(dbs, db)
 			}
 		} else {
-			glog.Error("open %s error: %s", host, err)
+			glog.Errorf("open %s error: %s", host, err)
 		}
 	}
 
