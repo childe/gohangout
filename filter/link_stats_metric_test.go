@@ -30,7 +30,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkStatsMetricFilter(config)
-	f.SetNexter(&NilNexter{})
+	f.SetBelongTo(NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkStatsMetricEvents(now) {
@@ -98,13 +98,10 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).count != 2 {
 		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).sum != 20.4 {
 		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
@@ -129,7 +126,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkStatsMetricFilter(config)
-	f.SetNexter(&NilNexter{})
+	f.SetBelongTo(NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkStatsMetricEvents(now) {
@@ -197,18 +194,15 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
-	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["count"] != 2 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).count != 2 {
 		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["sum"] != 20.4 {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).sum != 20.4 {
 		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
 
-func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFilter, now int64, count, sum float64) {
+func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFilter, now int64, count int, sum float64) {
 	if len(f.metricToEmit) != 4 {
 		t.Error(f.metricToEmit)
 	}
@@ -257,13 +251,10 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if len(localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)) != 2 {
-		t.Errorf("%v", f.metricToEmit[ts])
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).count != count {
+		t.Errorf("_10->localhost->200->responseTime-count should be %d", count)
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["count"] != count {
-		t.Errorf("_10->localhost->200->responseTime-count should be %f", count)
-	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(map[string]float64)["sum"] != sum {
+	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).sum != sum {
 		t.Errorf("_10->localhost->200->responseTime-sum should be %f", sum)
 	}
 }
@@ -288,7 +279,7 @@ func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkStatsMetricFilter(config)
-	f.SetNexter(&NilNexter{})
+	f.SetBelongTo(NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkStatsMetricEvents(now) {
@@ -325,7 +316,7 @@ func TestLinkStatsMetricFilterSeparateMode(t *testing.T) {
 	config["drop_original_event"] = drop_original_event
 
 	f = NewLinkStatsMetricFilter(config)
-	f.SetNexter(&NilNexter{})
+	f.SetBelongTo(NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkStatsMetricEvents(now) {
