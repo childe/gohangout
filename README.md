@@ -185,7 +185,7 @@ assign 配置用来只消费特定的partition, 和 `topic` 配置是冲突的, 
 
 bootstrap.servers group.id 必须配置
 
-auto.commit.interval.ms 是指多久commit一次offset, 太长的话有可能造成数据重复消费,太短的话可能会对kafka千万太大压力.
+auto.commit.interval.ms 是指多久commit一次offset, 太长的话有可能造成数据重复消费,太短的话可能会对kafka造成太大压力.
 
 max.partition.fetch.bytes 是指kafka client一次从kafka server读取多少数据,默认是10MB
 
@@ -440,7 +440,7 @@ Add:
   fields:
       name: childe
       hostname: '[host]'
-      logtime: '{{.date}} {{.{time}}
+      logtime: '{{.date}} {{.time}}
       message: '[stored][message]'
       '[a][b]': '[stored][message]'
 ```
