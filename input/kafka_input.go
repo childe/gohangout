@@ -114,9 +114,13 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 }
 
 func (p *KafkaInput) readOneEvent() map[string]interface{} {
-	message := <-p.messages
+	message, more := <-p.messages
+	if !more {
+		return nil
+	}
 
 	if message.Error != nil {
+		glog.Error("kafka message carries error: ", message.Error)
 		return nil
 	}
 	return p.decoder.Decode(message.Message.Value)
@@ -133,4 +137,5 @@ func (p *KafkaInput) Shutdown() {
 			c.AwaitClose(30 * time.Second)
 		}
 	}
+	close(p.messages)
 }
