@@ -79,8 +79,8 @@ func NewTCPInput(config map[interface{}]interface{}) *TCPInput {
 }
 
 func (p *TCPInput) readOneEvent() map[string]interface{} {
-	text := <-p.messages
-	if text == nil {
+	text, more := <-p.messages
+	if !more || text == nil {
 		return nil
 	}
 	return p.decoder.Decode(text)
@@ -89,4 +89,5 @@ func (p *TCPInput) readOneEvent() map[string]interface{} {
 func (p *TCPInput) Shutdown() {
 	p.stop = true
 	p.l.Close()
+	close(p.messages)
 }

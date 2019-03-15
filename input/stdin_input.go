@@ -10,7 +10,6 @@ import (
 
 type StdinInput struct {
 	config  map[interface{}]interface{}
-	reader  *bufio.Reader
 	decoder codec.Decoder
 
 	scanner  *bufio.Scanner
@@ -25,7 +24,6 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 	p := &StdinInput{
 
 		config:   config,
-		reader:   bufio.NewReader(os.Stdin),
 		decoder:  codec.NewDecoder(codertype),
 		scanner:  bufio.NewScanner(os.Stdin),
 		messages: make(chan []byte, 10),
@@ -39,17 +37,21 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 		if err := p.scanner.Err(); err != nil {
 			glog.Errorf("%s", err)
 		}
-		close(p.messages)
+
+		// shutdown
+		p.messages <- nil
 	}()
 	return p
 }
 
 func (p *StdinInput) readOneEvent() map[string]interface{} {
-	text := <-p.messages
-	if text == nil {
+	text, more := <-p.messages
+	if !more || text == nil {
 		return nil
 	}
 	return p.decoder.Decode(text)
 }
 
-func (p *StdinInput) Shutdown() {}
+func (p *StdinInput) Shutdown() {
+	close(p.messages)
+}
