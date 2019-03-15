@@ -81,15 +81,17 @@ func main() {
 	}
 
 	if options.memprofile != "" {
-		f, err := os.Create(options.memprofile)
-		if err != nil {
-			glog.Fatalf("could not create memory profile: %s", err)
-		}
-		runtime.GC() // get up-to-date statistics
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			glog.Fatalf("could not write memory profile: %s", err)
-		}
-		f.Close()
+		defer func() {
+			f, err := os.Create(options.memprofile)
+			if err != nil {
+				glog.Fatalf("could not create memory profile: %s", err)
+			}
+			defer f.Close()
+			runtime.GC() // get up-to-date statistics
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				glog.Fatalf("could not write memory profile: %s", err)
+			}
+		}()
 	}
 
 	config, err := parseConfig(options.config)
