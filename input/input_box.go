@@ -15,7 +15,7 @@ type InputBox struct {
 	stop               bool
 	shutdownWG         sync.WaitGroup
 	workerWG           sync.WaitGroup
-	shutdownMux        sync.Mutex
+	once               sync.Once
 }
 
 func NewInputBox(input Input, config map[string]interface{}) *InputBox {
@@ -77,23 +77,18 @@ func (box *InputBox) Beat(worker int) {
 }
 
 func (box *InputBox) shutdown() {
-	box.shutdownMux.Lock()
-	defer box.shutdownMux.Unlock()
+	box.once.Do(func() {
 
-	if box.stop {
-		return
-	}
+		glog.Infof("try to shutdown input %T", box.input)
+		box.input.Shutdown()
 
-	box.stop = true
-	glog.Infof("try to shutdown input %T", box.input)
-	box.input.Shutdown()
-
-	for i, outputs := range box.outputsInAllWorker {
-		for _, o := range outputs {
-			glog.Infof("try to shutdown output %T in worker %d", o, i)
-			o.Shutdown()
+		for i, outputs := range box.outputsInAllWorker {
+			for _, o := range outputs {
+				glog.Infof("try to shutdown output %T in worker %d", o, i)
+				o.Shutdown()
+			}
 		}
-	}
+	})
 }
 
 func (box *InputBox) Shutdown() {
