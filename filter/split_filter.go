@@ -14,6 +14,7 @@ type SplitFilter struct {
 	fieldsLength int
 	sep          string
 	maxSplit     int
+	trim         string
 	src          value_render.ValueRender
 	overwrite    bool
 	ignoreBlank  bool
@@ -25,6 +26,7 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 		fields:      make([]field_setter.FieldSetter, 0),
 		overwrite:   true,
 		sep:         "",
+		trim:        "",
 		ignoreBlank: true,
 		maxSplit:    -1,
 	}
@@ -83,7 +85,11 @@ func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]inte
 		if values[i] == "" && plugin.ignoreBlank {
 			continue
 		}
-		event = f.SetField(event, values[i], "", plugin.overwrite)
+		if plugin.trim == "" {
+			event = f.SetField(event, values[i], "", plugin.overwrite)
+		} else {
+			event = f.SetField(event, strings.Trim(values[i], plugin.trim), "", plugin.overwrite)
+		}
 	}
 	return event, true
 }
