@@ -46,9 +46,11 @@ filters:
         dictionary_path: http://corp.com/dict/user.yml
     - Drop:
         if:
-            - '{{if .name}}y{{end}}'
-            - '{{if eq .name "childe"}}y{{end}}'
-            - '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
+        #- '{{if .name}}y{{end}}'
+        #- '{{if eq .name "childe"}}y{{end}}'
+        #- '{{if or (before . "-24h") (after . "24h")}}y{{end}}'
+        - 'EQ(name,"childe")'
+        - 'Before(-24h) || After(24h)'
 
 outputs:
     - Stdout:
