@@ -569,6 +569,9 @@ Grok:
         - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
     ignore_blank: true
     remove_fields: ['message']
+	pattern_paths:
+	- 'https://raw.githubusercontent.com/vjeantet/grok/master/patterns/grok-patterns'
+	- '/opt/gohangout/patterns/linux-syslog'
 ```
 
 源字段不存在, 返回 false. 所有格式不匹配, 返回 false
@@ -581,6 +584,10 @@ Grok:
 
 依次匹配, 直到有一个成功.
 
+#### pattern_paths
+
+会加载定义的 patterns 文件. 这里推荐 (https://github.com/vjeantet/grok)[https://github.com/vjeantet/grok] 项目, 里面把 logstash 中使用的 pattern 都翻译成了 golang 的正则库可以使用的.
+
 #### ignore_blank
 
 默认 true. 如果匹配到的字段为空字符串, 则忽略这个字段. 如果 ignore_blank: false , 则添加此字段, 其值为空字符串.
@@ -589,7 +596,7 @@ Grok:
 
 根据 IP 信息补充地址信息, 会生成如下字段.
 
-country_name province_name city_name 
+country_name province_name city_name
 
 下面四个字段视情况生成, 可能会缺失. latitude longitude location country_code
 
