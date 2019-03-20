@@ -1,18 +1,10 @@
 hash:=$(shell git rev-parse --short HEAD)
 
-.PHONY: gohangout test hermes all clean
+.PHONY: gohangout test all clean
 
 gohangout:
+	mkdir -p build/
 	go build -o build/gohangout
-
-test:
-	mkdir -p build/
-	GOOS=linux GOARCH=amd64 go build -o build/gohangout-linux-x64-$(hash)
-
-hermes:
-	mkdir -p build/
-	git checkout hermes
-	GOOS=linux GOARCH=amd64 go build -o build/gohangout-linux-x64-$(hash)
 
 all:
 	@echo $(hash)
