@@ -571,7 +571,7 @@ Grok:
     remove_fields: ['message']
 	pattern_paths:
 	- 'https://raw.githubusercontent.com/vjeantet/grok/master/patterns/grok-patterns'
-	- '/opt/gohangout/patterns/linux-syslog'
+	- '/opt/gohangout/patterns/'
 ```
 
 源字段不存在, 返回 false. 所有格式不匹配, 返回 false
@@ -586,7 +586,9 @@ Grok:
 
 #### pattern_paths
 
-会加载定义的 patterns 文件. 这里推荐 (https://github.com/vjeantet/grok)[https://github.com/vjeantet/grok] 项目, 里面把 logstash 中使用的 pattern 都翻译成了 golang 的正则库可以使用的.
+会加载定义的 patterns 文件. 如果是目录会加载目录下的所有文件.
+
+这里推荐 [https://github.com/vjeantet/grok](https://github.com/vjeantet/grok) 项目, 里面把 logstash 中使用的 pattern 都翻译成了 golang 的正则库可以使用的.
 
 #### ignore_blank
 
