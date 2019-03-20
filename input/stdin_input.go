@@ -3,6 +3,8 @@ package input
 import (
 	"bufio"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/golang/glog"
@@ -14,6 +16,14 @@ type StdinInput struct {
 
 	scanner  *bufio.Scanner
 	messages chan []byte
+
+	once sync.Once
+	stop bool
+	done chan bool
+}
+
+func (p *StdinInput) closeMessagesChan() {
+	p.once.Do(func() { close(p.messages) })
 }
 
 func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
@@ -27,10 +37,12 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 		decoder:  codec.NewDecoder(codertype),
 		scanner:  bufio.NewScanner(os.Stdin),
 		messages: make(chan []byte, 10),
+		done:     make(chan bool, 0),
 	}
 
 	go func() {
-		for p.scanner.Scan() {
+		defer func() { p.done <- true }()
+		for !p.stop && p.scanner.Scan() {
 			t := p.scanner.Text()
 			p.messages <- []byte(t)
 		}
@@ -38,8 +50,8 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 			glog.Errorf("%s", err)
 		}
 
-		// shutdown
-		p.messages <- nil
+		// trigger shutdown
+		p.closeMessagesChan()
 	}()
 	return p
 }
@@ -53,5 +65,10 @@ func (p *StdinInput) readOneEvent() map[string]interface{} {
 }
 
 func (p *StdinInput) Shutdown() {
-	close(p.messages)
+	p.stop = true
+	select {
+	case <-p.done:
+	case <-time.After(time.Second * 3):
+	}
+	p.closeMessagesChan()
 }
