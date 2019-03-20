@@ -27,3 +27,6 @@ all:
 clean:
 	rm -rf build/*
 
+check:
+	git diff-index --quiet HEAD --
+	govendor status
