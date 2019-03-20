@@ -833,3 +833,18 @@ Translate:
 Uppercase:
   fields: ['loglevel']
 ```
+
+### Replace
+
+```
+- Replace:
+  fields:
+    name: ['wang', 'Wang', 1]
+- Replace:
+  fields:
+    name: ['en', 'eng']
+```
+
+最后面的 1 代表, 只替换一次. 如果不给这个值, 代表替换所有的.
+
+比如上面, 就是把 name 字段中的第一个 wang 换成 Wang, 把所有 en 换成 eng
