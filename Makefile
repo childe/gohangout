@@ -1,12 +1,14 @@
 hash:=$(shell git rev-parse --short HEAD)
 
-.PHONY: gohangout test all clean
+.PHONY: gohangout test all clean check
 
 gohangout:
+	make check
 	mkdir -p build/
 	go build -o build/gohangout
 
 all:
+	make check
 	@echo $(hash)
 	mkdir -p build/
 
