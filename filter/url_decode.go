@@ -29,7 +29,7 @@ func NewURLDecodeFilter(config map[interface{}]interface{}) *URLDecodeFilter {
 			plugin.fields[fieldSetter] = value_render.GetValueRender2(field.(string))
 		}
 	} else {
-		glog.Fatal("fileds must be set in remove filter plugin")
+		glog.Fatal("fileds must be set in URLDecode filter plugin")
 	}
 	return plugin
 }
