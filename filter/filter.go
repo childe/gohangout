@@ -145,6 +145,9 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 	case "URLDecode":
 		f := NewURLDecodeFilter(config)
 		return f
+	case "Replace":
+		f := NewReplaceFilter(config)
+		return f
 	case "KV":
 		f := NewKVFilter(config)
 		return f
