@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 
@@ -52,10 +53,46 @@ func (grok *Grok) loadPattern(filename string) {
 }
 
 func (grok *Grok) loadPatterns() {
-	for _, filename := range grok.patternPaths {
-		grok.loadPattern(filename)
+	for _, path := range grok.patternPaths {
+		files, err := getFiles(path)
+		if err != nil {
+			glog.Fatalf("build grok filter error: %s", err)
+		}
+		for _, file := range files {
+			grok.loadPattern(file)
+		}
 	}
 	glog.V(5).Infof("patterns:%s", grok.patterns)
+}
+
+func getFiles(filepath string) ([]string, error) {
+	fi, err := os.Stat(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	if !fi.IsDir() {
+		return []string{filepath}, nil
+	}
+
+	f, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := f.Readdir(-1)
+	f.Close()
+
+	if err != nil {
+		return nil, err
+	}
+	files := make([]string, 0)
+	for _, l := range list {
+		if l.Mode().IsRegular() {
+			files = append(files, path.Join(filepath, l.Name()))
+		}
+	}
+	return files, nil
 }
 
 func (grok *Grok) replaceFunc(s string) string {
