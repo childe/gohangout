@@ -1,6 +1,6 @@
 hash:=$(shell git rev-parse --short HEAD)
 
-.PHONY: gohangout test all clean check
+.PHONY: gohangout all clean check
 
 gohangout:
 	make check
