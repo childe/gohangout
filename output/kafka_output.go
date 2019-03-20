@@ -78,4 +78,6 @@ func (outputPlugin *KafkaOutput) Emit(event map[string]interface{}) {
 	}
 }
 
-func (outputPlugin *KafkaOutput) Shutdown() {}
+func (outputPlugin *KafkaOutput) Shutdown() {
+	outputPlugin.producer.Close()
+}
