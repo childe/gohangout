@@ -76,9 +76,14 @@ func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 				}
 
 				buf = append(buf, '\n')
-				if err = write(p.conn[i], buf); err != nil {
-					p.conn[i].Close()
-					p.conn[i] = p.loopDial()
+				for {
+					if err = write(p.conn[i], buf); err != nil {
+						glog.Error(err)
+						p.conn[i].Close()
+						p.conn[i] = p.loopDial()
+					} else {
+						break
+					}
 				}
 			}
 		}(i)
@@ -90,8 +95,8 @@ func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 func (p *TCPOutput) loopDial() net.Conn {
 	for {
 		if conn, err := p.dial(); err != nil {
-			glog.Errorf("dial error: %s. sleep 10s", err)
-			time.Sleep(10 * time.Second)
+			glog.Errorf("dial error: %s. sleep 1s", err)
+			time.Sleep(1 * time.Second)
 		} else {
 			glog.Infof("conn built to %s", conn.RemoteAddr())
 			return conn
