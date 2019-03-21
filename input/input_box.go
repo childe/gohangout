@@ -13,22 +13,20 @@ type InputBox struct {
 	input              Input
 	outputsInAllWorker [][]output.Output
 	stop               bool
-	shutdownWG         sync.WaitGroup
-	workerWG           sync.WaitGroup
 	once               sync.Once
+	shutdownChan       chan bool
 }
 
 func NewInputBox(input Input, config map[string]interface{}) *InputBox {
 	return &InputBox{
-		input:  input,
-		config: config,
-		stop:   false,
+		input:        input,
+		config:       config,
+		stop:         false,
+		shutdownChan: make(chan bool, 1),
 	}
 }
 
 func (box *InputBox) beat(workerIdx int) {
-	defer box.workerWG.Done()
-
 	var outputNexter filter.Nexter
 	outputs := output.BuildOutputs(box.config)
 	if len(outputs) == 1 {
@@ -57,8 +55,10 @@ func (box *InputBox) beat(workerIdx int) {
 	for !box.stop {
 		event = box.input.readOneEvent()
 		if event == nil {
-			glog.Info("receive nil message. shutdown...")
-			box.shutdown()
+			if !box.stop {
+				glog.Info("receive nil message. shutdown...")
+				box.shutdown()
+			}
 			return
 		}
 		nexter.Process(event)
@@ -66,14 +66,12 @@ func (box *InputBox) beat(workerIdx int) {
 }
 
 func (box *InputBox) Beat(worker int) {
-	defer box.workerWG.Wait()
-	defer box.shutdownWG.Wait() // wait shutdown
-
 	box.outputsInAllWorker = make([][]output.Output, worker)
 	for i := 0; i < worker; i++ {
-		box.workerWG.Add(1)
 		go box.beat(i)
 	}
+
+	<-box.shutdownChan
 }
 
 func (box *InputBox) shutdown() {
@@ -89,10 +87,11 @@ func (box *InputBox) shutdown() {
 			}
 		}
 	})
+
+	box.shutdownChan <- true
 }
 
 func (box *InputBox) Shutdown() {
-	box.shutdownWG.Add(1)
-	defer box.shutdownWG.Done()
+	box.stop = true
 	box.shutdown()
 }
