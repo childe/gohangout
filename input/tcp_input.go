@@ -20,11 +20,12 @@ type TCPInput struct {
 	stop     bool
 }
 
-func readLine(c net.Conn, messages chan<- []byte) {
-	scanner := bufio.NewScanner(c)
+func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
 	for scanner.Scan() {
-		t := scanner.Text()
-		messages <- []byte(t)
+		t := scanner.Bytes()
+		buf := make([]byte, len(t))
+		copy(buf, t)
+		messages <- buf
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -43,6 +44,16 @@ func NewTCPInput(config map[interface{}]interface{}) *TCPInput {
 		config:   config,
 		decoder:  codec.NewDecoder(codertype),
 		messages: make(chan []byte, 10),
+	}
+
+	if v, ok := config["max_length"]; ok {
+		if max, ok := v.(int); ok {
+			if max <= 0 {
+				glog.Fatal("max_length must be bigger than zero")
+			}
+		} else {
+			glog.Fatal("max_length must be int")
+		}
 	}
 
 	p.network = "tcp"
@@ -71,7 +82,12 @@ func NewTCPInput(config map[interface{}]interface{}) *TCPInput {
 				}
 				glog.Error(err)
 			} else {
-				go readLine(conn, p.messages)
+				scanner := bufio.NewScanner(conn)
+				if v, ok := config["max_length"]; ok {
+					max := v.(int)
+					scanner.Buffer(make([]byte, 0, max), max)
+				}
+				go readLine(scanner, conn, p.messages)
 			}
 		}
 	}()
