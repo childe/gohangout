@@ -3,7 +3,6 @@ hash:=$(shell git rev-parse --short HEAD)
 .PHONY: gohangout all clean check
 
 gohangout:
-	make check
 	mkdir -p build/
 	go build -o build/gohangout
 
