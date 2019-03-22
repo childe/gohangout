@@ -787,6 +787,7 @@ Split:
   fields: ['logtime', 'hostname', 'uri', 'return_code']
   ignore_blank: true
   overwrite: true
+  trim: '"]['
 ```
 
 #### src
@@ -814,6 +815,10 @@ sep: "\x01"
 #### ignore_blank
 
 如果分割后的某字段为空, 刚不放后 event 中, 默认 true
+
+#### trim
+
+用来把分割后的字段, 去除两边的一些空格或者是标点等.
 
 ### Translate
 
