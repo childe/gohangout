@@ -66,6 +66,10 @@ func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 	}
 	plugin.fieldsLength = len(plugin.fields)
 
+	if trim, ok := config["trim"]; ok {
+		plugin.trim = trim.(string)
+	}
+
 	return plugin
 }
 
