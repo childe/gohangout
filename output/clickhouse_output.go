@@ -212,8 +212,8 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	}
 	p.dbSelector = NewRRHostSelector(dbsI, 3)
 
-	p.checkColumnDefault()
 	p.setColumnDefault()
+	p.checkColumnDefault()
 
 	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
