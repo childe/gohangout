@@ -2,6 +2,7 @@ package output
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -31,8 +32,8 @@ type ClickhouseOutput struct {
 
 	fieldsLength int
 	query        string
-	desc         map[string]*RowDesc
-	defaultValue map[string]interface{} // column -> defaultValue
+	desc         map[string]*rowDesc
+	defaultValue map[string]interface{} // columnName -> defaultValue
 
 	bulkChan chan []map[string]interface{}
 
@@ -43,15 +44,15 @@ type ClickhouseOutput struct {
 	wg sync.WaitGroup
 }
 
-type RowDesc struct {
-	column            string
-	typ               string
-	defaultWay        string
-	defaultExpression string
+type rowDesc struct {
+	Name              string `json:"name"`
+	Type              string `json:"type"`
+	DefaultType       string `json:"default_type"`
+	DefaultExpression string `json:"default_expression"`
 }
 
 func (c *ClickhouseOutput) setTableDesc() {
-	c.desc = make(map[string]*RowDesc)
+	c.desc = make(map[string]*rowDesc)
 
 	query := fmt.Sprintf("desc table %s", c.table)
 	glog.V(5).Info(query)
@@ -68,16 +69,47 @@ func (c *ClickhouseOutput) setTableDesc() {
 		}
 		defer rows.Close()
 
+		columns, err := rows.Columns()
+		if err != nil {
+			glog.Fatalf("could not get columns from query `%s`: %s", query, err)
+		}
+		glog.V(10).Infof("desc table columns: %v", columns)
+
+		descMap := make(map[string]string)
+		for _, c := range columns {
+			descMap[c] = ""
+		}
+
 		for rows.Next() {
-			rowDesc := RowDesc{}
-
-			if err := rows.Scan(&rowDesc.column, &rowDesc.typ, &rowDesc.defaultWay, &rowDesc.defaultExpression); err != nil {
-				glog.Errorf("scan rows error: %s", err)
-				continue
+			values := make([]interface{}, 0)
+			for range columns {
+				var a string
+				values = append(values, &a)
 			}
-			glog.V(5).Infof("%v", rowDesc)
 
-			c.desc[rowDesc.column] = &rowDesc
+			if err := rows.Scan(values...); err != nil {
+				glog.Fatalf("scan rows error: %s", err)
+			}
+
+			descMap := make(map[string]string)
+			for i, c := range columns {
+				descMap[c] = *values[i].(*string)
+			}
+
+			b, err := json.Marshal(descMap)
+			if err != nil {
+				glog.Fatalf("marshal desc error: %s", err)
+			}
+
+			rowDesc := rowDesc{}
+			err = json.Unmarshal(b, &rowDesc)
+			if err != nil {
+				glog.Fatalf("marshal desc error: %s", err)
+			}
+
+			glog.V(5).Infof("row desc: %#v", rowDesc)
+
+			c.desc[rowDesc.Name] = &rowDesc
 		}
 
 		return
@@ -96,7 +128,7 @@ func (c *ClickhouseOutput) checkColumnDefault() {
 		}
 
 		// TODO default expression should be supported
-		switch d.defaultWay {
+		switch d.DefaultType {
 		case "MATERIALIZED", "ALIAS", "DEFAULT":
 			glog.Fatal("MATERIALIZED, ALIAS, DEFAULT field not supported")
 		}
@@ -109,11 +141,11 @@ func (c *ClickhouseOutput) setColumnDefault() {
 	c.defaultValue = make(map[string]interface{})
 
 	for columnName, d := range c.desc {
-		if d.defaultWay != "" {
-			c.defaultValue[columnName] = d.defaultExpression
+		if d.DefaultType != "" {
+			c.defaultValue[columnName] = d.DefaultExpression
 			continue
 		}
-		switch d.typ {
+		switch d.Type {
 		case "String":
 			c.defaultValue[columnName] = ""
 		case "Date", "DateTime":
@@ -125,7 +157,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 		case "Array(String)":
 			c.defaultValue[columnName] = []string{}
 		default:
-			glog.Errorf("column: %s, type: %s. unsupported column type, ignore", columnName, d.typ)
+			glog.Errorf("column: %s, type: %s. unsupported column type, ignore", columnName, d.Type)
 			continue
 		}
 	}
