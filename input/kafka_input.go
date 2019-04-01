@@ -1,6 +1,7 @@
 package input
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/childe/gohangout/codec"
@@ -31,7 +32,15 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 		glog.Fatal("kafka input must have consumer_settings")
 	} else {
 		for x, y := range v.(map[interface{}]interface{}) {
-			consumer_settings[x.(string)] = y
+			if reflect.TypeOf(y).Kind() == reflect.Map {
+				yy := make(map[string]interface{})
+				for kk, vv := range y.(map[interface{}]interface{}) {
+					yy[kk.(string)] = vv
+				}
+				consumer_settings[x.(string)] = yy
+			} else {
+				consumer_settings[x.(string)] = y
+			}
 		}
 	}
 	if v, ok := config["topic"]; ok {
