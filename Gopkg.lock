@@ -22,7 +22,7 @@
   name = "github.com/childe/healer"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d578161b03326ece15c7443d34065ccd4ae63d3e"
+  revision = "a2a038307e75bc8a0aeb2d4d4fe5e2a0426e5e8f"
 
 [[projects]]
   digest = "1:2b55f08306f24f60dab51e006c1890db08d34ccc1b92c53a08a1a6e7792e3eb8"
