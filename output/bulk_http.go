@@ -103,7 +103,9 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 	ticker := time.NewTicker(time.Second * time.Duration(flush_interval))
 	go func() {
 		for range ticker.C {
+			bulkProcessor.mux.Lock()
 			bulkProcessor.bulk()
+			bulkProcessor.mux.Unlock()
 		}
 	}()
 
@@ -111,36 +113,25 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 }
 
 func (p *HTTPBulkProcessor) add(event Event) {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
 	p.bulkRequest.add(event)
 
 	// TODO bulkRequest passed to bulk may be empty, but execution_id has ++
 	if p.bulkRequest.bufSizeByte() >= p.bulk_size || p.bulkRequest.eventCount() >= p.bulk_actions {
-		p.mux.Lock()
-
-		if p.bulkRequest.eventCount() == 0 {
-			p.mux.Unlock()
-			return
-		}
 
 		bulkRequest := p.bulkRequest
 		p.bulkRequest = p.newBulkRequestFunc()
-		p.mux.Unlock()
 
 		p.bulkChan <- &bulkRequest
 	}
 }
 
 func (p *HTTPBulkProcessor) bulk() {
-	p.mux.Lock()
-
-	if p.bulkRequest.eventCount() == 0 {
-		p.mux.Unlock()
-		return
-	}
 
 	bulkRequest := p.bulkRequest
 	p.bulkRequest = p.newBulkRequestFunc()
-	p.mux.Unlock()
 
 	p.bulkChan <- &bulkRequest
 }
