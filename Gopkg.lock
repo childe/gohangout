@@ -18,7 +18,7 @@
   revision = "7224d8d8f27ef618c0a95f1ae69dbb0488abc33a"
 
 [[projects]]
-  digest = "1:8fdd84af400f60667f54eec4f95ea74429c40f3ea777527cb1a2631e1bbc2d1c"
+  digest = "1:68b323674c8399a60cc76aab10cfa1280298ac53022d51162508e20921c355c8"
   name = "github.com/childe/healer"
   packages = ["."]
   pruneopts = "UT"
