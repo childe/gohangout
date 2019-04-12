@@ -93,6 +93,9 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 		go func() {
 			for {
 				bulkRequest := <-bulkProcessor.bulkChan
+				if (*bulkRequest).eventCount() <= 0 {
+					continue
+				}
 				bulkProcessor.wg.Add(1)
 				bulkProcessor.innerBulk(bulkRequest)
 				bulkProcessor.wg.Done()
