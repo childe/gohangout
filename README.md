@@ -173,13 +173,15 @@ Kafka:
     consumer_settings:
         bootstrap.servers: "10.0.0.100:9092,10.0.0.101:9092"
         group.id: gohangout.weblog
-        max.partition.fetch.bytes: 10485760
-        auto.commit.interval.ms: 5000
-        from.beginning: true
+        max.partition.fetch.bytes: '10485760'
+        auto.commit.interval.ms: '5000'
+        from.beginning: 'true'
         # sasl.mechanism: PLAIN
         # sasl.user: admin
         # sasl.password: admin-secret
 ```
+
+**特别注意** 参数需要是字符串, 像 `auto.commit.interval.ms: '5000'` , 以及 `from.beginning: 'true'` , 等等
 
 #### topic
 
