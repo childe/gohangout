@@ -46,7 +46,7 @@ func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]inter
 		d := json.NewDecoder(strings.NewReader(s.(string)))
 		d.UseNumber()
 		err := d.Decode(&o)
-		if err != nil {
+		if err != nil || o == nil {
 			return event, false
 		}
 
