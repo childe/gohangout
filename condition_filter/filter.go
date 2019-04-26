@@ -197,7 +197,7 @@ func (c *ContainsCondition) Pass(event map[string]interface{}) bool {
 		}
 	}
 
-	if v, ok := o[c.pathes[length-1]]; ok {
+	if v, ok := o[c.pathes[length-1]]; ok && v != nil {
 		if reflect.TypeOf(v).Kind() == reflect.String {
 			return strings.Contains(v.(string), c.substring)
 		}
