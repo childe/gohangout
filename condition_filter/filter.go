@@ -50,7 +50,7 @@ func (c *ExistCondition) Pass(event map[string]interface{}) bool {
 		length int                    = len(c.pathes)
 	)
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -83,7 +83,7 @@ func (c *EQCondition) Pass(event map[string]interface{}) bool {
 	)
 
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -116,7 +116,7 @@ func (c *HasPrefixCondition) Pass(event map[string]interface{}) bool {
 	)
 
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -127,7 +127,7 @@ func (c *HasPrefixCondition) Pass(event map[string]interface{}) bool {
 		}
 	}
 
-	if v, ok := o[c.pathes[length-1]]; ok {
+	if v, ok := o[c.pathes[length-1]]; ok && v != nil {
 		if reflect.TypeOf(v).Kind() == reflect.String {
 			return strings.HasPrefix(v.(string), c.prefix)
 		}
@@ -151,7 +151,7 @@ func (c *HasSuffixCondition) Pass(event map[string]interface{}) bool {
 	)
 
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -162,7 +162,7 @@ func (c *HasSuffixCondition) Pass(event map[string]interface{}) bool {
 		}
 	}
 
-	if v, ok := o[c.pathes[length-1]]; ok {
+	if v, ok := o[c.pathes[length-1]]; ok && v != nil {
 		if reflect.TypeOf(v).Kind() == reflect.String {
 			return strings.HasSuffix(v.(string), c.suffix)
 		}
@@ -186,7 +186,7 @@ func (c *ContainsCondition) Pass(event map[string]interface{}) bool {
 	)
 
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -221,7 +221,7 @@ func (c *ContainsAnyCondition) Pass(event map[string]interface{}) bool {
 	)
 
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -232,7 +232,7 @@ func (c *ContainsAnyCondition) Pass(event map[string]interface{}) bool {
 		}
 	}
 
-	if v, ok := o[c.pathes[length-1]]; ok {
+	if v, ok := o[c.pathes[length-1]]; ok && v != nil {
 		if reflect.TypeOf(v).Kind() == reflect.String {
 			return strings.ContainsAny(v.(string), c.substring)
 		}
@@ -260,7 +260,7 @@ func (c *MatchCondition) Pass(event map[string]interface{}) bool {
 	)
 
 	for _, path := range c.pathes[:length-1] {
-		if v, ok := o[path]; ok {
+		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
 			} else {
@@ -271,7 +271,7 @@ func (c *MatchCondition) Pass(event map[string]interface{}) bool {
 		}
 	}
 
-	if v, ok := o[c.pathes[length-1]]; ok {
+	if v, ok := o[c.pathes[length-1]]; ok && v != nil {
 		if reflect.TypeOf(v).Kind() == reflect.String {
 			return c.regexp.MatchString(v.(string))
 		}
