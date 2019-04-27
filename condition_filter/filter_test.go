@@ -78,6 +78,41 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
+	// nil value
+
+	condition = `Contains(name,jia)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = "liujia"
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = nil
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	condition = `Contains(name,first,jia)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = "liujia"
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
 	// ! Condition
 	condition = `!EQ(name,first,"jia")`
 	root, err = parseBoolTree(condition)
