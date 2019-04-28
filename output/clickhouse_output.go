@@ -41,7 +41,8 @@ type ClickhouseOutput struct {
 
 	dbSelector HostSelector
 
-	wg sync.WaitGroup
+	mux sync.Mutex
+	wg  sync.WaitGroup
 }
 
 type rowDesc struct {
@@ -347,14 +348,17 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 }
 
 func (p *ClickhouseOutput) Flush() {
-	events := p.events
-	p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-	if len(events) > 0 {
+	p.mux.Lock()
+	if len(p.events) > 0 {
+		events := p.events
+		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
 		p.bulkChan <- events
 	}
+	p.mux.Unlock()
 }
 
 func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
+	p.mux.Lock()
 	p.events = append(p.events, event)
 
 	if len(p.events) >= p.bulk_actions {
@@ -362,6 +366,8 @@ func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
 		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
 		p.bulkChan <- events
 	}
+
+	p.mux.Unlock()
 }
 
 func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
