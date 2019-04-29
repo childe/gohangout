@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/glog"
@@ -37,7 +38,8 @@ type ClickhouseOutput struct {
 
 	bulkChan chan []map[string]interface{}
 
-	events []map[string]interface{}
+	events       []map[string]interface{}
+	execution_id uint64
 
 	dbSelector HostSelector
 
@@ -289,7 +291,8 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		return
 	}
 
-	glog.Infof("write %d docs to clickhouse", len(events))
+	execution_id := atomic.AddUint64(&p.execution_id, 1)
+	glog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
 
 	p.wg.Add(1)
 	defer p.wg.Done()
