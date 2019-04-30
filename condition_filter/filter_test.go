@@ -343,6 +343,12 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
+	condition = `(EQ(namespace,"elasticsearch") && EQ(kubernetes.container.name,"nginx")) || (EQ(namespace,"kibana") && EQ(kubernetes.container.name,"nginx-100014379"))`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
 	// outsides
 	condition = `Before(-24h) || After(24h)`
 	root, err = parseBoolTree(condition)
