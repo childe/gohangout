@@ -5,6 +5,79 @@ import (
 	"time"
 )
 
+func TestNotBeforeAnd(t *testing.T) {
+	condition := `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
+	_, err := parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error", condition)
+	}
+}
+
+func TestSuccessiveAnd(t *testing.T) {
+	condition := `EQ(name,first,"jia") && && EQ(name,last,"liu")`
+	_, err := parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("parse %s should has error", condition)
+	}
+}
+
+func TestSuccessiveNot(t *testing.T) {
+	condition := `EQ(name,first,"jia") && !!EQ(name,last,"liu")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error: %s", condition, err)
+	}
+
+	event := make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+
+	event = make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+}
+
+func TestComplexCondition(t *testing.T) {
+	var (
+		condition string
+		root      *OPNode
+		err       error
+		event     map[string]interface{}
+		pass      bool
+	)
+	condition = `(EQ(namespace,"elasticsearch") && EQ(kubernetes.container.name,"nginx")) || (EQ(namespace,"kibana") && EQ(kubernetes.container.name,"nginx-100014379"))`
+	root, err = parseBoolTree(condition)
+	if err != nil || root == nil {
+		t.Error("parse error")
+	}
+
+	// pass
+	event = make(map[string]interface{})
+	event["namespace"] = "elasticsearch"
+	event["kubernetes.container.name"] = "nginx"
+
+	pass = root.Pass(event)
+	if !pass {
+		t.Error("")
+	}
+
+	// not pass
+	event = make(map[string]interface{})
+	event["namespace"] = "elasticsearch"
+	event["kubernetes.container.name"] = "nginx-100014379"
+
+	pass = root.Pass(event)
+	if pass {
+		t.Error("")
+	}
+}
+
 func TestParseCondition(t *testing.T) {
 	var (
 		condition string
@@ -177,28 +250,6 @@ func TestParseCondition(t *testing.T) {
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
-
-	// successive !
-	condition = `EQ(name,first,"jia") && !!EQ(name,last,"liu")`
-	root, err = parseBoolTree(condition)
-	if err != nil {
-		t.Errorf("parse %s error: %s", condition, err)
-	}
-
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
-	pass = root.Pass(event)
-	if !pass {
-		t.Errorf("`%s` %#v", condition, event)
-	}
-
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
-	pass = root.Pass(event)
-	if pass {
-		t.Errorf("`%s` %#v", condition, event)
-	}
-
 	// parse error
 
 	// successive condition (no && || between them)
@@ -231,20 +282,6 @@ func TestParseCondition(t *testing.T) {
 
 	// unclose ""
 	condition = `EQ(name,first,"jia") && EQ(name,last,"liu)`
-	_, err = parseBoolTree(condition)
-	if err == nil {
-		t.Errorf("parse %s should has error", condition)
-	}
-
-	// ! before &&
-	condition = `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
-	_, err = parseBoolTree(condition)
-	if err == nil {
-		t.Errorf("parse %s should has error", condition)
-	}
-
-	// successive &&
-	condition = `EQ(name,first,"jia") && && EQ(name,last,"liu")`
 	_, err = parseBoolTree(condition)
 	if err == nil {
 		t.Errorf("parse %s should has error", condition)
@@ -341,12 +378,6 @@ func TestParseCondition(t *testing.T) {
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
-	}
-
-	condition = `(EQ(namespace,"elasticsearch") && EQ(kubernetes.container.name,"nginx")) || (EQ(namespace,"kibana") && EQ(kubernetes.container.name,"nginx-100014379"))`
-	root, err = parseBoolTree(condition)
-	if err != nil {
-		t.Errorf("parse %s error: %s", condition, err)
 	}
 
 	// outsides

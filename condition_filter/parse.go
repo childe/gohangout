@@ -2,337 +2,253 @@ package condition_filter
 
 import (
 	"errors"
-	"fmt"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 const (
-	OP_NONE = iota
-	OP_NOT
-	OP_AND
-	OP_OR
+	_op_sharp = iota
+	_op_left
+	_op_right
+	_op_or
+	_op_and
+	_op_not
 )
 
 const (
-	PARSE_OUTSIDE_CONDITION = iota
-	PARSE_STATE_IN_ONE_CONDITION
-	PARSE_STATE_IN_STRING
-	PARSE_STATE_IN_PARENTHESIS
+	_OUTSIDES_CONDITION = iota
+	_IN_CONDITION
+	_IN_STRING
 )
 
-func process_node_stack(node_stack []*OPNode, force bool) ([]*OPNode, error) {
-	length := len(node_stack)
-	if length == 0 {
-		return node_stack, nil
-	}
+var errorParse = errors.New("parse condition error")
 
-	last_node := node_stack[length-1]
-	if length == 1 {
-		if last_node.left == nil && last_node.condition == nil {
-			if last_node.op == OP_AND || last_node.op == OP_OR {
-				return node_stack, errors.New("it is illegal that first element is && or ||")
-			}
+func parseBoolTree(c string) (node *OPNode, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			glog.Errorf("parse `%s` error at `%s`", c, r)
+			node = nil
+			err = errorParse
 		}
-		return node_stack, nil
-	}
+	}()
 
-	last_2_node := node_stack[length-2]
-	if last_node.op == OP_NONE || last_node.left != nil { // this is not pure oper node
-
-		switch last_2_node.op {
-		case OP_NOT:
-			last_2_node.left = last_node
-			node_stack = node_stack[:length-1]
-			return process_node_stack(node_stack, force)
-		case OP_AND:
-			last_2_node.left = node_stack[length-3]
-			last_2_node.right = last_node
-			node_stack = append(node_stack[:length-3], last_2_node)
-			return process_node_stack(node_stack, force)
-		case OP_NONE:
-			return node_stack, errors.New("2 successive condition (no && || between them) is illegal")
-		case OP_OR:
-			if !force {
-				return node_stack, nil
-			}
-			last_2_node.left = node_stack[length-3]
-			last_2_node.right = last_node
-			node_stack = append(node_stack[:length-3], last_2_node)
-			return process_node_stack(node_stack, force)
-		}
-	}
-
-	// last node is pure oper node
-	switch last_node.op {
-	case OP_NOT:
-		return node_stack, nil
-	case OP_AND:
-		return node_stack, nil
-	case OP_OR:
-		new_stack, err := process_node_stack(node_stack[:length-1], true)
-		if err != nil {
-			return node_stack, nil
-		}
-		return append(new_stack, last_node), nil
-	}
-
-	return node_stack, nil
-
-	//  ========= NO check ==========
-
-	/*** check ***
-
-	if last_node.left != nil {
-		if last_2_node.left != nil {
-			return errors.New("2 successive condition is illegal")
-		}
-		if last_2_node.op == OP_NOT {
-		}
-	}
-
-	switch last_node.op {
-	case OP_NONE:
-		if last_2_node.op == OP_NONE {
-			return errors.New("2 successive condition is illegal")
-		}
-		if last_2_node.op == OP_NOT {
-			last_2_node.left = last_node
-			node_stack = node_stack[:length-1]
-			return process_node_stack(node_stack)
-		}
-
-		if last_2_node.op == OP_AND {
-			if length < 3 {
-				return errors.New("should has one condition before &&")
-			}
-			last_2_node.left = node_stack[lenght-2]
-			last_2_node.right = last_node
-			node_stack = node_stack[:length-2]
-			return process_node_stack(node_stack)
-		}
-
-		if last_2_node.op == OP_OR {
-			if force == false {
-				return nil
-			}
-			if length < 3 {
-				return errors.New("should has one condition before ||")
-			}
-			last_2_node.left = node_stack[lenght-2]
-			last_2_node.right = last_node
-			node_stack = node_stack[:length-2]
-			return process_node_stack(node_stack, false)
-		}
-	case OP_NOT:
-		if last_2_node.op == OP_NONE {
-			return errors.New("it is illegal that `!` is after direct condition")
-		}
-	case OP_AND:
-		if last_2_node.op == OP_AND || last_2_node.op == OP_OR {
-			return errors.New("2 successive && or || is illegal")
-		}
-	case OP_OR:
-		if last_2_node.op == OP_AND || last_2_node.op == OP_OR {
-			return errors.New("2 successive && or || is illegal")
-		}
-		new_stack := process_node_stack(node_stack[:length-1], true)
-	}
-
-	return nil
-	*/
-}
-
-func check_node_stack(node_stack []*OPNode) (*OPNode, error) {
-	return node_stack[0], nil
-}
-
-func parseBoolTree(c string) (*OPNode, error) {
+	//glog.Info(c)
 	c = strings.Trim(c, " ")
 	if c == "" {
 		return nil, nil
 	}
 
-	if c[0] == '|' || c[0] == '&' {
-		return nil, errors.New("condition could not starts with & or |")
+	s2, err := buildRPNStack(c)
+	if err != nil {
+		return nil, err
+	}
+	//glog.Info(s2)
+	s := make([]interface{}, 0)
+
+	for _, e := range s2 {
+		if c, ok := e.(Condition); ok {
+			s = append(s, c)
+		} else {
+			sLen := len(s)
+			op := e.(int)
+			if op == _op_not {
+				right := s[sLen-1].(*OPNode)
+				s = s[:sLen-1]
+				node := &OPNode{
+					op:    op,
+					right: right,
+				}
+				s = append(s, node)
+			} else {
+				right := s[sLen-1].(*OPNode)
+				left := s[sLen-2].(*OPNode)
+				s = s[:sLen-2]
+				node := &OPNode{
+					op:    op,
+					left:  left,
+					right: right,
+				}
+				s = append(s, node)
+			}
+		}
 	}
 
+	//glog.Info(s)
+	if len(s) != 1 {
+		return nil, errorParse
+	}
+	return s[0].(*OPNode), nil
+}
+
+func buildRPNStack(c string) ([]interface{}, error) {
 	var (
-		i                        int       = 0
-		length                   int       = len(c)
-		state                    int       = PARSE_OUTSIDE_CONDITION
-		in_condition_parenthesis int       = 0
-		parenthesis              int       = 0
-		parenthesis_start_pos    int       = 0
-		op                       int       = OP_NONE
-		condition_start_pos      int       = 0
-		node_stack               []*OPNode = make([]*OPNode, 0)
-		err                      error
+		state               = _OUTSIDES_CONDITION
+		i                   int
+		length              = len(c)
+		parenthesis         = 0
+		condition_start_pos int
+
+		s1 = []int{_op_sharp}
+		s2 = make([]interface{}, 0)
 	)
 
+	// 哪些导致状态变化??
+
 	for i < length {
-		if state == PARSE_STATE_IN_PARENTHESIS {
-			for ; i < length; i++ {
-				if c[i] == '"' {
-					state = PARSE_STATE_IN_STRING
-					i++
-					break
+		switch c[i] {
+		case '(':
+			switch state {
+			case _OUTSIDES_CONDITION: // push s1
+				s1 = append(s1, _op_left)
+			case _IN_CONDITION:
+				parenthesis++
+			}
+		case ')':
+			switch state {
+			case _OUTSIDES_CONDITION:
+				if !pushOp(_op_right, &s1, &s2) {
+					panic(c[:i+1])
 				}
-				if c[i] == '(' {
-					parenthesis++
-				}
-				if c[i] == ')' {
-					parenthesis--
-					if parenthesis == 0 {
-						state = PARSE_OUTSIDE_CONDITION
-						n, err := parseBoolTree(c[parenthesis_start_pos:i])
-						if err != nil {
-							return nil, err
-						}
-						node_stack = append(node_stack, n)
+
+			case _IN_CONDITION:
+				parenthesis--
+				if parenthesis == 0 {
+					condition, err := NewSingleCondition(c[condition_start_pos : i+1])
+					if err != nil {
+						glog.Error(err)
+						panic(c[:i+1])
 					}
+					n := &OPNode{
+						condition: condition,
+					}
+					s2 = append(s2, n)
+					state = _OUTSIDES_CONDITION
 				}
 			}
-		} else if state == PARSE_OUTSIDE_CONDITION {
-			for ; i < length; i++ {
-				if c[i] == '(' {
-					if len(node_stack) > 0 {
-						last_node := node_stack[len(node_stack)-1]
-						if last_node.op == OP_NONE {
-							return nil, fmt.Errorf("successive conditions: column %d", i)
-						}
-					}
-					parenthesis = 1
-					parenthesis_start_pos = i + 1
-					state = PARSE_STATE_IN_PARENTHESIS
-					i++
-					break
-				}
-				if c[i] == ' ' {
-					continue
-				} else if c[i] == '!' {
-					op = OP_NOT
-					n := &OPNode{
-						op:        op,
-						left:      nil,
-						right:     nil,
-						condition: nil,
-					}
-					node_stack = append(node_stack, n)
-					i++
-					condition_start_pos = i
-					break
-				} else if c[i] == '|' {
-					if c[i+1] != '|' {
-						return nil, fmt.Errorf("column %d illegal |", i)
-					}
-
-					last_node := node_stack[len(node_stack)-1]
-					if last_node.left == nil && last_node.op != OP_NONE {
-						return nil, fmt.Errorf("Expecting condition: column %d", i)
-					}
-
-					op = OP_OR
-					n := &OPNode{
-						op:        op,
-						left:      nil,
-						right:     nil,
-						condition: nil,
-					}
-					node_stack = append(node_stack, n)
-					i += 2
-					condition_start_pos = i
-					break
-				} else if c[i] == '&' {
-					if c[i+1] != '&' {
-						return nil, fmt.Errorf("column %d illegal &", i)
-					}
-
-					last_node := node_stack[len(node_stack)-1]
-					if last_node.left == nil && last_node.op != OP_NONE {
-						return nil, fmt.Errorf("Expecting condition: column %d", i)
-					}
-
-					op = OP_AND
-					n := &OPNode{
-						op:        op,
-						left:      nil,
-						right:     nil,
-						condition: nil,
-					}
-					node_stack = append(node_stack, n)
-					i += 2
-					condition_start_pos = i
-					break
+		case '&':
+			switch state {
+			case _OUTSIDES_CONDITION: // push s1
+				if c[i+1] != '&' {
+					panic(c[:i+1])
 				} else {
-					if len(node_stack) > 0 {
-						last_node := node_stack[len(node_stack)-1]
-						if last_node.op == OP_NONE {
-							return nil, fmt.Errorf("successive conditions: column %d", i)
-						}
-					}
-
-					state = PARSE_STATE_IN_ONE_CONDITION
-					condition_start_pos = i
-					break
-				}
-			}
-		} else if state == PARSE_STATE_IN_STRING {
-			for ; i < length; i++ {
-				if c[i] == '"' {
-					if parenthesis > 0 {
-						state = PARSE_STATE_IN_PARENTHESIS
-					} else {
-						state = PARSE_STATE_IN_ONE_CONDITION
+					if !pushOp(_op_and, &s1, &s2) {
+						panic(c[:i+1])
 					}
 					i++
-					break
 				}
 			}
-		} else if state == PARSE_STATE_IN_ONE_CONDITION {
-			for ; i < length; i++ {
-				if c[i] == '"' {
-					state = PARSE_STATE_IN_STRING
-					i++
-					break
-				}
-				if c[i] == '(' {
-					in_condition_parenthesis++
-				}
-				if c[i] == ')' {
-					in_condition_parenthesis--
-					if in_condition_parenthesis == 0 {
-						n := &OPNode{
-							op:        OP_NONE,
-							left:      nil,
-							right:     nil,
-							condition: NewSingleCondition(c[condition_start_pos : i+1]),
-						}
-						node_stack = append(node_stack, n)
-						state = PARSE_OUTSIDE_CONDITION
-						i++
-						break
+		case '|':
+			switch state {
+			case _OUTSIDES_CONDITION: // push s1
+				if c[i+1] != '|' {
+					panic(c[:i+1])
+				} else {
+					if !pushOp(_op_or, &s1, &s2) {
+						panic(c[:i+1])
 					}
+					i++
 				}
 			}
+		case '!':
+			switch state {
+			case _OUTSIDES_CONDITION: // push s1
+				if n := c[i+1]; n == '|' || n == '&' || n == ' ' {
+					panic(c[:i+1])
+				}
+				if !pushOp(_op_not, &s1, &s2) {
+					panic(c[:i+1])
+				}
+			}
+		case '"':
+			switch state {
+			case _OUTSIDES_CONDITION: // push s1
+				panic(c[:i+1])
+			case _IN_STRING:
+				state = _IN_CONDITION
+			}
+		case ' ':
+		default:
+			if state == _OUTSIDES_CONDITION {
+				state = _IN_CONDITION
+				condition_start_pos = i
+			}
+
 		}
+		i++
+	}
 
-		if node_stack, err = process_node_stack(node_stack, false); err != nil {
-			return nil, err
+	if state != _OUTSIDES_CONDITION {
+		return nil, errorParse
+	}
+
+	for j := len(s1) - 1; j > 0; j-- {
+		s2 = append(s2, s1[j])
+	}
+
+	return s2, nil
+}
+
+func pushOp(op int, s1 *[]int, s2 *[]interface{}) bool {
+	//glog.Info("=====")
+	//glog.Info(op)
+	//glog.Info(*s1)
+	//glog.Info(*s2)
+	//glog.Info("=====")
+
+	//defer func() {
+	//glog.Info("~~~~~")
+	//glog.Info(op)
+	//glog.Info(*s1)
+	//glog.Info(*s2)
+	//glog.Info("~~~~~")
+	//}()
+
+	if op == _op_right {
+		return findLeftInS1(s1, s2)
+	}
+	return compareOpWithS1(op, s1, s2)
+}
+
+// find ( in s1
+func findLeftInS1(s1 *[]int, s2 *[]interface{}) bool {
+	var j int
+	for j = len(*s1) - 1; j > 0 && (*s1)[j] != _op_left; j-- {
+		*s2 = append(*s2, (*s1)[j])
+	}
+
+	if j == 0 {
+		return false
+	}
+
+	*s1 = (*s1)[:j]
+	return true
+}
+
+// compare op with ops in s1, and put them to s2
+func compareOpWithS1(op int, s1 *[]int, s2 *[]interface{}) bool {
+	var j int
+	for j = len(*s1) - 1; j > 0; j-- {
+		//if (*s1)[j] == _op_left || op > (*s1)[j] {
+		n1 := (*s1)[j]
+		b := true
+		switch {
+		case n1 == _op_left:
+			break
+		case op > n1:
+			break
+		case op == _op_not && n1 == _op_not:
+			break
+		default:
+			b = false
 		}
-
+		if b {
+			break
+		}
+		*s2 = append(*s2, n1)
 	}
 
-	if len(node_stack) == 0 {
-		return nil, errors.New("unclosed condition")
-	}
-
-	if state != PARSE_OUTSIDE_CONDITION {
-		return nil, errors.New("unclosed condition")
-	}
-
-	if node_stack, err = process_node_stack(node_stack, true); err != nil {
-		return nil, err
-	} else {
-		return check_node_stack(node_stack)
-	}
+	*s1 = (*s1)[:j+1]
+	*s1 = append(*s1, op)
+	return true
 }
