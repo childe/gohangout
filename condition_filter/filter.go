@@ -1,6 +1,7 @@
 package condition_filter
 
 import (
+	"fmt"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -245,12 +246,12 @@ type MatchCondition struct {
 	regexp *regexp.Regexp
 }
 
-func NewMatchCondition(pathes []string, pattern string) *MatchCondition {
+func NewMatchCondition(pathes []string, pattern string) (*MatchCondition, error) {
 	regexp, err := regexp.Compile(pattern)
 	if err != nil {
-		glog.Fatalf("could not build regexp from %s: %s", pattern, err)
+		return nil, err
 	}
-	return &MatchCondition{pathes, regexp}
+	return &MatchCondition{pathes, regexp}, nil
 }
 
 func (c *MatchCondition) Pass(event map[string]interface{}) bool {
@@ -342,14 +343,14 @@ func NewCondition(c string) Condition {
 	}
 
 	if root, err := parseBoolTree(c); err != nil {
-		glog.Fatalf("could not build Condition from `%s` : %s", original_c, err)
+		glog.Errorf("could not build Condition from `%s` : %s", original_c, err)
 		return nil
 	} else {
 		return root
 	}
 }
 
-func NewSingleCondition(c string) Condition {
+func NewSingleCondition(c string) (Condition, error) {
 	original_c := c
 
 	// Exist
@@ -359,7 +360,7 @@ func NewSingleCondition(c string) Condition {
 		for _, p := range strings.Split(c, ",") {
 			pathes = append(pathes, strings.Trim(p, " "))
 		}
-		return NewExistCondition(pathes)
+		return NewExistCondition(pathes), nil
 	}
 
 	// EQ
@@ -374,20 +375,20 @@ func NewSingleCondition(c string) Condition {
 
 		if value[0] == '"' && value[len(value)-1] == '"' {
 			value = value[1 : len(value)-1]
-			return NewEQCondition(pathes, value)
+			return NewEQCondition(pathes, value), nil
 		}
 		if strings.Contains(value, ".") {
-			s, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				glog.Fatalf("%s could not convert to float: %s", value, err)
+			if s, err := strconv.ParseFloat(value, 64); err == nil {
+				return NewEQCondition(pathes, s), nil
+			} else {
+				return nil, err
 			}
-			return NewEQCondition(pathes, s)
 		}
-		s, err := strconv.ParseInt(value, 0, 32)
-		if err != nil {
-			glog.Fatalf("%s could not convert to int: %s", value, err)
+		if s, err := strconv.ParseInt(value, 0, 32); err == nil {
+			return NewEQCondition(pathes, int(s)), nil
+		} else {
+			return nil, err
 		}
-		return NewEQCondition(pathes, int(s))
 	}
 
 	// HasPrefix
@@ -399,7 +400,7 @@ func NewSingleCondition(c string) Condition {
 		}
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
-		return NewHasPrefixCondition(pathes, value)
+		return NewHasPrefixCondition(pathes, value), nil
 	}
 
 	// HasSuffix
@@ -411,7 +412,7 @@ func NewSingleCondition(c string) Condition {
 		}
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
-		return NewHasSuffixCondition(pathes, value)
+		return NewHasSuffixCondition(pathes, value), nil
 	}
 
 	// Contains
@@ -423,7 +424,7 @@ func NewSingleCondition(c string) Condition {
 		}
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
-		return NewContainsCondition(pathes, value)
+		return NewContainsCondition(pathes, value), nil
 	}
 
 	// ContainsAny
@@ -435,7 +436,7 @@ func NewSingleCondition(c string) Condition {
 		}
 		value := pathes[len(pathes)-1]
 		pathes = pathes[:len(pathes)-1]
-		return NewContainsAnyCondition(pathes, value)
+		return NewContainsAnyCondition(pathes, value), nil
 	}
 
 	// Match
@@ -453,27 +454,26 @@ func NewSingleCondition(c string) Condition {
 	// Random
 	if matched, _ := regexp.MatchString(`^Random\(.*\)$`, c); matched {
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "Random("), ")")
-		value, err := strconv.ParseInt(c, 0, 32)
-		if err != nil {
-			glog.Fatalf("%s could not convert to int: %s", c, err)
+		if value, err := strconv.ParseInt(c, 0, 32); err != nil {
+			return nil, err
+		} else {
+			return NewRandomCondition(int(value)), nil
 		}
-		return NewRandomCondition(int(value))
 	}
 
 	// Before
 	if matched, _ := regexp.MatchString(`^Before\(.*\)$`, c); matched {
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "Before("), ")")
-		return NewBeforeCondition(c)
+		return NewBeforeCondition(c), nil
 	}
 
 	// After
 	if matched, _ := regexp.MatchString(`^After\(.*\)$`, c); matched {
 		c = strings.TrimSuffix(strings.TrimPrefix(c, "After("), ")")
-		return NewAfterCondition(c)
+		return NewAfterCondition(c), nil
 	}
 
-	glog.Fatalf("could not build Condition from `%s`", original_c)
-	return nil
+	return nil, fmt.Errorf("could not build Condition from `%s`", original_c)
 }
 
 type ConditionFilter struct {
@@ -512,6 +512,7 @@ type OPNode struct {
 	left      *OPNode
 	right     *OPNode
 	condition Condition //leaf node has condition
+	pos       int
 }
 
 func (root *OPNode) Pass(event map[string]interface{}) bool {
@@ -519,14 +520,14 @@ func (root *OPNode) Pass(event map[string]interface{}) bool {
 		return root.condition.Pass(event)
 	}
 
-	if root.op == OP_AND {
+	if root.op == _op_and {
 		return root.left.Pass(event) && root.right.Pass(event)
 	}
-	if root.op == OP_OR {
+	if root.op == _op_or {
 		return root.left.Pass(event) || root.right.Pass(event)
 	}
-	if root.op == OP_NOT {
-		return !root.left.Pass(event)
+	if root.op == _op_not {
+		return !root.right.Pass(event)
 	}
 	return false
 }
