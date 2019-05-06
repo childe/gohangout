@@ -10,12 +10,12 @@
   revision = "b9740d71e571c1f4ccb570b9bc7f352329d3e600"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c5b1eb6d45a42e7eb6ded6ff6cf849e6726da60868d1150964b2d087c70d9084"
+  digest = "1:3979ce00a7ab70223ab575eb7ee7191d6a91ff45ecbe61774252ea25ef0f6cf4"
   name = "github.com/bkaradzic/go-lz4"
   packages = ["."]
   pruneopts = "UT"
-  revision = "7224d8d8f27ef618c0a95f1ae69dbb0488abc33a"
+  revision = "74ddf82598bc4745b965729e9c6a463bedd33049"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -41,11 +41,12 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:29a5ab9fa9e845fd8e8726f31b187d710afd271ef1eb32085fe3d604b7e06382"
+  digest = "1:e4f5819333ac698d294fe04dbf640f84719658d5c7ce195b10060cc37292ce79"
   name = "github.com/golang/snappy"
   packages = ["."]
   pruneopts = "UT"
-  revision = "553a641470496b2327abcac10b36396bd98e45c9"
+  revision = "2a8bb927dd31d8daada140a5d09578521ce5c36a"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:c2a7150106b3e9178760bfb0edb8514faa433f54cf631b2fa290d5844cc4d408"
@@ -55,11 +56,12 @@
   revision = "0ac818a639c339140ca04aaa6ea8a738d9167d28"
 
 [[projects]]
-  digest = "1:8d44b575d464430d321863488733d08f98b925721fff5b5f7f5011b6848ef135"
+  digest = "1:f5a2051c55d05548d2d4fd23d244027b59fbd943217df8aa3b5e170ac2fd6e1b"
   name = "github.com/json-iterator/go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2433035e513208b0f7bd5b50d0aecd889b2c1ff8"
+  revision = "0ff49de124c6f76f8494e194af75bde0f1a49a29"
+  version = "v1.1.6"
 
 [[projects]]
   digest = "1:f02dbf2124e5dfb5305a6c3c8957a41d54a89d2a3ef60f030769f86e7851d5f5"
