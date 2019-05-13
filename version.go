@@ -2,11 +2,10 @@ package main
 
 import "fmt"
 
-var version = `
-  ebff01c
+var version = `  ebff01c
   Thu May 9 11:48:06 2019 +0800
-
-  name = "github.com/aviddiviner/go-murmur"
+`
+var dependences = `  name = "github.com/aviddiviner/go-murmur"
   revision = "b9740d71e571c1f4ccb570b9bc7f352329d3e600"
   name = "github.com/bkaradzic/go-lz4"
   revision = "74ddf82598bc4745b965729e9c6a463bedd33049"
@@ -37,6 +36,9 @@ func init() {
 }
 
 func printVersion() {
-	fmt.Println("dependences:")
+	fmt.Println("version:")
 	fmt.Println(version)
+
+	fmt.Println("dependences:")
+	fmt.Println(dependences)
 }
