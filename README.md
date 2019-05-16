@@ -17,6 +17,10 @@
 
   > make
 
+为避免编译后gohangout在docker容器中无法正常启动，推荐使用完整编译命令进行编译，如：
+
+  > GOOS=linux GOARCH=amd64 CGO_ENABLED=0 make
+
 ### 下载编译后二进制文件
 
 [https://github.com/childe/gohangout/releases](https://github.com/childe/gohangout/releases) 直接下载
