@@ -46,6 +46,7 @@ type BulkProcessor interface {
 type GetRetryEventsFunc func(*http.Response, []byte, *BulkRequest) ([]int, []int, BulkRequest)
 
 type HTTPBulkProcessor struct {
+	stop              bool
 	headers           map[string]string
 	requestMethod     string
 	retryResponseCode map[int]bool
@@ -91,7 +92,7 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 	}
 	for i := 0; i < concurrent; i++ {
 		go func() {
-			for {
+			for !bulkProcessor.stop {
 				bulkRequest := <-bulkProcessor.bulkChan
 				if (*bulkRequest).eventCount() <= 0 {
 					continue
@@ -247,6 +248,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 }
 
 func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
+	p.stop = true
 	c := make(chan bool)
 	defer func() {
 		select {
@@ -266,6 +268,21 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 		}()
 	}()
 
+AllBulkReqInChan:
+	for {
+		select {
+		case bulkRequest := <-p.bulkChan:
+			if (*bulkRequest).eventCount() <= 0 {
+				continue
+			}
+			p.wg.Add(1)
+			p.innerBulk(bulkRequest)
+			p.wg.Done()
+		default:
+			break AllBulkReqInChan
+		}
+	}
+
 	p.mux.Lock()
 	defer p.mux.Unlock()
 	if p.bulkRequest.eventCount() == 0 {
@@ -276,6 +293,7 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 
 	p.wg.Add(1)
 	go func() {
+		glog.Infof("bulk %d docs in awaitclose", bulkRequest.eventCount())
 		p.innerBulk(&bulkRequest)
 		p.wg.Done()
 	}()
