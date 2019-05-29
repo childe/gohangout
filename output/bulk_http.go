@@ -276,8 +276,11 @@ AllBulkReqInChan:
 				continue
 			}
 			p.wg.Add(1)
-			p.innerBulk(bulkRequest)
-			p.wg.Done()
+			go func() {
+				glog.Infof("bulk %d docs from bulkChan in awaitclose", (*bulkRequest).eventCount())
+				p.innerBulk(bulkRequest)
+				p.wg.Done()
+			}()
 		default:
 			break AllBulkReqInChan
 		}
@@ -293,7 +296,7 @@ AllBulkReqInChan:
 
 	p.wg.Add(1)
 	go func() {
-		glog.Infof("bulk %d docs in awaitclose", bulkRequest.eventCount())
+		glog.Infof("bulk last %d docs in awaitclose", bulkRequest.eventCount())
 		p.innerBulk(&bulkRequest)
 		p.wg.Done()
 	}()
