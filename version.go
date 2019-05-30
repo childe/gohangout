@@ -31,10 +31,6 @@ var dependences = `  name = "github.com/aviddiviner/go-murmur"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
 `
 
-func init() {
-	printVersion()
-}
-
 func printVersion() {
 	fmt.Println("version:")
 	fmt.Println(version)
