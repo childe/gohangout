@@ -22,4 +22,4 @@ clean:
 
 check:
 	git diff-index --quiet HEAD --
-	govendor status
+	dep check
