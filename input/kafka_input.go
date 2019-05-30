@@ -146,5 +146,4 @@ func (p *KafkaInput) Shutdown() {
 			c.AwaitClose(30 * time.Second)
 		}
 	}
-	close(p.messages)
 }
