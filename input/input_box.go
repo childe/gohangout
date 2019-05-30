@@ -92,6 +92,6 @@ func (box *InputBox) shutdown() {
 }
 
 func (box *InputBox) Shutdown() {
-	box.stop = true
 	box.shutdown()
+	box.stop = true
 }
