@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-var version = `  ebff01c
+var version = `  48629eb
   Thu May 9 11:48:06 2019 +0800
 `
 var dependences = `  name = "github.com/aviddiviner/go-murmur"
@@ -10,7 +10,7 @@ var dependences = `  name = "github.com/aviddiviner/go-murmur"
   name = "github.com/bkaradzic/go-lz4"
   revision = "74ddf82598bc4745b965729e9c6a463bedd33049"
   name = "github.com/childe/healer"
-  revision = "50dcbe896c9f3426a12c53dafab92d5b114ec0dd"
+  revision = "60949c66ae1ac48c67d74eb144d1211d917c5c5c"
   name = "github.com/eapache/go-xerial-snappy"
   revision = "bb955e01b9346ac19dc29eb16586c90ded99a98c"
   name = "github.com/golang/glog"
