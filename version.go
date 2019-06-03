@@ -2,15 +2,15 @@ package main
 
 import "fmt"
 
-var version = `  48629eb
-  Thu May 9 11:48:06 2019 +0800
+var version = `  1f248cd
+  Mon Jun 3 16:04:27 2019 +0800
 `
 var dependences = `  name = "github.com/aviddiviner/go-murmur"
   revision = "b9740d71e571c1f4ccb570b9bc7f352329d3e600"
   name = "github.com/bkaradzic/go-lz4"
   revision = "74ddf82598bc4745b965729e9c6a463bedd33049"
   name = "github.com/childe/healer"
-  revision = "60949c66ae1ac48c67d74eb144d1211d917c5c5c"
+  revision = "00d8c0abb42dba2a9bbc992191978c92bc08d608"
   name = "github.com/eapache/go-xerial-snappy"
   revision = "bb955e01b9346ac19dc29eb16586c90ded99a98c"
   name = "github.com/golang/glog"
