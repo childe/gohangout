@@ -3,11 +3,7 @@ package codec
 import (
 	"bytes"
 	"time"
-
-	jsoniter "github.com/json-iterator/go"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type JsonDecoder struct {
 }
