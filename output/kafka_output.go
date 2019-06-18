@@ -72,7 +72,7 @@ func NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
 }
 
 func (p *KafkaOutput) Emit(event map[string]interface{}) {
-	buf, err := p.encoder(event)
+	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		glog.Errorf("marshal %v error: %s", event, err)
 		return
