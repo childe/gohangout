@@ -2,7 +2,6 @@ package codec
 
 import (
 	"github.com/childe/gohangout/simplejson"
-	"github.com/golang/glog"
 )
 
 type Encoder interface {
@@ -15,8 +14,7 @@ func NewEncoder(t string) Encoder {
 		return &JsonEncoder{}
 	case "simplejson":
 		return &simplejson.SimpleJsonDecoder{}
-	default:
-		glog.Infof("no %s encoder, use json decoder", t)
-		return &JsonEncoder{}
 	}
+	panic(t + " encoder not supported")
+	return nil
 }
