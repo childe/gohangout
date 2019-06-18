@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	DEFAULT_INDEX_TYPE  = "logs"
-	META_FORMAT_WITH_ID = `{"%s":{"_index":%s,"_type":%s,"_id":%s,"routing":%s}}` + "\n"
+	DEFAULT_INDEX_TYPE = "logs"
 )
 
 type Action struct {
