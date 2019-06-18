@@ -10,7 +10,7 @@ import (
 type StdoutOutput struct {
 	BaseOutput
 	config  map[interface{}]interface{}
-	encodec codec.Encoder
+	encoder codec.Encoder
 }
 
 func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
@@ -20,9 +20,9 @@ func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
 	}
 
 	if v, ok := config["codec"]; ok {
-		p.encodec = codec.NewEncoder(v.(string))
+		p.encoder = codec.NewEncoder(v.(string))
 	} else {
-		p.encodec = codec.NewEncoder("json")
+		p.encoder = codec.NewEncoder("json")
 	}
 
 	return p
@@ -30,7 +30,7 @@ func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
 }
 
 func (p *StdoutOutput) Emit(event map[string]interface{}) {
-	buf, err := p.encodec.Encode(event)
+	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		glog.Errorf("marshal %v error:%s", event, err)
 	}
