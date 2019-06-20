@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-
+	"encoding/base64"
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
