@@ -264,8 +264,23 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	} else {
 		glog.Fatal("hosts must be set in elasticsearch output")
 	}
+	var user string
+	if v, ok := config["user"]; ok {
+		user = v.(string)
+	}
 
-	var headers = map[string]string{"Content-Type": "application/x-ndjson"}
+	var password string
+	if v, ok := config["password"]; ok {
+		password = v.(string)
+	}
+	secret := "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
+	var headers = map[string]string{}
+	if secret != "Basic Og==" {
+		headers = map[string]string{"Content-Type": "application/x-ndjson", "Authorization": secret}
+	}else
+	{
+		headers = map[string]string{"Content-Type": "application/x-ndjson"}
+	}
 	if v, ok := config["headers"]; ok {
 		for keyI, valueI := range v.(map[interface{}]interface{}) {
 			headers[keyI.(string)] = valueI.(string)
