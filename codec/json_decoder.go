@@ -2,6 +2,7 @@ package codec
 
 import (
 	"bytes"
+	stdJson "encoding/json"
 	"time"
 )
 
@@ -18,6 +19,18 @@ func (jd *JsonDecoder) Decode(value []byte) map[string]interface{} {
 		return map[string]interface{}{
 			"@timestamp": time.Now(),
 			"message":    string(value),
+		}
+	}
+
+	for k, v := range rst {
+		if nv, ok := v.(stdJson.Number); ok {
+			if rv, err := nv.Int64(); err == nil {
+				rst[k] = rv
+			} else if rv, err := nv.Float64(); err == nil {
+				rst[k] = rv
+			} else {
+				rst[k] = nv.String
+			}
 		}
 	}
 	return rst

@@ -271,14 +271,14 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		p.bulk_actions = CLICKHOUSE_DEFAULT_BULK_ACTIONS
 	}
 
-	var flush_interval int
+	var flushInterval int
 	if v, ok := config["flush_interval"]; ok {
-		flush_interval = v.(int)
+		flushInterval = v.(int)
 	} else {
-		flush_interval = CLICKHOUSE_DEFAULT_FLUSH_INTERVAL
+		flushInterval = CLICKHOUSE_DEFAULT_FLUSH_INTERVAL
 	}
 	go func() {
-		for range time.NewTicker(time.Second * time.Duration(flush_interval)).C {
+		for range time.NewTicker(time.Second * time.Duration(flushInterval)).C {
 			p.Flush()
 		}
 	}()
