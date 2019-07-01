@@ -1,8 +1,7 @@
 package output
 
 import (
-	"encoding/json"
-
+	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/value_render"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
@@ -12,6 +11,8 @@ type KafkaOutput struct {
 	BaseOutput
 	config map[interface{}]interface{}
 
+	encoder codec.Encoder
+
 	producer *healer.Producer
 	key      value_render.ValueRender
 }
@@ -20,6 +21,12 @@ func NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
 	p := &KafkaOutput{
 		BaseOutput: NewBaseOutput(config),
 		config:     config,
+	}
+
+	if v, ok := config["codec"]; ok {
+		p.encoder = codec.NewEncoder(v.(string))
+	} else {
+		p.encoder = codec.NewEncoder("json")
 	}
 
 	producerConfig := healer.DefaultProducerConfig()
@@ -64,20 +71,20 @@ func NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
 	return p
 }
 
-func (outputPlugin *KafkaOutput) Emit(event map[string]interface{}) {
-	buf, err := json.Marshal(event)
+func (p *KafkaOutput) Emit(event map[string]interface{}) {
+	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		glog.Errorf("marshal %v error: %s", event, err)
 		return
 	}
-	if outputPlugin.key == nil {
-		outputPlugin.producer.AddMessage(nil, buf)
+	if p.key == nil {
+		p.producer.AddMessage(nil, buf)
 	} else {
-		key := []byte(outputPlugin.key.Render(event).(string))
-		outputPlugin.producer.AddMessage(key, buf)
+		key := []byte(p.key.Render(event).(string))
+		p.producer.AddMessage(key, buf)
 	}
 }
 
-func (outputPlugin *KafkaOutput) Shutdown() {
-	outputPlugin.producer.Close()
+func (p *KafkaOutput) Shutdown() {
+	p.producer.Close()
 }

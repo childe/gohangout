@@ -3,29 +3,38 @@ package output
 import (
 	"fmt"
 
-	"github.com/childe/gohangout/simplejson"
+	"github.com/childe/gohangout/codec"
 	"github.com/golang/glog"
 )
 
 type StdoutOutput struct {
 	BaseOutput
-	config map[interface{}]interface{}
+	config  map[interface{}]interface{}
+	encoder codec.Encoder
 }
 
 func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
-	return &StdoutOutput{
+	p := &StdoutOutput{
 		BaseOutput: NewBaseOutput(config),
 		config:     config,
 	}
+
+	if v, ok := config["codec"]; ok {
+		p.encoder = codec.NewEncoder(v.(string))
+	} else {
+		p.encoder = codec.NewEncoder("json")
+	}
+
+	return p
+
 }
 
-func (outputPlugin *StdoutOutput) Emit(event map[string]interface{}) {
-	d := &simplejson.SimpleJsonDecoder{}
-	buf, err := d.Encode(event)
+func (p *StdoutOutput) Emit(event map[string]interface{}) {
+	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		glog.Errorf("marshal %v error:%s", event, err)
 	}
 	fmt.Println(string(buf))
 }
 
-func (outputPlugin *StdoutOutput) Shutdown() {}
+func (p *StdoutOutput) Shutdown() {}
