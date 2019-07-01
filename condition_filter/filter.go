@@ -71,19 +71,19 @@ func (c *ExistCondition) Pass(event map[string]interface{}) bool {
 type EQCondition struct {
 	pathes []string
 	value  interface{}
+	fn     int
 }
 
 func NewEQCondition(pathes []string, value interface{}) *EQCondition {
-	return &EQCondition{pathes, value}
+	return &EQCondition{pathes, value, len(pathes)}
 }
 
 func (c *EQCondition) Pass(event map[string]interface{}) bool {
 	var (
-		o      map[string]interface{} = event
-		length int                    = len(c.pathes)
+		o map[string]interface{} = event
 	)
 
-	for _, path := range c.pathes[:length-1] {
+	for _, path := range c.pathes[:c.fn-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
 				o = v.(map[string]interface{})
@@ -95,7 +95,7 @@ func (c *EQCondition) Pass(event map[string]interface{}) bool {
 		}
 	}
 
-	if v, ok := o[c.pathes[length-1]]; ok {
+	if v, ok := o[c.pathes[c.fn-1]]; ok {
 		return v == c.value
 	}
 	return false

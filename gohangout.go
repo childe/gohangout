@@ -13,7 +13,7 @@ import (
 
 	"github.com/childe/gohangout/input"
 	"github.com/golang/glog"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -27,7 +27,6 @@ var options = &struct {
 
 var (
 	worker = flag.Int("worker", 1, "worker thread count")
-	q      = flag.Bool("q", false, "if print version info")
 )
 
 func init() {
@@ -65,9 +64,6 @@ func buildPluginLink(config map[string]interface{}) []*input.InputBox {
 }
 
 func main() {
-	if !(*q) {
-		printVersion()
-	}
 	if options.pprof {
 		go func() {
 			http.ListenAndServe(options.pprofAddr, nil)
