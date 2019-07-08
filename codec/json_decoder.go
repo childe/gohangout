@@ -22,6 +22,11 @@ func (jd *JsonDecoder) Decode(value []byte) map[string]interface{} {
 		}
 	}
 
+	convertNumberType(rst)
+	return rst
+}
+
+func convertNumberType(rst map[string]interface{}) {
 	for k, v := range rst {
 		if nv, ok := v.(stdJson.Number); ok {
 			if rv, err := nv.Int64(); err == nil {
@@ -33,5 +38,4 @@ func (jd *JsonDecoder) Decode(value []byte) map[string]interface{} {
 			}
 		}
 	}
-	return rst
 }

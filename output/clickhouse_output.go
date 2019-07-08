@@ -313,14 +313,13 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 			glog.Errorf("db begin to create transaction error: %s", err)
 			continue
 		}
-		defer tx.Rollback()
 
 		stmt, err := tx.Prepare(p.query)
 		if err != nil {
 			glog.Errorf("transaction prepare statement error: %s", err)
-			return
+			tx.Rollback()
+			continue
 		}
-		defer stmt.Close()
 
 		for _, event := range events {
 			args := make([]interface{}, p.fieldsLength)
@@ -337,14 +336,21 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 			}
 			if _, err := stmt.Exec(args...); err != nil {
 				glog.Errorf("exec clickhouse insert %v error: %s", event, err)
-				return
+				stmt.Close()
+				tx.Rollback()
+				continue
 			}
 		}
 
 		if err := tx.Commit(); err != nil {
 			glog.Errorf("exec clickhouse commit error: %s", err)
-			return
+			stmt.Close()
+			tx.Rollback()
+			continue
 		}
+
+		stmt.Close()
+		tx.Rollback()
 		glog.Infof("%d docs has been committed to clickhouse", len(events))
 		return
 	}
