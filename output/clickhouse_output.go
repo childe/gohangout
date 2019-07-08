@@ -1,6 +1,7 @@
 package output
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -380,30 +381,22 @@ func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
 }
 
 func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
-	c := make(chan bool)
-	defer func() {
-		select {
-		case <-c:
-			glog.Info("all clickhouse flush job done. return")
-			return
-		case <-time.After(timeout):
-			glog.Info("clickhouse await timeout. return")
-			return
-		}
-	}()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	defer func() {
-		go func() {
-			p.wg.Wait()
-			c <- true
-		}()
-	}()
-
-	p.wg.Add(1)
+	c := make(chan struct{}, 1)
 	go func() {
 		p.Flush()
-		p.wg.Done()
+		close(c)
 	}()
+
+	select {
+	case <-ctx.Done():
+		glog.Info("clickhouse await timeout. return")
+	case <-c:
+		glog.Info("all clickhouse flush job done. return")
+	}
+	return
 }
 
 func (p *ClickhouseOutput) Shutdown() {
