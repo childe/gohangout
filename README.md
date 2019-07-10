@@ -142,7 +142,7 @@ Stdin:
 
 - json 对数据做 json 解析, 如果解析失败, 则将整条数据写到 message 字段, 并添加当前时间到 `@timestamp` 字段. 如果解析成功而且数据中没有 `@timestamp` 字段, 则添加当前时间到 `@timestamp` 字段.
 - plain 将整条数据写到 message 字段, 并添加当前时间到 `@timestamp` 字段.
-- json:not_usenumber 因为数字类型的位数有限, 会有一个最高精度, 为了不损失精度, 默认的 json 配置情况下, 数字类型的值默认转成字符串保存. 如果你需要存成数字, 比如后续是要写 clickhouse, 使用 json:not_usenumber
+- json:not_usenumber 因为数字类型的位数有限, 会有一个最高精度, 为了不损失精度, 默认的 json 配置情况下, 数字类型的值默认转成字符串保存. 如果需要存成数字, 比如后续是要写 clickhouse, 可以使用 json:not_usenumber.  如果使用 json codec, 也可以配置 Convert Filter 转换成数字.
 
 ### TCP
 
