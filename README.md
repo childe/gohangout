@@ -9,13 +9,13 @@
 
 1. 下载依赖包
 
-  使用 govender 管理依赖.
+  使用 dep 管理依赖.
 
-   > govender sync
+   > dep ensure
 
 2. 编译
 
-  > make
+   > make
 
 为避免编译后gohangout在docker容器中无法正常启动，推荐使用完整编译命令进行编译，如：
 
