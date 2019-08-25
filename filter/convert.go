@@ -29,7 +29,7 @@ func (c *IntConverter) convert(v interface{}) (interface{}, error) {
 		}
 	}
 	if reflect.TypeOf(v).Kind() == reflect.String {
-		i, err := strconv.ParseInt(v.(string), 0, 32)
+		i, err := strconv.ParseInt(v.(string), 0, 64)
 		if err == nil {
 			return (int)(i), err
 		} else {
