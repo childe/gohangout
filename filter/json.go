@@ -13,6 +13,7 @@ type JsonFilter struct {
 	target    string
 	overwrite bool
 	remove_fields    []string
+	simplejsonString bool
 
 }
 
@@ -21,6 +22,7 @@ func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
 		overwrite: true,
 		target:    "",
 		remove_fields:    []string{},
+		simplejsonString: false,
 
 	}
 
@@ -38,6 +40,10 @@ func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
         for _,  remove_field := range v.([]interface{}) {
             plugin.remove_fields = append(plugin.remove_fields, remove_field.(string))
         }
+	}
+
+	if simplejsonString, ok := config["simplejsonString"]; ok {
+        plugin.simplejsonString = simplejsonString.(bool)
     }
 
 	if target, ok := config["target"]; ok {
@@ -67,12 +73,33 @@ func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]inter
 			}
 			if plugin.overwrite {
 				for k, v := range o.(map[string]interface{}) {
-					event[k] = v
+					if plugin.simplejsonString {
+                        switch vv := v.(type){
+                            case []interface{}, map[interface{}]interface{}, map[string]interface{}:
+                                mjson, _ := json.Marshal(vv)
+                                event[k] = string(mjson)
+                            default:
+                                event[k] = fmt.Sprintf("%+v", v)
+                        }
+                    } else {
+                        event[k] = v
+                    }
 				}
 			} else {
 				for k, v := range o.(map[string]interface{}) {
 					if _, ok := event[k]; !ok {
-						event[k] = v
+						if plugin.simplejsonString {
+							switch vv := v.(type){
+								case []interface{}, map[interface{}]interface{}, map[string]interface{}:
+									mjson, _ := json.Marshal(vv)
+									event[k] = string(mjson)
+								default:
+									event[k] = fmt.Sprintf("%+v", v)
+							}
+	
+						} else {
+							event[k] = v
+						}
 					}
 				}
 			}

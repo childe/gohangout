@@ -677,6 +677,7 @@ Json:
     target: request_fields
     remove_fields:
             - "jsonMessage"
+    simplejsonString: true
 ```
 
 #### field
@@ -686,6 +687,15 @@ Json:
 #### target
 
 目标字段, 如果不设置, 则将Json Filter生成的所有字段写入到根一层.
+
+####  remove_fields
+
+删除该字段定义的fields. 有些时间需要解析完json后，删除该原始字段。
+
+#### simplejsonString 
+
+如果原始定义中json key 层级太多，会对系统产生存储系统性能造成很大的性能消耗，这里知解析第一层
+
 
 ### LinkMetric
 
