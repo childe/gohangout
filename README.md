@@ -675,6 +675,8 @@ KV:
 Json:
     field: request
     target: request_fields
+    remove_fields:
+            - "jsonMessage"
 ```
 
 #### field
