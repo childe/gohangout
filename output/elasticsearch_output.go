@@ -297,7 +297,33 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 	return rst
 }
 
+
 func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
+
+	// 日志一变多
+	if v, ok := p.config["oneEventToMore"]; ok {
+        for _, h := range v.([]interface{}) {
+
+            newevent := make(map[string]interface{})
+
+            strArray := strings.Split(h.(string), ",")
+            for k, v := range event {
+                for s := range strArray {
+                    if _, ok := event[strArray[s]] ;! ok  {
+                        newevent[k] = v
+                    }
+                }
+            }
+            p.emits(newevent)
+        }
+    }else{
+        p.emits(event)
+    }
+}
+
+
+
+func (p *ElasticsearchOutput) emits(event map[string]interface{}) {
 	var (
 		index      string = p.index.Render(event).(string)
 		index_type string = p.index_type.Render(event).(string)

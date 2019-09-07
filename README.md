@@ -267,6 +267,9 @@ Elasticsearch:
     concurrent: 3
     compress: false
     retry_response_code: [401, 502]
+    oneEventToMore:
+             - "requestJson,requestSize"
+             - "responseJson,responseSize"
 ```
 
 #### bulk_actions
@@ -304,6 +307,17 @@ bulk 的goroutine 最大值, 默认1
 
 默认 [401, 502] , 当Bulk请求的返回码是401或者502时, 会重试.
 
+#### oneEventToMore
+
+某些场景下，我们需要把一条event变成多条event, 
+
+2019.09.08 10:00:00  { "requestJson":"xxxx", "requestSize":xxx, "responseSize":xxx, "responseJson":"xxxx" }
+-->
+2019.09.08 10:00:00  { "requestJson":"xxxx", "requestSize":xxx  } 
+2019.09.08 10:00:00  { "responseSize":xxx, "responseJson":"xxxx" }
+
+
+
 #### 两个额外的配置
 
 ```
@@ -316,6 +330,9 @@ bytes_source_field: _source
 bytes_source_field优先级高于source_field.  bytes_source_field是指字段是[]byte类型, source_field是指字段是string类型
 
 增加这个配置的来由是这样的. 上游数据源已经是 json.dump之后的[]byte数据, 做一次json.parse, 然后再json.dump, 耗费了大量CPU做无用功.
+
+
+
 
 ### clickhouse
 
