@@ -12,12 +12,16 @@ type JsonFilter struct {
 	field     string
 	target    string
 	overwrite bool
+	remove_fields    []string
+
 }
 
 func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
 	plugin := &JsonFilter{
 		overwrite: true,
 		target:    "",
+		remove_fields:    []string{},
+
 	}
 
 	if field, ok := config["field"]; ok {
@@ -29,6 +33,12 @@ func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
 	if overwrite, ok := config["overwrite"]; ok {
 		plugin.overwrite = overwrite.(bool)
 	}
+
+	if v, ok := config["remove_fields"]; ok {
+        for _,  remove_field := range v.([]interface{}) {
+            plugin.remove_fields = append(plugin.remove_fields, remove_field.(string))
+        }
+    }
 
 	if target, ok := config["target"]; ok {
 		plugin.target = target.(string)
@@ -69,9 +79,11 @@ func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]inter
 		} else {
 			event[plugin.target] = o
 		}
+		// 当remove_fields 存在，删除该key
+		for _, remove_field := range plugin.remove_fields {
+			delete(event, remove_field)
+		}
 		return event, true
-	} else {
-		return event, false
-	}
+	} 
 	return event, false
 }
