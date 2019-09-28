@@ -3,6 +3,8 @@
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
 
 
+
+
 ## 安装
 
 ### 从源码安装
@@ -26,7 +28,8 @@
 [https://github.com/childe/gohangout/releases](https://github.com/childe/gohangout/releases) 直接下载
 
 
-## RUN
+
+## 运行
 
 gohangout --config config.yml
 
@@ -53,6 +56,16 @@ pprof 的http地址
 
 --worker 4
 使用四个线程(goroutine)处理数据. 每个线程拥有自己的filter, output. 比如说translate filter, 每个线程有自己的字典, 他们占用多份内存.  elasticsearch output也是一样的, 如果每个 elasticsearch 设置了2并发, 那一共就是8个并发.  默认是一个线程
+
+
+
+## 开发新的插件
+
+目前只在 Dev 分支实现了 Filter 的新插件接口. 后面会添加 Input 和 Output.
+
+ Filter 插件示例参考  [gohangout-filter-title](https://github.com/childe/gohangout-filter-title)
+
+
 
 
 ## 一个简单的配置

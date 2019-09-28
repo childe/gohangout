@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"plugin"
 	"reflect"
 
 	"github.com/childe/gohangout/condition_filter"
@@ -163,12 +164,20 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 	case "LinkStatsMetric":
 		f := NewLinkStatsMetricFilter(config)
 		return f
-		//case "Filters":
-		//f := NewFiltersFilter(config, nextFilter, outputs)
-		//return f
+	//case "Filters":
+	//f := NewFiltersFilter(config, nextFilter, outputs)
+	//return f
+	default:
+		p, err := plugin.Open(filterType)
+		if err != nil {
+			glog.Fatalf("could not open %s", filterType)
+		}
+		new, err := p.Lookup("New")
+		if err != nil {
+			glog.Fatalf("could not find New function in %s", filterType)
+		}
+		return new.(func(map[interface{}]interface{}) Filter)(config)
 	}
-	glog.Fatalf("could not build %s filter plugin", filterType)
-	return nil
 }
 
 type FilterBox struct {
