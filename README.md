@@ -61,7 +61,7 @@ pprof 的http地址
 
 ## 开发新的插件
 
-目前只在 Dev 分支实现了 Filter 的新插件接口. 后面会添加 Input 和 Output.
+目前只实现了 Filter 的新插件接口. 后面会添加 Input 和 Output.
 
  Filter 插件示例参考  [gohangout-filter-title](https://github.com/childe/gohangout-filter-title)
 
