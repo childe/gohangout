@@ -43,11 +43,11 @@ func init() {
 func buildPluginLink(config map[string]interface{}) []*input.InputBox {
 	boxes := make([]*input.InputBox, 0)
 
-	for input_idx, inputI := range config["inputs"].([]interface{}) {
+	for inputIdx, inputI := range config["inputs"].([]interface{}) {
 		var inputPlugin input.Input
 
 		i := inputI.(map[interface{}]interface{})
-		glog.Infof("input[%d] %v", input_idx+1, i)
+		glog.Infof("input[%d] %v", inputIdx+1, i)
 
 		// len(i) is 1
 		for inputTypeI, inputConfigI := range i {
