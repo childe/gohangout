@@ -1,6 +1,7 @@
 package input
 
 import (
+	"context"
 	"sync"
 
 	"github.com/childe/gohangout/filter"
@@ -12,8 +13,8 @@ type InputBox struct {
 	config             map[string]interface{} // whole config
 	input              Input
 	outputsInAllWorker [][]output.Output
-	stop               bool
 	once               sync.Once
+	wg                 sync.WaitGroup
 	shutdownChan       chan bool
 }
 
@@ -21,12 +22,11 @@ func NewInputBox(input Input, config map[string]interface{}) *InputBox {
 	return &InputBox{
 		input:        input,
 		config:       config,
-		stop:         false,
 		shutdownChan: make(chan bool, 1),
 	}
 }
 
-func (box *InputBox) beat(workerIdx int) {
+func (box *InputBox) beat(ctx context.Context, workerIdx int) {
 	var outputNexter filter.Nexter
 	outputs := output.BuildOutputs(box.config)
 	if len(outputs) == 1 {
@@ -52,33 +52,45 @@ func (box *InputBox) beat(workerIdx int) {
 		event map[string]interface{}
 	)
 
-	for !box.stop {
-		event = box.input.readOneEvent()
-		if event == nil {
-			if !box.stop {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			event = box.input.readOneEvent()
+			if event == nil {
 				glog.Info("receive nil message. shutdown...")
 				box.shutdown()
+				return
 			}
-			return
+			nexter.Process(event)
 		}
-		nexter.Process(event)
 	}
 }
 
 func (box *InputBox) Beat(worker int) {
+	ctx, cancel := context.WithCancel(context.Background())
 	box.outputsInAllWorker = make([][]output.Output, worker)
+	box.wg.Add(worker)
 	for i := 0; i < worker; i++ {
-		go box.beat(i)
+		go func(i int) {
+			defer box.wg.Done()
+			box.beat(ctx, i)
+		}(i)
 	}
 
 	<-box.shutdownChan
+	cancel()
 }
 
 func (box *InputBox) shutdown() {
 	box.once.Do(func() {
-
 		glog.Infof("try to shutdown input %T", box.input)
 		box.input.Shutdown()
+		// close beat
+		close(box.shutdownChan)
+		// wait beat close
+		box.wg.Wait()
 
 		for i, outputs := range box.outputsInAllWorker {
 			for _, o := range outputs {
@@ -88,10 +100,8 @@ func (box *InputBox) shutdown() {
 		}
 	})
 
-	box.shutdownChan <- true
 }
 
 func (box *InputBox) Shutdown() {
 	box.shutdown()
-	box.stop = true
 }
