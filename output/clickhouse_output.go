@@ -318,7 +318,7 @@ func (p *ClickhouseOutput) flushWithRetry(retry int, events []map[string]interfa
 
 		retryCount++
 		if retry >= 0 && retryCount >= retry {
-			glog.Infof("innerFlush %d docs to clickhouse fail %s. retry count %d. will not retry", len(events), retryCount, err.Error())
+			glog.Infof("innerFlush %d docs to clickhouse fail %s. retry count %d. will not retry", len(events), err.Error(), retryCount)
 			break
 		}
 
