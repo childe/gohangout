@@ -87,7 +87,7 @@ func NewIndexRender(t string) *IndexRender {
 			value:   t[lastPos:len(t)],
 		})
 	}
-	return &IndexRender{fields, nil}
+	return &IndexRender{fields, time.UTC}
 }
 
 // SetTimeLocation parse `location` to time.Location ans set it as its member.
