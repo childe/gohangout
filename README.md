@@ -286,7 +286,9 @@ Elasticsearch:
 #### index_time_location
 
 渲染索引名字时, 使用什么时区. 默认是 UTC. 北京时间 2019-10-25 07:00:00 的日志, 会写到 2019.10.24 这个索引中. 
+
 内容如 `Asia/Shanghai` 等, 参考 [https://timezonedb.com/time-zones](https://timezonedb.com/time-zones)
+
 两个特殊值: `UTC` `Local`
 
 #### bulk_actions
