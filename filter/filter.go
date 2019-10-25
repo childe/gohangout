@@ -88,6 +88,12 @@ func BuildFilterBoxes(config map[string]interface{}, nexter Nexter) []*FilterBox
 		}
 	}
 
+	fullbackConvertFilter := BuildFilter("fullbackConvert", nil)
+	fullbackConvertBox := NewFilterBox(nil)
+	fullbackConvertBox.filter = fullbackConvertFilter
+	filters = append(filters, fullbackConvertFilter)
+	boxes = append(boxes, fullbackConvertBox)
+
 	for i := 0; i < len(filters)-1; i++ {
 		boxes[i].nexter = &FilterNexter{boxes[i+1]}
 	}
@@ -163,6 +169,9 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 		return f
 	case "LinkStatsMetric":
 		f := NewLinkStatsMetricFilter(config)
+		return f
+	case "fullbackConvert":
+		f := NewFullbackConvertFilter()
 		return f
 	//case "Filters":
 	//f := NewFiltersFilter(config, nextFilter, outputs)

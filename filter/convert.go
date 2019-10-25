@@ -133,3 +133,25 @@ func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]in
 	}
 	return event, true
 }
+
+type FullbackConvertFilter struct{}
+
+func NewFullbackConvertFilter() *FullbackConvertFilter {
+	return new(FullbackConvertFilter)
+}
+
+func (plugin *FullbackConvertFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+	for key, val := range event {
+		if reflect.TypeOf(val).String() == "json.Number" {
+			valNumber := val.(json.Number)
+			if ival, err := valNumber.Int64(); err == nil {
+				event[key] = ival
+			} else if fval, err := valNumber.Float64(); err == nil {
+				event[key] = fval
+			} else {
+				event[key] = valNumber.String()
+			}
+		}
+	}
+	return event, true
+}
