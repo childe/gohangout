@@ -13,32 +13,31 @@ import (
 	"github.com/golang/glog"
 )
 
-func dateFormat(t interface{}, format string, loc *time.Location) (string, error) {
-	if reflect.TypeOf(t).String() == "time.Time" {
-		t1 := t.(time.Time).UTC()
-		return t1.Format(format), nil
+func dateFormat(t interface{}, format string, location *time.Location) (string, error) {
+	if t1, ok := t.(time.Time); ok {
+		return t1.In(location).Format(format), nil
 	}
 	if reflect.TypeOf(t).String() == "json.Number" {
 		t1, err := t.(json.Number).Int64()
 		if err != nil {
 			return format, err
 		}
-		return time.Unix(t1/1000, t1%1000*1000000).UTC().Format(format), nil
+		return time.Unix(t1/1000, t1%1000*1000000).In(location).Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.Int {
 		t1 := int64(t.(int))
-		return time.Unix(t1/1000, t1%1000*1000000).UTC().Format(format), nil
+		return time.Unix(t1/1000, t1%1000*1000000).In(location).Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.Int64 {
 		t1 := t.(int64)
-		return time.Unix(t1/1000, t1%1000*1000000).UTC().Format(format), nil
+		return time.Unix(t1/1000, t1%1000*1000000).In(location).Format(format), nil
 	}
 	if reflect.TypeOf(t).Kind() == reflect.String {
 		t1, e := time.Parse(time.RFC3339, t.(string))
 		if e != nil {
 			return format, e
 		}
-		return t1.UTC().Format(format), nil
+		return t1.In(location).Format(format), nil
 	}
 	return format, errors.New("could not tell the type timestamp field belongs to")
 }
