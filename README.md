@@ -271,6 +271,7 @@ Elasticsearch:
         - 'http://10.0.0.100:9200'
         - 'http://admin:password@10.0.0.101:9200'
     index: 'web-%{appid}-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
+    index_time_location: 'Local'
     index_type: "logs"
     bulk_actions: 5000
     routing: '[domain]'
@@ -281,6 +282,12 @@ Elasticsearch:
     compress: false
     retry_response_code: [401, 502]
 ```
+
+#### index_time_location
+
+渲染索引名字时, 使用什么时区. 默认是 UTC. 北京时间 2019-10-25 07:00:00 的日志, 会写到 2019.10.24 这个索引中. 
+内容如 `Asia/Shanghai` 等, 参考 [https://timezonedb.com/time-zones](https://timezonedb.com/time-zones)
+两个特殊值: `UTC` `Local`
 
 #### bulk_actions
 
