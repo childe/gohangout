@@ -279,11 +279,11 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			ticker := time.NewTicker(time.Second * time.Duration(flushInterval))
+			timer := time.NewTimer(time.Second * time.Duration(flushInterval))
 			events := make([]map[string]interface{}, 0, p.bulkActions)
 			for {
 				select {
-				case <-ticker.C:
+				case <-timer.C:
 					if len(events) > 0 {
 						p.flushWithRetry(retry, events)
 						events = events[:0]
@@ -299,6 +299,7 @@ func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 					if len(events) >= p.bulkActions {
 						p.flushWithRetry(retry, events)
 						events = events[:0]
+						timer.Reset(time.Second * time.Duration(flushInterval))
 					}
 				}
 			}
