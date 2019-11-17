@@ -170,13 +170,13 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 	default:
 		p, err := plugin.Open(filterType)
 		if err != nil {
-			glog.Fatalf("could not open %s", filterType)
+			glog.Fatalf("could not open %s: %s", filterType, err)
 		}
-		new, err := p.Lookup("New")
+		newFunc, err := p.Lookup("New")
 		if err != nil {
-			glog.Fatalf("could not find New function in %s", filterType)
+			glog.Fatalf("could not find New function in %s: %s", filterType, err)
 		}
-		return new.(func(map[interface{}]interface{}) Filter)(config)
+		return newFunc.(func(map[interface{}]interface{}) Filter)(config)
 	}
 }
 
