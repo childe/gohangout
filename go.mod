@@ -11,7 +11,7 @@ require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/ipipdotnet/datx-go v0.0.0-20180617151335-0ac818a639c3
 	github.com/json-iterator/go v1.1.6
-	github.com/kshvakov/clickhouse v1.3.4
+	github.com/kshvakov/clickhouse v1.3.11
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
