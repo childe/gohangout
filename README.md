@@ -7,6 +7,8 @@
 
 ## 安装
 
+可以从源码编译, 或者是直接下载二进制可执行文件
+
 ### 从源码安装
 
 1. 下载依赖包
@@ -46,7 +48,7 @@ gohangout --config config.yml
 ### pprof debug
 
 - -pprof=true
-默认不开启 pprof
+(默认是不开启 pprof的)
 
 - -pprof-address 127.0.0.1:8899
 pprof 的http地址
@@ -54,10 +56,17 @@ pprof 的http地址
 
 ### 多线程处理
 
+默认是一个线程
+
 --worker 4
-使用四个线程(goroutine)处理数据. 每个线程拥有自己的filter, output. 比如说translate filter, 每个线程有自己的字典, 他们占用多份内存.  elasticsearch output也是一样的, 如果每个 elasticsearch 设置了2并发, 那一共就是8个并发.  默认是一个线程
 
+使用四个线程(goroutine)处理数据. 每个线程拥有自己的filter, output. 比如说translate filter, 每个线程有自己的字典, 他们占用多份内存.  elasticsearch output也是一样的, 如果每个 elasticsearch 设置了2并发, 那一共就是8个并发.
 
+进一步说明一下为什么添加了这个配置:
+
+最开始是没有这个配置的, 如果需要多线程并发处理数据, 依赖 Input 里面的配置, 比如说 Kafka 配置 `topicname: 2` 就是两个线程去消费(需要 Topic 有至少2个Partition, 保证每个线程可以消费到一个 Partition 里面的数据).
+
+但是后面出现一些矛盾, 比如说, Kafka 的 Consumer 个数多的情况下, 给 Kafka 带来更大压力, 可能导致 Rebalance 更频繁等. 所以如果 Kafka 消费数据没有瓶颈的情况下, 希望控制尽量少的 Consumer, 后面多线程的处理这些数据.
 
 ## 开发新的插件
 
