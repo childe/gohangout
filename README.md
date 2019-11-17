@@ -2,6 +2,9 @@
 
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
 
+创建一个 QQ 群交流吧
+
+![QQ](https://user-images.githubusercontent.com/2444825/67572448-ca0cb280-f768-11e9-9990-68afd80801ff.png)
 
 
 
