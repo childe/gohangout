@@ -22,4 +22,3 @@ clean:
 
 check:
 	git diff-index --quiet HEAD --
-	dep check
