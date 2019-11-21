@@ -12,13 +12,7 @@
 
 ### 从源码安装
 
-1. 下载依赖包
-
-  使用 dep 管理依赖.
-
-   > dep ensure
-
-2. 编译
+  使用 go module 管理依赖. 直接 make 就可
 
    > make
 
