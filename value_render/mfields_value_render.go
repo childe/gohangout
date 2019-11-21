@@ -24,7 +24,7 @@ func (vr *MultiLevelValueRender) Render(event map[string]interface{}) interface{
 	var current map[string]interface{}
 	current = event
 	for _, field := range vr.preFields {
-		if value, ok := current[field]; !ok {
+		if value, ok := current[field]; !ok || value == nil {
 			return nil
 		} else {
 			if reflect.TypeOf(value).Kind() == reflect.Map {
