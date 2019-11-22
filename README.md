@@ -332,6 +332,8 @@ bytes_source_field优先级高于source_field.  bytes_source_field是指字段�
 ```
 Clickhouse:
     table: 'hotel.weblog'
+	username: admin
+	password: XXX
     hosts:
     - 'tcp://10.100.0.101:9000'
     - 'tcp://10.100.0.102:9000'
