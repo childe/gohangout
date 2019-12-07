@@ -10,7 +10,7 @@ inputs:
         consumer_settings:
             bootstrap.servers: "10.0.0.100:9092"
             group.id: hangout.test
-            from.beginning: true
+            from.beginning: 'true'
 
 filters:
     - Add:
