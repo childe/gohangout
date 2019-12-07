@@ -192,6 +192,14 @@ func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOu
 		glog.Fatal("index must be set in elasticsearch output")
 	}
 
+	if v, ok := config["index_time_location"]; ok {
+		if e, ok := rst.index.(*value_render.IndexRender); ok {
+			e.SetTimeLocation(v.(string))
+		} else {
+			glog.Fatal("index_time_location is not supported in this index format")
+		}
+	}
+
 	if v, ok := config["index_type"]; ok {
 		rst.index_type = value_render.GetValueRender(v.(string))
 	} else {
