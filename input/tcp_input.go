@@ -94,7 +94,7 @@ func NewTCPInput(config map[interface{}]interface{}) *TCPInput {
 	return p
 }
 
-func (p *TCPInput) readOneEvent() map[string]interface{} {
+func (p *TCPInput) ReadOneEvent() map[string]interface{} {
 	text, more := <-p.messages
 	if !more || text == nil {
 		return nil

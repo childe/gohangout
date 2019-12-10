@@ -48,7 +48,7 @@ func NewRandomInput(config map[interface{}]interface{}) *RandomInput {
 	return p
 }
 
-func (p *RandomInput) readOneEvent() map[string]interface{} {
+func (p *RandomInput) ReadOneEvent() map[string]interface{} {
 	if p.maxMessages != -1 && p.count >= p.maxMessages {
 		return nil
 	}
