@@ -5,19 +5,20 @@ import (
 
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/output"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
 type InputBox struct {
 	config             map[string]interface{} // whole config
-	input              Input
+	input              topology.Input
 	outputsInAllWorker [][]*output.OutputBox
 	stop               bool
 	once               sync.Once
 	shutdownChan       chan bool
 }
 
-func NewInputBox(input Input, config map[string]interface{}) *InputBox {
+func NewInputBox(input topology.Input, config map[string]interface{}) *InputBox {
 	return &InputBox{
 		input:        input,
 		config:       config,
@@ -27,17 +28,17 @@ func NewInputBox(input Input, config map[string]interface{}) *InputBox {
 }
 
 func (box *InputBox) beat(workerIdx int) {
-	var outputProcesserInLink filter.ProcesserInLink
+	var outputProcesserInLink topology.ProcesserInLink
 	outputs := output.BuildOutputs(box.config)
 	if len(outputs) == 1 {
-		outputProcesserInLink = (*filter.OutputProcesserInLink)(outputs[0])
+		outputProcesserInLink = (*output.OutputProcesserInLink)(outputs[0])
 	} else {
-		outputProcesserInLink = (filter.OutputsProcesserInLink)(outputs)
+		outputProcesserInLink = (output.OutputsProcesserInLink)(outputs)
 	}
 	filterBoxes := filter.BuildFilterBoxes(box.config, outputProcesserInLink)
 	box.outputsInAllWorker[workerIdx] = outputs
 
-	var firstNode filter.ProcesserInLink
+	var firstNode topology.ProcesserInLink
 	if len(filterBoxes) > 0 {
 		firstNode = (*filter.FilterProcesserInLink)(filterBoxes[0])
 	} else {

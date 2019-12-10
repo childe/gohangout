@@ -7,53 +7,16 @@ import (
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/field_deleter"
 	"github.com/childe/gohangout/field_setter"
-	"github.com/childe/gohangout/output"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
-
-type ProcesserInLink interface {
-	// will process event in filter/output , and the call nexter.process, until nexter is nil
-	Process(map[string]interface{}) map[string]interface{}
-}
-
-type FilterProcesserInLink FilterBox
-
-func (f *FilterProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
-	return (*FilterBox)(f).Process(event)
-}
-
-type OutputProcesserInLink output.OutputBox
-
-func (p *OutputProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
-	if (*output.OutputBox)(p).ConditionFilter.Pass(event) {
-		(*output.OutputBox)(p).Output.Emit(event)
-	}
-	return nil
-}
-
-type OutputsProcesserInLink []*output.OutputBox
-
-func (p OutputsProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
-	for _, o := range ([]*output.OutputBox)(p) {
-		if o.Pass(event) {
-			o.Emit(event)
-		}
-	}
-	return nil
-}
-
-type NilProcesserInLink struct{}
-
-func (n *NilProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
-	return event
-}
 
 type Filter interface {
 	Filter(map[string]interface{}) (map[string]interface{}, bool)
 }
 
-func BuildFilterBoxes(config map[string]interface{}, next ProcesserInLink) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}, next topology.ProcesserInLink) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
@@ -174,7 +137,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 type FilterBox struct {
 	filter Filter
 
-	next            ProcesserInLink
+	next            topology.ProcesserInLink
 	conditionFilter *condition_filter.ConditionFilter
 
 	config map[interface{}]interface{}
@@ -259,4 +222,10 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 	}
 
 	return b.next.Process(event)
+}
+
+type FilterProcesserInLink FilterBox
+
+func (f *FilterProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+	return (*FilterBox)(f).Process(event)
 }

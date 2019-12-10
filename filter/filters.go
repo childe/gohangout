@@ -1,6 +1,9 @@
 package filter
 
-import "github.com/golang/glog"
+import (
+	"github.com/childe/gohangout/topology"
+	"github.com/golang/glog"
+)
 
 type FiltersFilter struct {
 	config      map[interface{}]interface{}
@@ -16,7 +19,7 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	for k, v := range config {
 		_config[k.(string)] = v
 	}
-	f.filterBoxes = BuildFilterBoxes(_config, &NilProcesserInLink{})
+	f.filterBoxes = BuildFilterBoxes(_config, &topology.NilProcesserInLink{})
 	if len(f.filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}
