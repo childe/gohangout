@@ -122,7 +122,7 @@ func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	return kafkaInput
 }
 
-func (p *KafkaInput) readOneEvent() map[string]interface{} {
+func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 	message, more := <-p.messages
 	if !more {
 		return nil

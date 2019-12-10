@@ -48,7 +48,7 @@ func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 	return p
 }
 
-func (p *StdinInput) readOneEvent() map[string]interface{} {
+func (p *StdinInput) ReadOneEvent() map[string]interface{} {
 	text, more := <-p.messages
 	if !more || text == nil {
 		return nil

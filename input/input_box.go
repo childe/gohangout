@@ -49,7 +49,7 @@ func (box *InputBox) beat(workerIdx int) {
 	)
 
 	for !box.stop {
-		event = box.input.readOneEvent()
+		event = box.input.ReadOneEvent()
 		if event == nil {
 			if !box.stop {
 				glog.Info("receive nil message. shutdown...")

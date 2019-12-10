@@ -7,7 +7,7 @@ import (
 )
 
 type Input interface {
-	readOneEvent() map[string]interface{}
+	ReadOneEvent() map[string]interface{}
 	Shutdown()
 }
 
