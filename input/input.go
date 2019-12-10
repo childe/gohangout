@@ -3,15 +3,11 @@ package input
 import (
 	"plugin"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
-type Input interface {
-	ReadOneEvent() map[string]interface{}
-	Shutdown()
-}
-
-func GetInput(inputType string, config map[interface{}]interface{}) Input {
+func GetInput(inputType string, config map[interface{}]interface{}) topology.Input {
 	switch inputType {
 	case "Stdin":
 		f := NewStdinInput(config)
@@ -34,6 +30,6 @@ func GetInput(inputType string, config map[interface{}]interface{}) Input {
 		if err != nil {
 			glog.Fatalf("could not find New function in %s: %s", inputType, err)
 		}
-		return newFunc.(func(map[interface{}]interface{}) interface{})(config).(Input)
+		return newFunc.(func(map[interface{}]interface{}) interface{})(config).(topology.Input)
 	}
 }

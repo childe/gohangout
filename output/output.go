@@ -4,16 +4,12 @@ import (
 	"plugin"
 
 	"github.com/childe/gohangout/condition_filter"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
-type Output interface {
-	Emit(map[string]interface{})
-	Shutdown()
-}
-
 type OutputBox struct {
-	Output
+	topology.Output
 	*condition_filter.ConditionFilter
 }
 
@@ -35,7 +31,7 @@ func BuildOutputs(config map[string]interface{}) []*OutputBox {
 }
 
 func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputBox {
-	var output Output
+	var output topology.Output
 	switch outputType {
 	case "Dot":
 		output = NewDotOutput(config)
@@ -60,11 +56,31 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputB
 		if err != nil {
 			glog.Fatalf("could not find New function in %s: %s", outputType, err)
 		}
-		output = newFunc.(func(map[interface{}]interface{}) interface{})(config).(Output)
+		output = newFunc.(func(map[interface{}]interface{}) interface{})(config).(topology.Output)
 	}
 
 	return &OutputBox{
-		Output:          output,
-		ConditionFilter: condition_filter.NewConditionFilter(config),
+		output,
+		condition_filter.NewConditionFilter(config),
 	}
+}
+
+type OutputProcesserInLink OutputBox
+
+func (p *OutputProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+	if (*OutputBox)(p).Pass(event) {
+		(*OutputBox)(p).Emit(event)
+	}
+	return nil
+}
+
+type OutputsProcesserInLink []*OutputBox
+
+func (p OutputsProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+	for _, o := range ([]*OutputBox)(p) {
+		if o.Pass(event) {
+			o.Emit(event)
+		}
+	}
+	return nil
 }
