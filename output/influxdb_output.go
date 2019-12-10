@@ -84,7 +84,6 @@ func (br *InfluxdbBulkRequest) readBuf() []byte {
 }
 
 type InfluxdbOutput struct {
-	BaseOutput
 	config map[interface{}]interface{}
 
 	db          string
@@ -102,8 +101,7 @@ func influxdbGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *B
 
 func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 	rst := &InfluxdbOutput{
-		BaseOutput: NewBaseOutput(config),
-		config:     config,
+		config: config,
 	}
 
 	if v, ok := config["db"]; ok {

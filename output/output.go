@@ -68,17 +68,3 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputB
 		ConditionFilter: condition_filter.NewConditionFilter(config),
 	}
 }
-
-type BaseOutput struct {
-	conditionFilter *condition_filter.ConditionFilter
-}
-
-func NewBaseOutput(config map[interface{}]interface{}) BaseOutput {
-	return BaseOutput{
-		conditionFilter: condition_filter.NewConditionFilter(config),
-	}
-}
-
-func (f BaseOutput) Pass(event map[string]interface{}) bool {
-	return f.conditionFilter.Pass(event)
-}

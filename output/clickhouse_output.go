@@ -21,7 +21,6 @@ const (
 )
 
 type ClickhouseOutput struct {
-	BaseOutput
 	config map[interface{}]interface{}
 
 	bulk_actions int
@@ -169,8 +168,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
-		BaseOutput: NewBaseOutput(config),
-		config:     config,
+		config: config,
 	}
 
 	if v, ok := config["table"]; ok {

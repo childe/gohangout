@@ -8,7 +8,6 @@ import (
 )
 
 type KafkaOutput struct {
-	BaseOutput
 	config map[interface{}]interface{}
 
 	encoder codec.Encoder
@@ -19,8 +18,7 @@ type KafkaOutput struct {
 
 func NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
 	p := &KafkaOutput{
-		BaseOutput: NewBaseOutput(config),
-		config:     config,
+		config: config,
 	}
 
 	if v, ok := config["codec"]; ok {

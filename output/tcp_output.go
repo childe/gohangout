@@ -11,7 +11,6 @@ import (
 )
 
 type TCPOutput struct {
-	BaseOutput
 	config    map[interface{}]interface{}
 	network   string
 	address   string
@@ -28,7 +27,6 @@ type TCPOutput struct {
 
 func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 	p := &TCPOutput{
-		BaseOutput: NewBaseOutput(config),
 		config:     config,
 		concurrent: 1,
 	}
