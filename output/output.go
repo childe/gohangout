@@ -65,18 +65,18 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputB
 	}
 }
 
-type OutputProcesserInLink OutputBox
+type OutputProcessorInLink OutputBox
 
-func (p *OutputProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+func (p *OutputProcessorInLink) Process(event map[string]interface{}) map[string]interface{} {
 	if (*OutputBox)(p).Pass(event) {
 		(*OutputBox)(p).Emit(event)
 	}
 	return nil
 }
 
-type OutputsProcesserInLink []*OutputBox
+type OutputsProcessorInLink []*OutputBox
 
-func (p OutputsProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+func (p OutputsProcessorInLink) Process(event map[string]interface{}) map[string]interface{} {
 	for _, o := range ([]*OutputBox)(p) {
 		if o.Pass(event) {
 			o.Emit(event)

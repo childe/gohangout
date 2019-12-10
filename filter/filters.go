@@ -19,7 +19,7 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	for k, v := range config {
 		_config[k.(string)] = v
 	}
-	f.filterBoxes = BuildFilterBoxes(_config, &topology.NilProcesserInLink{})
+	f.filterBoxes = BuildFilterBoxes(_config, &topology.NilProcessorInLink{})
 	if len(f.filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}
