@@ -27,7 +27,7 @@ func NewDecoder(t string) Decoder {
 		if err != nil {
 			glog.Fatalf("could not find New function in %s: %s", t, err)
 		}
-		return newFunc.(func() Decoder)()
+		return newFunc.(func() interface{})().(Decoder)
 	}
 	return nil
 }

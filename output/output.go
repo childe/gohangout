@@ -1,6 +1,8 @@
 package output
 
 import (
+	"plugin"
+
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/golang/glog"
 )
@@ -50,8 +52,15 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputB
 	case "TCP":
 		output = NewTCPOutput(config)
 	default:
-		glog.Fatalf("could not build %s output plugin", outputType)
-		output = nil
+		p, err := plugin.Open(outputType)
+		if err != nil {
+			glog.Fatalf("could not open %s: %s", outputType, err)
+		}
+		newFunc, err := p.Lookup("New")
+		if err != nil {
+			glog.Fatalf("could not find New function in %s: %s", outputType, err)
+		}
+		output = newFunc.(func(map[interface{}]interface{}) interface{})(config).(Output)
 	}
 
 	return &OutputBox{
