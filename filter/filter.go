@@ -12,35 +12,30 @@ import (
 	"github.com/golang/glog"
 )
 
-type Nexter interface {
+type ProcesserInLink interface {
+	// will process event in filter/output , and the call nexter.process, until nexter is nil
 	Process(map[string]interface{}) map[string]interface{}
 }
 
-type FilterNexter struct {
-	Next *FilterBox
+type FilterProcesserInLink FilterBox
+
+func (f *FilterProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+	return (*FilterBox)(f).Process(event)
 }
 
-func (n *FilterNexter) Process(event map[string]interface{}) map[string]interface{} {
-	return n.Next.Process(event)
-}
+type OutputProcesserInLink output.OutputBox
 
-type OutputNexter struct {
-	Next output.Output
-}
-
-func (n *OutputNexter) Process(event map[string]interface{}) map[string]interface{} {
-	if n.Next.Pass(event) {
-		n.Next.Emit(event)
+func (p *OutputProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+	if (*output.OutputBox)(p).ConditionFilter.Pass(event) {
+		(*output.OutputBox)(p).Output.Emit(event)
 	}
 	return nil
 }
 
-type OutputsNexter struct {
-	Next []output.Output
-}
+type OutputsProcesserInLink []*output.OutputBox
 
-func (n *OutputsNexter) Process(event map[string]interface{}) map[string]interface{} {
-	for _, o := range n.Next {
+func (p OutputsProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+	for _, o := range ([]*output.OutputBox)(p) {
 		if o.Pass(event) {
 			o.Emit(event)
 		}
@@ -48,10 +43,9 @@ func (n *OutputsNexter) Process(event map[string]interface{}) map[string]interfa
 	return nil
 }
 
-type NilNexter struct {
-}
+type NilProcesserInLink struct{}
 
-func (n *NilNexter) Process(event map[string]interface{}) map[string]interface{} {
+func (n *NilProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
 	return event
 }
 
@@ -59,7 +53,7 @@ type Filter interface {
 	Filter(map[string]interface{}) (map[string]interface{}, bool)
 }
 
-func BuildFilterBoxes(config map[string]interface{}, nexter Nexter) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}, next ProcesserInLink) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
@@ -89,10 +83,10 @@ func BuildFilterBoxes(config map[string]interface{}, nexter Nexter) []*FilterBox
 	}
 
 	for i := 0; i < len(filters)-1; i++ {
-		boxes[i].nexter = &FilterNexter{boxes[i+1]}
+		boxes[i].next = boxes[i+1]
 	}
 
-	boxes[len(boxes)-1].nexter = nexter
+	boxes[len(boxes)-1].next = next
 
 	for i, filter := range filters {
 		v := reflect.ValueOf(filter)
@@ -164,9 +158,6 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 	case "LinkStatsMetric":
 		f := NewLinkStatsMetricFilter(config)
 		return f
-	//case "Filters":
-	//f := NewFiltersFilter(config, nextFilter, outputs)
-	//return f
 	default:
 		p, err := plugin.Open(filterType)
 		if err != nil {
@@ -176,14 +167,15 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 		if err != nil {
 			glog.Fatalf("could not find New function in %s: %s", filterType, err)
 		}
-		return newFunc.(func(map[interface{}]interface{}) Filter)(config)
+		o := newFunc.(func(map[interface{}]interface{}) Filter)(config)
+		return o.(Filter)
 	}
 }
 
 type FilterBox struct {
 	filter Filter
 
-	nexter          Nexter
+	next            ProcesserInLink
 	conditionFilter *condition_filter.ConditionFilter
 
 	config map[interface{}]interface{}
@@ -267,5 +259,5 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 		event = b.PostProcess(event, rst)
 	}
 
-	return b.nexter.Process(event)
+	return b.next.Process(event)
 }
