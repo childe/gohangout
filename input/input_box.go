@@ -11,7 +11,7 @@ import (
 type InputBox struct {
 	config             map[string]interface{} // whole config
 	input              Input
-	outputsInAllWorker [][]output.Output
+	outputsInAllWorker [][]*output.OutputBox
 	stop               bool
 	once               sync.Once
 	shutdownChan       chan bool
@@ -27,25 +27,21 @@ func NewInputBox(input Input, config map[string]interface{}) *InputBox {
 }
 
 func (box *InputBox) beat(workerIdx int) {
-	var outputNexter filter.Nexter
+	var outputProcesserInLink filter.ProcesserInLink
 	outputs := output.BuildOutputs(box.config)
 	if len(outputs) == 1 {
-		outputNexter = &filter.OutputNexter{outputs[0]}
+		outputProcesserInLink = (*filter.OutputProcesserInLink)(outputs[0])
 	} else {
-		outputNexter = &filter.OutputsNexter{outputs}
+		outputProcesserInLink = (filter.OutputsProcesserInLink)(outputs)
 	}
-	filterBoxes := filter.BuildFilterBoxes(box.config, outputNexter)
+	filterBoxes := filter.BuildFilterBoxes(box.config, outputProcesserInLink)
 	box.outputsInAllWorker[workerIdx] = outputs
 
-	var nexter filter.Nexter
+	var firstNode filter.ProcesserInLink
 	if len(filterBoxes) > 0 {
-		nexter = &filter.FilterNexter{filterBoxes[0]}
+		firstNode = (*filter.FilterProcesserInLink)(filterBoxes[0])
 	} else {
-		if len(outputs) == 1 {
-			nexter = &filter.OutputNexter{outputs[0]}
-		} else {
-			nexter = &filter.OutputsNexter{outputs}
-		}
+		firstNode = outputProcesserInLink
 	}
 
 	var (
@@ -61,12 +57,12 @@ func (box *InputBox) beat(workerIdx int) {
 			}
 			return
 		}
-		nexter.Process(event)
+		firstNode.Process(event)
 	}
 }
 
 func (box *InputBox) Beat(worker int) {
-	box.outputsInAllWorker = make([][]output.Output, worker)
+	box.outputsInAllWorker = make([][]*output.OutputBox, worker)
 	for i := 0; i < worker; i++ {
 		go box.beat(i)
 	}
@@ -83,7 +79,7 @@ func (box *InputBox) shutdown() {
 		for i, outputs := range box.outputsInAllWorker {
 			for _, o := range outputs {
 				glog.Infof("try to shutdown output %T in worker %d", o, i)
-				o.Shutdown()
+				o.Output.Shutdown()
 			}
 		}
 	})

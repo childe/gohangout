@@ -7,12 +7,16 @@ import (
 
 type Output interface {
 	Emit(map[string]interface{})
-	Pass(map[string]interface{}) bool
 	Shutdown()
 }
 
-func BuildOutputs(config map[string]interface{}) []Output {
-	rst := make([]Output, 0)
+type OutputBox struct {
+	Output
+	*condition_filter.ConditionFilter
+}
+
+func BuildOutputs(config map[string]interface{}) []*OutputBox {
+	rst := make([]*OutputBox, 0)
 
 	for _, outputI := range config["outputs"].([]interface{}) {
 		// len(outputI) is 1
@@ -28,25 +32,31 @@ func BuildOutputs(config map[string]interface{}) []Output {
 	return rst
 }
 
-func BuildOutput(outputType string, config map[interface{}]interface{}) Output {
+func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputBox {
+	var output Output
 	switch outputType {
 	case "Dot":
-		return NewDotOutput(config)
+		output = NewDotOutput(config)
 	case "Stdout":
-		return NewStdoutOutput(config)
+		output = NewStdoutOutput(config)
 	case "Kafka":
-		return NewKafkaOutput(config)
+		output = NewKafkaOutput(config)
 	case "Elasticsearch":
-		return NewElasticsearchOutput(config)
+		output = NewElasticsearchOutput(config)
 	case "Influxdb":
-		return NewInfluxdbOutput(config)
+		output = NewInfluxdbOutput(config)
 	case "Clickhouse":
-		return NewClickhouseOutput(config)
+		output = NewClickhouseOutput(config)
 	case "TCP":
-		return NewTCPOutput(config)
+		output = NewTCPOutput(config)
 	default:
 		glog.Fatalf("could not build %s output plugin", outputType)
-		return nil
+		output = nil
+	}
+
+	return &OutputBox{
+		Output:          output,
+		ConditionFilter: condition_filter.NewConditionFilter(config),
 	}
 }
 

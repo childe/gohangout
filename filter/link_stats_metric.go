@@ -287,7 +287,7 @@ func (f *LinkStatsMetricFilter) emitMetrics() {
 		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
 			event[f.timestamp] = time.Unix(timestamp, 0)
 			f.box.PostProcess(event, true)
-			f.box.nexter.Process(event)
+			f.box.next.Process(event)
 		}
 	}
 	f.metricToEmit = make(map[int64]interface{})

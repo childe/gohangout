@@ -1,5 +1,5 @@
 go build -o build/gohangout-test
-gohangout='build/gohangout-test -q'
+gohangout='build/gohangout-test'
 
 em_print() {
   echo "\n======="
