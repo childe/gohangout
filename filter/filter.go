@@ -16,7 +16,7 @@ type Filter interface {
 	Filter(map[string]interface{}) (map[string]interface{}, bool)
 }
 
-func BuildFilterBoxes(config map[string]interface{}, next topology.ProcesserInLink) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}, next topology.ProcessorInLink) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
@@ -137,7 +137,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 type FilterBox struct {
 	filter Filter
 
-	next            topology.ProcesserInLink
+	next            topology.ProcessorInLink
 	conditionFilter *condition_filter.ConditionFilter
 
 	config map[interface{}]interface{}
@@ -224,8 +224,8 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 	return b.next.Process(event)
 }
 
-type FilterProcesserInLink FilterBox
+type FilterProcessorInLink FilterBox
 
-func (f *FilterProcesserInLink) Process(event map[string]interface{}) map[string]interface{} {
+func (f *FilterProcessorInLink) Process(event map[string]interface{}) map[string]interface{} {
 	return (*FilterBox)(f).Process(event)
 }
