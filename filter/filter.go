@@ -167,8 +167,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 		if err != nil {
 			glog.Fatalf("could not find New function in %s: %s", filterType, err)
 		}
-		o := newFunc.(func(map[interface{}]interface{}) Filter)(config)
-		return o.(Filter)
+		return newFunc.(func(map[interface{}]interface{}) interface{})(config).(Filter)
 	}
 }
 
