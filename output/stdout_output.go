@@ -8,15 +8,13 @@ import (
 )
 
 type StdoutOutput struct {
-	BaseOutput
 	config  map[interface{}]interface{}
 	encoder codec.Encoder
 }
 
 func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
 	p := &StdoutOutput{
-		BaseOutput: NewBaseOutput(config),
-		config:     config,
+		config: config,
 	}
 
 	if v, ok := config["codec"]; ok {

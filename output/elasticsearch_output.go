@@ -92,7 +92,6 @@ func (br *ESBulkRequest) readBuf() []byte {
 }
 
 type ElasticsearchOutput struct {
-	BaseOutput
 	config map[interface{}]interface{}
 
 	index              value_render.ValueRender
@@ -176,8 +175,7 @@ func buildRetryBulkRequest(shouldRetry, noRetry []int, bulkRequest *BulkRequest)
 
 func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOutput {
 	rst := &ElasticsearchOutput{
-		BaseOutput: NewBaseOutput(config),
-		config:     config,
+		config: config,
 	}
 
 	_codec := "simplejson"
