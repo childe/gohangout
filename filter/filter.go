@@ -45,7 +45,7 @@ func BuildFilterBoxes(config map[string]interface{}, next topology.Processor) []
 		v := reflect.ValueOf(filter)
 		f := v.MethodByName("SetBelongTo")
 		if f.IsValid() {
-			if i == len(filters)-1 {
+			if i == len(filters)-1 && next != nil {
 				f.Call([]reflect.Value{reflect.ValueOf(next)})
 			} else {
 				f.Call([]reflect.Value{reflect.ValueOf(boxes[i])})
