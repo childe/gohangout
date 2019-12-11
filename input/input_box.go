@@ -28,22 +28,23 @@ func NewInputBox(input topology.Input, config map[string]interface{}) *InputBox 
 }
 
 func (box *InputBox) beat(workerIdx int) {
-	var outputProcessorInLink topology.ProcessorInLink
 	outputs := output.BuildOutputs(box.config)
-	if len(outputs) == 1 {
-		outputProcessorInLink = (*output.OutputProcessorInLink)(outputs[0])
-	} else {
-		outputProcessorInLink = (output.OutputsProcessorInLink)(outputs)
-	}
-	filterBoxes := filter.BuildFilterBoxes(box.config, outputProcessorInLink)
 	box.outputsInAllWorker[workerIdx] = outputs
 
-	var firstNode topology.ProcessorInLink
-	if len(filterBoxes) > 0 {
-		firstNode = (*filter.FilterProcessorInLink)(filterBoxes[0])
+	var outputProcessor topology.Processor
+	if len(outputs) == 1 {
+		outputProcessor = outputs[0]
 	} else {
-		firstNode = outputProcessorInLink
+		outputProcessor = (output.OutputsProcessor)(outputs)
 	}
+
+	filterBoxes := filter.BuildFilterBoxes(box.config, outputProcessor)
+
+	var firstNode *topology.ProcessorNode
+	for _, b := range filterBoxes {
+		firstNode = topology.AppendProcessorsToLink(firstNode, b)
+	}
+	firstNode = topology.AppendProcessorsToLink(firstNode, outputProcessor)
 
 	var (
 		event map[string]interface{}

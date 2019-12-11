@@ -12,17 +12,13 @@ import (
 	"github.com/golang/glog"
 )
 
-type Filter interface {
-	Filter(map[string]interface{}) (map[string]interface{}, bool)
-}
-
-func BuildFilterBoxes(config map[string]interface{}, next topology.ProcessorInLink) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}, next topology.Processor) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
 
 	filtersI := config["filters"].([]interface{})
-	filters := make([]Filter, len(filtersI))
+	filters := make([]topology.Filter, len(filtersI))
 
 	for i := 0; i < len(filters); i++ {
 		for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
@@ -45,24 +41,22 @@ func BuildFilterBoxes(config map[string]interface{}, next topology.ProcessorInLi
 		}
 	}
 
-	for i := 0; i < len(filters)-1; i++ {
-		boxes[i].next = boxes[i+1]
-	}
-
-	boxes[len(boxes)-1].next = next
-
 	for i, filter := range filters {
 		v := reflect.ValueOf(filter)
 		f := v.MethodByName("SetBelongTo")
 		if f.IsValid() {
-			f.Call([]reflect.Value{reflect.ValueOf(boxes[i])})
+			if i == len(filters)-1 {
+				f.Call([]reflect.Value{reflect.ValueOf(next)})
+			} else {
+				f.Call([]reflect.Value{reflect.ValueOf(boxes[i])})
+			}
 		}
 	}
 
 	return boxes
 }
 
-func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
+func BuildFilter(filterType string, config map[interface{}]interface{}) topology.Filter {
 	switch filterType {
 	case "Add":
 		f := NewAddFilter(config)
@@ -130,14 +124,13 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) Filter {
 		if err != nil {
 			glog.Fatalf("could not find New function in %s: %s", filterType, err)
 		}
-		return newFunc.(func(map[interface{}]interface{}) interface{})(config).(Filter)
+		return newFunc.(func(map[interface{}]interface{}) interface{})(config).(topology.Filter)
 	}
 }
 
 type FilterBox struct {
-	filter Filter
+	filter topology.Filter
 
-	next            topology.ProcessorInLink
 	conditionFilter *condition_filter.ConditionFilter
 
 	config map[interface{}]interface{}
@@ -220,12 +213,5 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 		}
 		event = b.PostProcess(event, rst)
 	}
-
-	return b.next.Process(event)
-}
-
-type FilterProcessorInLink FilterBox
-
-func (f *FilterProcessorInLink) Process(event map[string]interface{}) map[string]interface{} {
-	return (*FilterBox)(f).Process(event)
+	return event
 }
