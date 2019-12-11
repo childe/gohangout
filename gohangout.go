@@ -26,6 +26,12 @@ var options = &struct {
 	memprofile string
 }{}
 
+var gitCommit string
+
+func printVersion() {
+	glog.Info("Current build version: ", gitCommit)
+}
+
 var (
 	worker = flag.Int("worker", 1, "worker thread count")
 )
@@ -39,6 +45,10 @@ func init() {
 	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
 
 	flag.Parse()
+}
+
+func init() {
+	printVersion()
 }
 
 func buildPluginLink(config map[string]interface{}) []*input.InputBox {
