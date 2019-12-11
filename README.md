@@ -67,11 +67,10 @@ pprof 的http地址
 
 ## 开发新的插件
 
-目前只实现了 Filter 的新插件接口. 后面会添加 Input 和 Output.
-
- Filter 插件示例参考  [gohangout-filter-title](https://github.com/childe/gohangout-filter-title)
-
-
+- Filter 插件示例参考  [gohangout-filter-title](https://github.com/childe/gohangout-filter-title)
+- Input 插件示例参考 [gohangout-input-dot](https://github.com/childe/gohangout-input-dot)
+- Output 插件示例参考 [gohangout-output-dash](https://github.com/childe/gohangout-output-dash)
+- Decoder 插件示例参考 [gohangout-decode-empty](https://github.com/childe/gohangout-decode-empty)
 
 
 ## 一个简单的配置
