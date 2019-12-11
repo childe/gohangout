@@ -45,7 +45,7 @@ then
     exit 255
 fi
 
-em_print 'test filterFilter'
+em_print 'test filtersFilter'
 $gohangout --config test/itest-4.yml > $tmpfile
 
 wcl=`wc -l $tmpfile | awk '{print $1}'`

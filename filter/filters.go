@@ -6,8 +6,8 @@ import (
 )
 
 type FiltersFilter struct {
-	config      map[interface{}]interface{}
-	filterBoxes []*FilterBox
+	config        map[interface{}]interface{}
+	processorNode *topology.ProcessorNode
 }
 
 func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
@@ -19,13 +19,20 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	for k, v := range config {
 		_config[k.(string)] = v
 	}
-	f.filterBoxes = BuildFilterBoxes(_config, &topology.NilProcessorInLink{})
-	if len(f.filterBoxes) == 0 {
+
+	// TODO set next topology.Processor
+	filterBoxes := BuildFilterBoxes(_config, nil)
+	if len(filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}
+
+	for _, b := range filterBoxes {
+		f.processorNode = topology.AppendProcessorsToLink(f.processorNode, b)
+	}
+
 	return f
 }
 
 func (f *FiltersFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	return f.filterBoxes[0].Process(event), true
+	return f.processorNode.Process(event), true
 }
