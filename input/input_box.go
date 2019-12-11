@@ -1,6 +1,7 @@
 package input
 
 import (
+	"reflect"
 	"sync"
 
 	"github.com/childe/gohangout/filter"
@@ -28,23 +29,7 @@ func NewInputBox(input topology.Input, config map[string]interface{}) *InputBox 
 }
 
 func (box *InputBox) beat(workerIdx int) {
-	outputs := output.BuildOutputs(box.config)
-	box.outputsInAllWorker[workerIdx] = outputs
-
-	var outputProcessor topology.Processor
-	if len(outputs) == 1 {
-		outputProcessor = outputs[0]
-	} else {
-		outputProcessor = (output.OutputsProcessor)(outputs)
-	}
-
-	filterBoxes := filter.BuildFilterBoxes(box.config, outputProcessor)
-
-	var firstNode *topology.ProcessorNode
-	for _, b := range filterBoxes {
-		firstNode = topology.AppendProcessorsToLink(firstNode, b)
-	}
-	firstNode = topology.AppendProcessorsToLink(firstNode, outputProcessor)
+	var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
 
 	var (
 		event map[string]interface{}
@@ -61,6 +46,40 @@ func (box *InputBox) beat(workerIdx int) {
 		}
 		firstNode.Process(event)
 	}
+}
+
+func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
+	outputs := output.BuildOutputs(box.config)
+	box.outputsInAllWorker[workerIdx] = outputs
+
+	var outputProcessor topology.Processor
+	if len(outputs) == 1 {
+		outputProcessor = outputs[0]
+	} else {
+		outputProcessor = (output.OutputsProcessor)(outputs)
+	}
+
+	filterBoxes := filter.BuildFilterBoxes(box.config)
+
+	// Set BelongTo
+	for i, b := range filterBoxes {
+		v := reflect.ValueOf(b.Filter)
+		f := v.MethodByName("SetBelongTo")
+		if f.IsValid() {
+			if i == len(filterBoxes)-1 {
+				f.Call([]reflect.Value{reflect.ValueOf(outputProcessor)})
+			} else {
+				f.Call([]reflect.Value{reflect.ValueOf(filterBoxes[i+1])})
+			}
+		}
+	}
+
+	var firstNode *topology.ProcessorNode
+	for _, b := range filterBoxes {
+		firstNode = topology.AppendProcessorsToLink(firstNode, b)
+	}
+	firstNode = topology.AppendProcessorsToLink(firstNode, outputProcessor)
+	return firstNode
 }
 
 func (box *InputBox) Beat(worker int) {

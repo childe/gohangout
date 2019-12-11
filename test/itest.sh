@@ -1,4 +1,4 @@
-go build -o build/gohangout-test
+go build -o build/gohangout-test || exit 255
 gohangout='build/gohangout-test'
 
 em_print() {

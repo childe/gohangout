@@ -23,7 +23,7 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 		_config[k.(string)] = v
 	}
 
-	f.filterBoxes = BuildFilterBoxes(_config, nil)
+	f.filterBoxes = BuildFilterBoxes(_config)
 	if len(f.filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}
@@ -41,7 +41,7 @@ func (f *FiltersFilter) Filter(event map[string]interface{}) (map[string]interfa
 
 func (f *FiltersFilter) SetBelongTo(next topology.Processor) {
 	var b *FilterBox = f.filterBoxes[len(f.filterBoxes)-1]
-	v := reflect.ValueOf(b.filter)
+	v := reflect.ValueOf(b.Filter)
 	fun := v.MethodByName("SetBelongTo")
 	if fun.IsValid() {
 		fun.Call([]reflect.Value{reflect.ValueOf(next)})
