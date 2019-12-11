@@ -12,7 +12,7 @@ import (
 	"github.com/golang/glog"
 )
 
-func BuildFilterBoxes(config map[string]interface{}, next topology.Processor) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
@@ -37,19 +37,7 @@ func BuildFilterBoxes(config map[string]interface{}, next topology.Processor) []
 	for i := 0; i < len(filters); i++ {
 		for _, cfg := range filtersI[i].(map[interface{}]interface{}) {
 			boxes[i] = NewFilterBox(cfg.(map[interface{}]interface{}))
-			boxes[i].filter = filters[i]
-		}
-	}
-
-	for i, filter := range filters {
-		v := reflect.ValueOf(filter)
-		f := v.MethodByName("SetBelongTo")
-		if f.IsValid() {
-			if i == len(filters)-1 && next != nil {
-				f.Call([]reflect.Value{reflect.ValueOf(next)})
-			} else {
-				f.Call([]reflect.Value{reflect.ValueOf(boxes[i])})
-			}
+			boxes[i].Filter = filters[i]
 		}
 	}
 
@@ -129,7 +117,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) topology
 }
 
 type FilterBox struct {
-	filter topology.Filter
+	Filter topology.Filter
 
 	conditionFilter *condition_filter.ConditionFilter
 
@@ -207,7 +195,7 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 	var rst bool
 
 	if b.conditionFilter.Pass(event) {
-		event, rst = b.filter.Filter(event)
+		event, rst = b.Filter.Filter(event)
 		if event == nil {
 			return nil
 		}
