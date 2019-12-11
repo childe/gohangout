@@ -8,29 +8,7 @@ import (
 	"github.com/golang/glog"
 )
 
-type OutputBox struct {
-	topology.Output
-	*condition_filter.ConditionFilter
-}
-
-func BuildOutputs(config map[string]interface{}) []*OutputBox {
-	rst := make([]*OutputBox, 0)
-
-	for _, outputI := range config["outputs"].([]interface{}) {
-		// len(outputI) is 1
-		for outputTypeI, outputConfigI := range outputI.(map[interface{}]interface{}) {
-			outputType := outputTypeI.(string)
-			glog.Infof("output type: %s", outputType)
-			outputConfig := outputConfigI.(map[interface{}]interface{})
-			glog.Infof("output config: %v", outputConfig)
-			outputPlugin := BuildOutput(outputType, outputConfig)
-			rst = append(rst, outputPlugin)
-		}
-	}
-	return rst
-}
-
-func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputBox {
+func BuildOutput(outputType string, config map[interface{}]interface{}) *topology.OutputBox {
 	var output topology.Output
 	switch outputType {
 	case "Dot":
@@ -59,28 +37,8 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *OutputB
 		output = newFunc.(func(map[interface{}]interface{}) interface{})(config).(topology.Output)
 	}
 
-	return &OutputBox{
+	return &topology.OutputBox{
 		output,
 		condition_filter.NewConditionFilter(config),
 	}
-}
-
-// Process implement Processor interface
-func (p *OutputBox) Process(event map[string]interface{}) map[string]interface{} {
-	if p.Pass(event) {
-		p.Emit(event)
-	}
-	return nil
-}
-
-type OutputsProcessor []*OutputBox
-
-// Process implement Processor interface
-func (p OutputsProcessor) Process(event map[string]interface{}) map[string]interface{} {
-	for _, o := range ([]*OutputBox)(p) {
-		if o.Pass(event) {
-			o.Emit(event)
-		}
-	}
-	return nil
 }

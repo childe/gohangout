@@ -13,7 +13,7 @@ import (
 type InputBox struct {
 	config             map[string]interface{} // whole config
 	input              topology.Input
-	outputsInAllWorker [][]*output.OutputBox
+	outputsInAllWorker [][]*topology.OutputBox
 	stop               bool
 	once               sync.Once
 	shutdownChan       chan bool
@@ -49,17 +49,17 @@ func (box *InputBox) beat(workerIdx int) {
 }
 
 func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
-	outputs := output.BuildOutputs(box.config)
+	outputs := topology.BuildOutputs(box.config, output.BuildOutput)
 	box.outputsInAllWorker[workerIdx] = outputs
 
 	var outputProcessor topology.Processor
 	if len(outputs) == 1 {
 		outputProcessor = outputs[0]
 	} else {
-		outputProcessor = (output.OutputsProcessor)(outputs)
+		outputProcessor = (topology.OutputsProcessor)(outputs)
 	}
 
-	filterBoxes := filter.BuildFilterBoxes(box.config)
+	filterBoxes := topology.BuildFilterBoxes(box.config, filter.BuildFilter)
 
 	// Set BelongTo
 	for i, b := range filterBoxes {
@@ -83,7 +83,7 @@ func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
 }
 
 func (box *InputBox) Beat(worker int) {
-	box.outputsInAllWorker = make([][]*output.OutputBox, worker)
+	box.outputsInAllWorker = make([][]*topology.OutputBox, worker)
 	for i := 0; i < worker; i++ {
 		go box.beat(i)
 	}

@@ -10,7 +10,7 @@ import (
 type FiltersFilter struct {
 	config        map[interface{}]interface{}
 	processorNode *topology.ProcessorNode
-	filterBoxes   []*FilterBox
+	filterBoxes   []*topology.FilterBox
 }
 
 func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
@@ -23,7 +23,7 @@ func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 		_config[k.(string)] = v
 	}
 
-	f.filterBoxes = BuildFilterBoxes(_config)
+	f.filterBoxes = topology.BuildFilterBoxes(_config, BuildFilter)
 	if len(f.filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}
@@ -40,7 +40,7 @@ func (f *FiltersFilter) Filter(event map[string]interface{}) (map[string]interfa
 }
 
 func (f *FiltersFilter) SetBelongTo(next topology.Processor) {
-	var b *FilterBox = f.filterBoxes[len(f.filterBoxes)-1]
+	var b *topology.FilterBox = f.filterBoxes[len(f.filterBoxes)-1]
 	v := reflect.ValueOf(b.Filter)
 	fun := v.MethodByName("SetBelongTo")
 	if fun.IsValid() {
