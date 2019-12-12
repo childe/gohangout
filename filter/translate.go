@@ -63,7 +63,7 @@ func (plugin *TranslateFilter) parseDict() error {
 	return nil
 }
 
-func NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
+func (l *MethodLibrary) NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
 	plugin := &TranslateFilter{
 		config: config,
 	}

@@ -14,7 +14,7 @@ type UppercaseFilter struct {
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewUppercaseFilter(config map[interface{}]interface{}) *UppercaseFilter {
+func (l *MethodLibrary) NewUppercaseFilter(config map[interface{}]interface{}) *UppercaseFilter {
 	plugin := &UppercaseFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),

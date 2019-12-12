@@ -4,7 +4,7 @@ type DropFilter struct {
 	config map[interface{}]interface{}
 }
 
-func NewDropFilter(config map[interface{}]interface{}) *DropFilter {
+func (l *MethodLibrary) NewDropFilter(config map[interface{}]interface{}) *DropFilter {
 	plugin := &DropFilter{
 		config: config,
 	}

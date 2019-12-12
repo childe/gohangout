@@ -21,7 +21,7 @@ type ReplaceFilter struct {
 	fields []replaceConfig
 }
 
-func NewReplaceFilter(config map[interface{}]interface{}) *ReplaceFilter {
+func (l *MethodLibrary) NewReplaceFilter(config map[interface{}]interface{}) *ReplaceFilter {
 	p := &ReplaceFilter{
 		config: config,
 		fields: make([]replaceConfig, 0),

@@ -20,7 +20,7 @@ type SplitFilter struct {
 	ignoreBlank  bool
 }
 
-func NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
+func (l *MethodLibrary) NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
 	plugin := &SplitFilter{
 		config:      config,
 		fields:      make([]field_setter.FieldSetter, 0),

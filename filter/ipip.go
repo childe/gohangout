@@ -18,7 +18,7 @@ type IPIPFilter struct {
 	overwrite bool
 }
 
-func NewIPIPFilter(config map[interface{}]interface{}) *IPIPFilter {
+func (l *MethodLibrary) NewIPIPFilter(config map[interface{}]interface{}) *IPIPFilter {
 	plugin := &IPIPFilter{
 		config:    config,
 		target:    "geoip",

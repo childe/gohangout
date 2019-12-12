@@ -37,7 +37,7 @@ func (f *LinkMetricFilter) SetBelongTo(next topology.Processor) {
 	f.next = next
 }
 
-func NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
+func (l *MethodLibrary) NewLinkMetricFilter(config map[interface{}]interface{}) *LinkMetricFilter {
 	p := &LinkMetricFilter{
 		config:       config,
 		overwrite:    true,

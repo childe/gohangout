@@ -165,7 +165,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 	}
 }
 
-func NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
+func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
 	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
 		config: config,

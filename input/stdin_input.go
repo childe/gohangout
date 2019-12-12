@@ -18,7 +18,7 @@ type StdinInput struct {
 	stop bool
 }
 
-func NewStdinInput(config map[interface{}]interface{}) *StdinInput {
+func (l *MethodLibrary) NewStdinInput(config map[interface{}]interface{}) *StdinInput {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)

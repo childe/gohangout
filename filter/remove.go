@@ -10,7 +10,7 @@ type RemoveFilter struct {
 	fieldsDeleters []field_deleter.FieldDeleter
 }
 
-func NewRemoveFilter(config map[interface{}]interface{}) *RemoveFilter {
+func (l *MethodLibrary) NewRemoveFilter(config map[interface{}]interface{}) *RemoveFilter {
 	plugin := &RemoveFilter{
 		config:         config,
 		fieldsDeleters: make([]field_deleter.FieldDeleter, 0),

@@ -99,7 +99,7 @@ func influxdbGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *B
 	return nil, nil, nil
 }
 
-func NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
+func (l *MethodLibrary) NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
 	rst := &InfluxdbOutput{
 		config: config,
 	}

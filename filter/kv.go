@@ -19,7 +19,7 @@ type KVFilter struct {
 	trim_key    string
 }
 
-func NewKVFilter(config map[interface{}]interface{}) *KVFilter {
+func (l *MethodLibrary) NewKVFilter(config map[interface{}]interface{}) *KVFilter {
 	plugin := &KVFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),

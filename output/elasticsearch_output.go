@@ -173,7 +173,7 @@ func buildRetryBulkRequest(shouldRetry, noRetry []int, bulkRequest *BulkRequest)
 	return nil
 }
 
-func NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOutput {
+func (l *MethodLibrary) NewElasticsearchOutput(config map[interface{}]interface{}) *ElasticsearchOutput {
 	rst := &ElasticsearchOutput{
 		config: config,
 	}

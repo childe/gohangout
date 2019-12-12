@@ -7,7 +7,7 @@ type RenameFilter struct {
 	fields map[string]string
 }
 
-func NewRenameFilter(config map[interface{}]interface{}) *RenameFilter {
+func (l *MethodLibrary) NewRenameFilter(config map[interface{}]interface{}) *RenameFilter {
 	plugin := &RenameFilter{
 		config: config,
 		fields: make(map[string]string),

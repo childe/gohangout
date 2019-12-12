@@ -69,7 +69,7 @@ type ConvertFilter struct {
 	fields map[field_setter.FieldSetter]ConveterAndRender
 }
 
-func NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
+func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
 	plugin := &ConvertFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
