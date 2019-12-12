@@ -12,7 +12,7 @@
 
 可以从源码编译, 或者是直接下载二进制可执行文件
 
-### 从源码安装
+### 从源码编译
 
   使用 go module 管理依赖. 直接 make 就可
 
@@ -25,6 +25,10 @@
 ### 下载编译后二进制文件
 
 [https://github.com/childe/gohangout/releases](https://github.com/childe/gohangout/releases) 直接下载
+
+### go get
+
+  > go get github.com/childe/gohangout
 
 
 
