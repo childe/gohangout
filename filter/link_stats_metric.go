@@ -44,7 +44,7 @@ func (f *LinkStatsMetricFilter) SetBelongTo(next topology.Processor) {
 	f.next = next
 }
 
-func NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetricFilter {
+func (l *MethodLibrary) NewLinkStatsMetricFilter(config map[interface{}]interface{}) *LinkStatsMetricFilter {
 	p := &LinkStatsMetricFilter{
 		config:       config,
 		metric:       make(map[int64]interface{}),

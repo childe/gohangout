@@ -19,7 +19,7 @@ type RandomInput struct {
 	count       int
 }
 
-func NewRandomInput(config map[interface{}]interface{}) *RandomInput {
+func (l *MethodLibrary) NewRandomInput(config map[interface{}]interface{}) *RandomInput {
 	var codertype string = "plain"
 
 	p := &RandomInput{

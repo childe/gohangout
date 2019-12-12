@@ -141,7 +141,7 @@ type DateFilter struct {
 	targetFS    field_setter.FieldSetter
 }
 
-func NewDateFilter(config map[interface{}]interface{}) *DateFilter {
+func (l *MethodLibrary) NewDateFilter(config map[interface{}]interface{}) *DateFilter {
 	plugin := &DateFilter{
 		config:      config,
 		overwrite:   true,

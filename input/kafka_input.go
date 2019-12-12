@@ -20,7 +20,7 @@ type KafkaInput struct {
 	consumers      []*healer.Consumer
 }
 
-func NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
+func (l *MethodLibrary) NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	var (
 		codertype string = "plain"
 		topics    map[interface{}]interface{}

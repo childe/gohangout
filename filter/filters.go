@@ -13,7 +13,7 @@ type FiltersFilter struct {
 	filterBoxes   []*topology.FilterBox
 }
 
-func NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
+func (l *MethodLibrary) NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
 	f := &FiltersFilter{
 		config: config,
 	}

@@ -2,30 +2,26 @@ package output
 
 import (
 	"plugin"
+	"reflect"
 
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
+type MethodLibrary struct{}
+
+var methodLibrary *MethodLibrary = &MethodLibrary{}
+
 func BuildOutput(outputType string, config map[interface{}]interface{}) *topology.OutputBox {
 	var output topology.Output
-	switch outputType {
-	case "Dot":
-		output = NewDotOutput(config)
-	case "Stdout":
-		output = NewStdoutOutput(config)
-	case "Kafka":
-		output = NewKafkaOutput(config)
-	case "Elasticsearch":
-		output = NewElasticsearchOutput(config)
-	case "Influxdb":
-		output = NewInfluxdbOutput(config)
-	case "Clickhouse":
-		output = NewClickhouseOutput(config)
-	case "TCP":
-		output = NewTCPOutput(config)
-	default:
+
+	method := reflect.ValueOf(methodLibrary).MethodByName("New" + outputType + "Output")
+	if method.IsValid() {
+		output = method.Call([]reflect.Value{reflect.ValueOf(config)})[0].Interface().(topology.Output)
+	} else {
+		glog.Info("use third party plugin")
+
 		p, err := plugin.Open(outputType)
 		if err != nil {
 			glog.Fatalf("could not open %s: %s", outputType, err)

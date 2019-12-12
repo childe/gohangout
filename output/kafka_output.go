@@ -16,7 +16,7 @@ type KafkaOutput struct {
 	key      value_render.ValueRender
 }
 
-func NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
+func (l *MethodLibrary) NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
 	p := &KafkaOutput{
 		config: config,
 	}

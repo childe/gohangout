@@ -12,7 +12,7 @@ type StdoutOutput struct {
 	encoder codec.Encoder
 }
 
-func NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
+func (l *MethodLibrary) NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
 	p := &StdoutOutput{
 		config: config,
 	}

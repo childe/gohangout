@@ -6,7 +6,7 @@ type DotOutput struct {
 	config map[interface{}]interface{}
 }
 
-func NewDotOutput(config map[interface{}]interface{}) *DotOutput {
+func (l *MethodLibrary) NewDotOutput(config map[interface{}]interface{}) *DotOutput {
 	return &DotOutput{
 		config: config,
 	}

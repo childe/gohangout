@@ -14,7 +14,7 @@ type JsonFilter struct {
 	overwrite bool
 }
 
-func NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
+func (l *MethodLibrary) NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
 	plugin := &JsonFilter{
 		overwrite: true,
 		target:    "",

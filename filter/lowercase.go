@@ -14,7 +14,7 @@ type LowercaseFilter struct {
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewLowercaseFilter(config map[interface{}]interface{}) *LowercaseFilter {
+func (l *MethodLibrary) NewLowercaseFilter(config map[interface{}]interface{}) *LowercaseFilter {
 	plugin := &LowercaseFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),

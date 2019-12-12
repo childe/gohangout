@@ -12,7 +12,7 @@ type AddFilter struct {
 	overwrite bool
 }
 
-func NewAddFilter(config map[interface{}]interface{}) *AddFilter {
+func (l *MethodLibrary) NewAddFilter(config map[interface{}]interface{}) *AddFilter {
 	plugin := &AddFilter{
 		config:    config,
 		fields:    make(map[field_setter.FieldSetter]value_render.ValueRender),

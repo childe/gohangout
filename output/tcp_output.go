@@ -25,7 +25,7 @@ type TCPOutput struct {
 	dialLock sync.Mutex
 }
 
-func NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
+func (l *MethodLibrary) NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
 	p := &TCPOutput{
 		config:     config,
 		concurrent: 1,

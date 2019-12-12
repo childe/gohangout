@@ -14,7 +14,7 @@ type URLDecodeFilter struct {
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewURLDecodeFilter(config map[interface{}]interface{}) *URLDecodeFilter {
+func (l *MethodLibrary) NewURLDecodeFilter(config map[interface{}]interface{}) *URLDecodeFilter {
 	plugin := &URLDecodeFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),

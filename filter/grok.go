@@ -183,7 +183,7 @@ type GrokFilter struct {
 	vr        value_render.ValueRender
 }
 
-func NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
+func (l *MethodLibrary) NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
 	var patternPaths []string = make([]string, 0)
 	if i, ok := config["pattern_paths"]; ok {
 		for _, p := range i.([]interface{}) {

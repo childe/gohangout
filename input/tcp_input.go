@@ -34,7 +34,7 @@ func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
 	c.Close()
 }
 
-func NewTCPInput(config map[interface{}]interface{}) *TCPInput {
+func (lib *MethodLibrary) NewTCPInput(config map[interface{}]interface{}) *TCPInput {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
