@@ -10,7 +10,7 @@ func TestAddFilter(t *testing.T) {
 	fields := make(map[interface{}]interface{})
 	fields["name"] = `{{.first}} {{.last}}`
 	config["fields"] = fields
-	f := NewAddFilter(config)
+	f := methodLibrary.NewAddFilter(config)
 
 	event := make(map[string]interface{})
 	event["@timestamp"] = time.Now().Unix()
