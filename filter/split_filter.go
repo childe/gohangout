@@ -13,11 +13,13 @@ type SplitFilter struct {
 	fields       []field_setter.FieldSetter
 	fieldsLength int
 	sep          string
+	sepRender    value_render.ValueRender
 	maxSplit     int
 	trim         string
 	src          value_render.ValueRender
 	overwrite    bool
 	ignoreBlank  bool
+	dynamicSep   bool
 }
 
 func (l *MethodLibrary) NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
@@ -28,6 +30,7 @@ func (l *MethodLibrary) NewSplitFilter(config map[interface{}]interface{}) *Spli
 		sep:         "",
 		trim:        "",
 		ignoreBlank: true,
+		dynamicSep:  false,
 		maxSplit:    -1,
 	}
 
@@ -52,9 +55,15 @@ func (l *MethodLibrary) NewSplitFilter(config map[interface{}]interface{}) *Spli
 	if sep, ok := config["sep"]; ok {
 		plugin.sep = sep.(string)
 	}
-
 	if plugin.sep == "" {
 		glog.Fatal("sep must be set in split filter plugin")
+	}
+
+	if dynamicSep, ok := config["dynamicSep"]; ok {
+		plugin.dynamicSep = dynamicSep.(bool)
+	}
+	if plugin.dynamicSep {
+		plugin.sepRender = value_render.GetValueRender(plugin.sep)
 	}
 
 	if fieldsI, ok := config["fields"]; ok {
@@ -79,7 +88,13 @@ func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]inte
 		return event, false
 	}
 
-	values := strings.SplitN(src.(string), plugin.sep, plugin.maxSplit)
+	var sep string
+	if plugin.dynamicSep {
+		sep = plugin.sepRender.Render(event).(string)
+	} else {
+		sep = plugin.sep
+	}
+	values := strings.SplitN(src.(string), sep, plugin.maxSplit)
 
 	if len(values) != plugin.fieldsLength {
 		return event, false
