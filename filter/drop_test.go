@@ -15,7 +15,7 @@ func TestDropFilter(t *testing.T) {
 
 	// test DropFilter without any condition
 	config = make(map[interface{}]interface{})
-	f = NewDropFilter(config)
+	f = methodLibrary.NewDropFilter(config)
 
 	event = make(map[string]interface{})
 	event["@timestamp"] = time.Now().Unix()

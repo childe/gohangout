@@ -3,6 +3,8 @@ package filter
 import (
 	"testing"
 	"time"
+
+	"github.com/childe/gohangout/topology"
 )
 
 func createLinkMetricEvents(now int64) []map[string]interface{} {
@@ -85,8 +87,8 @@ func TestLinkMetricFilter(t *testing.T) {
 	config["windowOffset"] = windowOffset
 	config["drop_original_event"] = drop_original_event
 
-	f = NewLinkMetricFilter(config)
-	f.SetBelongTo(NewFilterBox(config))
+	f = methodLibrary.NewLinkMetricFilter(config)
+	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
@@ -221,8 +223,8 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 	config["windowOffset"] = windowOffset
 	config["drop_original_event"] = drop_original_event
 
-	f = NewLinkMetricFilter(config)
-	f.SetBelongTo(NewFilterBox(config))
+	f = methodLibrary.NewLinkMetricFilter(config)
+	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
@@ -398,8 +400,8 @@ func TestLinkMetricFilterCumulativeMode(t *testing.T) {
 	config["accumulateMode"] = accumulateMode
 	config["drop_original_event"] = drop_original_event
 
-	f = NewLinkMetricFilter(config)
-	f.SetBelongTo(NewFilterBox(config))
+	f = methodLibrary.NewLinkMetricFilter(config)
+	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {
@@ -435,8 +437,8 @@ func TestLinkMetricFilterSeparateMode(t *testing.T) {
 	config["accumulateMode"] = accumulateMode
 	config["drop_original_event"] = drop_original_event
 
-	f = NewLinkMetricFilter(config)
-	f.SetBelongTo(NewFilterBox(config))
+	f = methodLibrary.NewLinkMetricFilter(config)
+	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
 	for _, event := range createLinkMetricEvents(now) {

@@ -7,7 +7,7 @@ func TestReplaceFilter(t *testing.T) {
 	fields := make(map[interface{}]interface{})
 	fields["msg"] = []interface{}{"'", `"`}
 	config["fields"] = fields
-	f := NewReplaceFilter(config)
+	f := methodLibrary.NewReplaceFilter(config)
 
 	event := make(map[string]interface{})
 	event["msg"] = `this is 'cat'`
@@ -27,7 +27,7 @@ func TestReplaceFilter(t *testing.T) {
 	fields["name1"] = []interface{}{"wang", "Wang", 1}
 	fields["name2"] = []interface{}{"en", "eng"}
 	config["fields"] = fields
-	f = NewReplaceFilter(config)
+	f = methodLibrary.NewReplaceFilter(config)
 
 	event = make(map[string]interface{})
 	event["name1"] = "wang wangwang"

@@ -7,7 +7,7 @@ func TestKVFilter(t *testing.T) {
 	config["field_split"] = " "
 	config["value_split"] = "="
 	config["src"] = "message"
-	f := NewKVFilter(config)
+	f := methodLibrary.NewKVFilter(config)
 
 	event := make(map[string]interface{})
 	event["message"] = "a=aaa b=bbb c=ccc xyz=\txyzxyz\t d=ddd"
@@ -42,7 +42,7 @@ func TestKVFilter(t *testing.T) {
 	config["trim"] = "\t \""
 	config["trim_key"] = `"`
 	config["src"] = "message"
-	f = NewKVFilter(config)
+	f = methodLibrary.NewKVFilter(config)
 
 	event = make(map[string]interface{})
 	event["message"] = "a=aaa b=bbb xyz=\"\txyzxyz\t\" d=ddd"

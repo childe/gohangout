@@ -15,7 +15,7 @@ func TestConvertFilter(t *testing.T) {
 	}
 
 	config["fields"] = fields
-	f := NewConvertFilter(config)
+	f := methodLibrary.NewConvertFilter(config)
 
 	event := map[string]interface{}{
 		"responseSize": "10",
