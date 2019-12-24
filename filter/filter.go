@@ -27,7 +27,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) topology
 	}
 	p, err := getFilterFromPlugin(filterType, config)
 	if err != nil {
-		glog.Fatal("could not load plugin from %s. try %s.so", filterType, filterType)
+		glog.Fatalf("could not load plugin from %s. try %s.so", filterType, filterType)
 	}
 	return p
 }
