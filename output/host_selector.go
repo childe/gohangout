@@ -38,20 +38,17 @@ func NewRRHostSelector(hosts []interface{}, weight int) *RRHostSelector {
 }
 
 func (s *RRHostSelector) Next() interface{} {
-	// reset weight and return "" if all hosts are down
-	var hasAtLeastOneUp bool = false
-	for i := 0; i < s.hostsCount; i++ {
-		if s.weight[i] > 0 {
-			hasAtLeastOneUp = true
+	for i := 1; i <= s.hostsCount; i++ {
+		idx := (s.index + i) % s.hostsCount
+		if s.weight[idx] > 0 {
+			s.index = idx
+			return s.hosts[idx]
 		}
 	}
-	if !hasAtLeastOneUp {
-		s.resetWeight(s.initWeight)
-		return nil
-	}
 
-	s.index = (s.index + 1) % s.hostsCount
-	return s.hosts[s.index]
+	s.resetWeight(s.initWeight)
+	// allow client wait for some time and then get Next
+	return nil
 }
 
 func (s *RRHostSelector) resetWeight(weight int) {
@@ -61,8 +58,12 @@ func (s *RRHostSelector) resetWeight(weight int) {
 }
 
 func (s *RRHostSelector) ReduceWeight() {
-	if s.weight[s.index] > 0 {
-		s.weight[s.index]--
+	s.weight[s.index]--
+	if s.weight[s.index] <= 0 {
+		i := s.index
+		time.AfterFunc(time.Minute*30, func() {
+			s.weight[i] = 1
+		})
 	}
 }
 
