@@ -5,6 +5,21 @@ import (
 	"time"
 )
 
+func TestJsonpath(t *testing.T) {
+	condition := `EQ($.name.first,"jia") && EQ($.name.last,"liu")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error", condition)
+	}
+
+	event := make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("`%s` %#v", condition, event)
+	}
+}
+
 func TestNotBeforeAnd(t *testing.T) {
 	condition := `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
 	_, err := parseBoolTree(condition)
