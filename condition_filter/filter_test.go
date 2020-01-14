@@ -5,7 +5,30 @@ import (
 	"time"
 )
 
-func TestJsonpath(t *testing.T) {
+func TestEQJsonpathSyntaxError(t *testing.T) {
+	condition := `EQ($.name.first,jia) && EQ($.name.last,liu)`
+	_, err := parseBoolTree(condition)
+	if err == nil {
+		t.Errorf("%s should have error", condition)
+	}
+}
+
+func TestEQJsonpathSingleCondition(t *testing.T) {
+	condition := `EQ($.name.first,"jia")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error", condition)
+	}
+
+	event := make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+}
+
+func TestEQJsonpath(t *testing.T) {
 	condition := `EQ($.name.first,"jia") && EQ($.name.last,"liu")`
 	root, err := parseBoolTree(condition)
 	if err != nil {
@@ -16,7 +39,7 @@ func TestJsonpath(t *testing.T) {
 	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
 	pass := root.Pass(event)
 	if !pass {
-		t.Errorf("`%s` %#v", condition, event)
+		t.Errorf("pass failed. `%s` %#v", condition, event)
 	}
 }
 
