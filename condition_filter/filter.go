@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/oliveagle/jsonpath"
+
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -69,25 +71,74 @@ func (c *ExistCondition) Pass(event map[string]interface{}) bool {
 }
 
 type EQCondition struct {
+	pat    *jsonpath.Compiled
 	pathes []string
 	value  interface{}
 	fn     int
 }
 
-func NewEQCondition(pathes []string, value interface{}) *EQCondition {
-	return &EQCondition{pathes, value, len(pathes)}
+func NewEQCondition(c string) (*EQCondition, error) {
+	var (
+		pat    *jsonpath.Compiled
+		pathes []string
+		value  string
+		err    error
+	)
+
+	if strings.HasPrefix(c, `EQ($.`) {
+		p := regexp.MustCompile(`^EQ\((\$\..*),(.*)\)$`)
+		r := p.FindStringSubmatch(c)
+		if len(r) != 3 {
+			return nil, fmt.Errorf("split jsonpath pattern/value error in `%s`", c)
+		}
+
+		if pat, err = jsonpath.Compile(r[1]); err != nil {
+			return nil, err
+		}
+
+		value = r[2]
+	} else {
+		pathes = make([]string, 0)
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "EQ("), ")")
+		for _, p := range strings.Split(c, ",") {
+			pathes = append(pathes, strings.Trim(p, " "))
+		}
+		value = pathes[len(pathes)-1]
+		pathes = pathes[:len(pathes)-1]
+	}
+
+	if value[0] == '"' && value[len(value)-1] == '"' {
+		value = value[1 : len(value)-1]
+		return &EQCondition{pat, pathes, value, len(pathes)}, nil
+	}
+	if strings.Contains(value, ".") {
+		if s, err := strconv.ParseFloat(value, 64); err == nil {
+			return &EQCondition{pat, pathes, s, len(pathes)}, nil
+		} else {
+			return nil, err
+		}
+	}
+	if s, err := strconv.ParseInt(value, 0, 32); err == nil {
+		return &EQCondition{pat, pathes, int(s), len(pathes)}, nil
+	} else {
+		return nil, err
+	}
+	return &EQCondition{pat, pathes, value, len(pathes)}, nil
 }
 
 func (c *EQCondition) Pass(event map[string]interface{}) bool {
+	if c.pat != nil {
+		v, err := c.pat.Lookup(event)
+		return err == nil && v == c.value
+	}
+
 	var (
 		o map[string]interface{} = event
 	)
 
 	for _, path := range c.pathes[:c.fn-1] {
 		if v, ok := o[path]; ok && v != nil {
-			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
-			} else {
+			if o, ok = v.(map[string]interface{}); !ok {
 				return false
 			}
 		} else {
@@ -365,30 +416,10 @@ func NewSingleCondition(c string) (Condition, error) {
 
 	// EQ
 	if matched, _ := regexp.MatchString(`^EQ\(.*\)$`, c); matched {
-		pathes := make([]string, 0)
-		c = strings.TrimSuffix(strings.TrimPrefix(c, "EQ("), ")")
-		for _, p := range strings.Split(c, ",") {
-			pathes = append(pathes, strings.Trim(p, " "))
+		if strings.HasPrefix(c, `EQ($.`) {
+			return NewEQJsonpathCondition(c)
 		}
-		value := pathes[len(pathes)-1]
-		pathes = pathes[:len(pathes)-1]
-
-		if value[0] == '"' && value[len(value)-1] == '"' {
-			value = value[1 : len(value)-1]
-			return NewEQCondition(pathes, value), nil
-		}
-		if strings.Contains(value, ".") {
-			if s, err := strconv.ParseFloat(value, 64); err == nil {
-				return NewEQCondition(pathes, s), nil
-			} else {
-				return nil, err
-			}
-		}
-		if s, err := strconv.ParseInt(value, 0, 32); err == nil {
-			return NewEQCondition(pathes, int(s)), nil
-		} else {
-			return nil, err
-		}
+		return NewEQCondition(c)
 	}
 
 	// HasPrefix

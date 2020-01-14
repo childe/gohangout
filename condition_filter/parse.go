@@ -190,20 +190,6 @@ func buildRPNStack(c string) ([]interface{}, error) {
 }
 
 func pushOp(op int, s1 *[]int, s2 *[]interface{}) bool {
-	//glog.Info("=====")
-	//glog.Info(op)
-	//glog.Info(*s1)
-	//glog.Info(*s2)
-	//glog.Info("=====")
-
-	//defer func() {
-	//glog.Info("~~~~~")
-	//glog.Info(op)
-	//glog.Info(*s1)
-	//glog.Info(*s2)
-	//glog.Info("~~~~~")
-	//}()
-
 	if op == _op_right {
 		return findLeftInS1(s1, s2)
 	}
