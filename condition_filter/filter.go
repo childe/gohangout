@@ -153,15 +153,44 @@ func (c *EQCondition) Pass(event map[string]interface{}) bool {
 }
 
 type HasPrefixCondition struct {
+	pat    *jsonpath.Compiled
 	pathes []string
 	prefix string
 }
 
-func NewHasPrefixCondition(pathes []string, prefix string) *HasPrefixCondition {
-	return &HasPrefixCondition{pathes, prefix}
+func NewHasPrefixCondition(c string) (*HasPrefixCondition, error) {
+	if strings.HasPrefix(c, `HasPrefix($.`) {
+		p := regexp.MustCompile(`^HasPrefix\((\$\..*),"(.*)"\)$`)
+		r := p.FindStringSubmatch(c)
+		if len(r) != 3 {
+			return nil, fmt.Errorf("split jsonpath pattern/value error in `%s`", c)
+		}
+
+		value := r[2]
+		pat, err := jsonpath.Compile(r[1])
+		if err != nil {
+			return nil, err
+		}
+
+		return &HasPrefixCondition{pat, nil, value}, nil
+	}
+
+	pathes := make([]string, 0)
+	c = strings.TrimSuffix(strings.TrimPrefix(c, "HasPrefix("), ")")
+	for _, p := range strings.Split(c, ",") {
+		pathes = append(pathes, strings.Trim(p, " "))
+	}
+	value := pathes[len(pathes)-1]
+	pathes = pathes[:len(pathes)-1]
+	return &HasPrefixCondition{nil, pathes, value}, nil
 }
 
 func (c *HasPrefixCondition) Pass(event map[string]interface{}) bool {
+	if c.pat != nil {
+		v, err := c.pat.Lookup(event)
+		return err == nil && strings.HasPrefix(v.(string), c.prefix)
+	}
+
 	var (
 		o      map[string]interface{} = event
 		length int                    = len(c.pathes)
@@ -416,22 +445,12 @@ func NewSingleCondition(c string) (Condition, error) {
 
 	// EQ
 	if matched, _ := regexp.MatchString(`^EQ\(.*\)$`, c); matched {
-		if strings.HasPrefix(c, `EQ($.`) {
-			return NewEQJsonpathCondition(c)
-		}
 		return NewEQCondition(c)
 	}
 
 	// HasPrefix
 	if matched, _ := regexp.MatchString(`^HasPrefix\(.*\)$`, c); matched {
-		pathes := make([]string, 0)
-		c = strings.TrimSuffix(strings.TrimPrefix(c, "HasPrefix("), ")")
-		for _, p := range strings.Split(c, ",") {
-			pathes = append(pathes, strings.Trim(p, " "))
-		}
-		value := pathes[len(pathes)-1]
-		pathes = pathes[:len(pathes)-1]
-		return NewHasPrefixCondition(pathes, value), nil
+		return NewHasPrefixCondition(c)
 	}
 
 	// HasSuffix

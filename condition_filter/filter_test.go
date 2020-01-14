@@ -43,6 +43,21 @@ func TestEQJsonpath(t *testing.T) {
 	}
 }
 
+func TestHasPrefixJsonpath(t *testing.T) {
+	condition := `HasPrefix($.name.first,"jia") || HasPrefix($.name.last,"liu")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error", condition)
+	}
+
+	event := make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "ji", "last": "liuu"}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+}
+
 func TestNotBeforeAnd(t *testing.T) {
 	condition := `EQ(name,first,"jia") ! && EQ(name,last,"liu")`
 	_, err := parseBoolTree(condition)
