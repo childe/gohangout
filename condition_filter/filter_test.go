@@ -73,6 +73,22 @@ func TestHasSuffixJsonpath(t *testing.T) {
 	}
 }
 
+func TestMatchJsonpath(t *testing.T) {
+	condition := `Match($.name.first,"^jia$") && Match($.fullname,"^liu,jia$")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Errorf("parse %s error", condition)
+	}
+
+	event := make(map[string]interface{})
+	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event["fullname"] = "liu,jia"
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+}
+
 func TestContainsJsonpath(t *testing.T) {
 	condition := `Contains($.name.first,"jia") || Contains($.name.last,"liu")`
 	root, err := parseBoolTree(condition)
