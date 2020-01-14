@@ -379,19 +379,52 @@ func (c *ContainsAnyCondition) Pass(event map[string]interface{}) bool {
 }
 
 type MatchCondition struct {
+	pat    *jsonpath.Compiled
 	paths  []string
 	regexp *regexp.Regexp
 }
 
-func NewMatchCondition(paths []string, pattern string) (*MatchCondition, error) {
-	regexp, err := regexp.Compile(pattern)
+func NewMatchCondition(c string) (*MatchCondition, error) {
+	if strings.HasPrefix(c, `Match($.`) {
+		p := regexp.MustCompile(`^Match\((\$\..*),"(.*)"\)$`)
+		r := p.FindStringSubmatch(c)
+		if len(r) != 3 {
+			return nil, fmt.Errorf("split jsonpath pattern/value error in `%s`", c)
+		}
+
+		pat, err := jsonpath.Compile(r[1])
+		if err != nil {
+			return nil, err
+		}
+
+		value := r[2]
+		regexp, err := regexp.Compile(value)
+		if err != nil {
+			return nil, err
+		}
+
+		return &MatchCondition{pat, nil, regexp}, nil
+	}
+
+	paths := make([]string, 0)
+	c = strings.TrimSuffix(strings.TrimPrefix(c, "Match("), ")")
+	for _, p := range strings.Split(c, ",") {
+		paths = append(paths, strings.Trim(p, " "))
+	}
+	value := paths[len(paths)-1]
+	paths = paths[:len(paths)-1]
+	regexp, err := regexp.Compile(value)
 	if err != nil {
 		return nil, err
 	}
-	return &MatchCondition{paths, regexp}, nil
+	return &MatchCondition{nil, paths, regexp}, nil
 }
 
 func (c *MatchCondition) Pass(event map[string]interface{}) bool {
+	if c.pat != nil {
+		v, err := c.pat.Lookup(event)
+		return err == nil && c.regexp.MatchString(v.(string))
+	}
 	var (
 		o      map[string]interface{} = event
 		length int                    = len(c.paths)
@@ -534,14 +567,7 @@ func NewSingleCondition(c string) (Condition, error) {
 
 	// Match
 	if matched, _ := regexp.MatchString(`^Match\(.*\)$`, c); matched {
-		paths := make([]string, 0)
-		c = strings.TrimSuffix(strings.TrimPrefix(c, "Match("), ")")
-		for _, p := range strings.Split(c, ",") {
-			paths = append(paths, strings.Trim(p, " "))
-		}
-		value := paths[len(paths)-1]
-		paths = paths[:len(paths)-1]
-		return NewMatchCondition(paths, value)
+		return NewMatchCondition(c)
 	}
 
 	// Random
