@@ -217,15 +217,44 @@ func (c *HasPrefixCondition) Pass(event map[string]interface{}) bool {
 }
 
 type HasSuffixCondition struct {
+	pat    *jsonpath.Compiled
 	pathes []string
 	suffix string
 }
 
-func NewHasSuffixCondition(pathes []string, suffix string) *HasSuffixCondition {
-	return &HasSuffixCondition{pathes, suffix}
+func NewHasSuffixCondition(c string) (*HasSuffixCondition, error) {
+	if strings.HasPrefix(c, `HasSuffix($.`) {
+		p := regexp.MustCompile(`^HasSuffix\((\$\..*),"(.*)"\)$`)
+		r := p.FindStringSubmatch(c)
+		if len(r) != 3 {
+			return nil, fmt.Errorf("split jsonpath pattern/value error in `%s`", c)
+		}
+
+		value := r[2]
+		pat, err := jsonpath.Compile(r[1])
+		if err != nil {
+			return nil, err
+		}
+
+		return &HasSuffixCondition{pat, nil, value}, nil
+	}
+
+	pathes := make([]string, 0)
+	c = strings.TrimSuffix(strings.TrimPrefix(c, "HasSuffix("), ")")
+	for _, p := range strings.Split(c, ",") {
+		pathes = append(pathes, strings.Trim(p, " "))
+	}
+	value := pathes[len(pathes)-1]
+	pathes = pathes[:len(pathes)-1]
+	return &HasSuffixCondition{nil, pathes, value}, nil
 }
 
 func (c *HasSuffixCondition) Pass(event map[string]interface{}) bool {
+	if c.pat != nil {
+		v, err := c.pat.Lookup(event)
+		return err == nil && strings.HasSuffix(v.(string), c.suffix)
+	}
+
 	var (
 		o      map[string]interface{} = event
 		length int                    = len(c.pathes)
@@ -455,14 +484,7 @@ func NewSingleCondition(c string) (Condition, error) {
 
 	// HasSuffix
 	if matched, _ := regexp.MatchString(`^HasSuffix\(.*\)$`, c); matched {
-		pathes := make([]string, 0)
-		c = strings.TrimSuffix(strings.TrimPrefix(c, "HasSuffix("), ")")
-		for _, p := range strings.Split(c, ",") {
-			pathes = append(pathes, strings.Trim(p, " "))
-		}
-		value := pathes[len(pathes)-1]
-		pathes = pathes[:len(pathes)-1]
-		return NewHasSuffixCondition(pathes, value), nil
+		return NewHasSuffixCondition(c)
 	}
 
 	// Contains
