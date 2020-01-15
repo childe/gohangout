@@ -122,27 +122,48 @@ fields:
     type: 'weblog'
     hostname: '[host]'
     name: '{{.firstname}}.{{.lastname}}'
+	name2: '$.name'
     city: '[geo][cityname]'
     '[a][b]': '[stored][message]'
 ```
 
-### 格式1 [XX][YY]
+### 格式1 JSONPATH 格式
+
+**相比格式2, 更推荐使用这种格式. 更标准, 也灵活, 性能也足够**
+
+给几个下面文中的例子
+
+```
+$.store.book[0].title
+
+$['store']['book'][0]['title']
+
+$.store.book[(@.length-1)].title
+
+$.store.book[?(@.price < 10)].title
+```
+
+具体的格式和例子参见 [https://goessner.net/articles/JsonPath/](https://goessner.net/articles/JsonPath/)
+
+### 格式2 [XX][YY]
+
+**不再推荐使用, 请使用格式1**
 
 `city: '[geo][cityname]'` 是把 geo.cityname 的值赋值给 city 字段. 必须严格 [XX][YY] 格式, 前后不能有别的内容
 
 
-### 格式2 {{XXX}}
+### 格式3 {{XXX}}
 
 如果含有 `{{XXX}}` 的内容, 就认为是 golang template 格式, 具体语法可以参考 [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/). 前后及中间可以含有别的内容, 像 `name: 'my name is {{.firstname}}.{{.lastname}}'`
 
-### 格式3 %{XXX}
+### 格式4 %{XXX}
 
 含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} {%time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
 
 2006 01 02 15 06 05 这几个数字是 golang 里面特定的数字, 代表年月日时分秒. 1月2号3点4分5秒06年. 其实就像hangout里面的YYYY MM dd HH mm SS
 
 
-### 格式4 除了1,2,3 之外的其它
+### 格式5 除了1,2,3,4 之外的其它
 
 在不同Filter中, 可能意义不同. 像 Date 中的 src: logtime, 是说取 logtime 字段的值.  
 Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就是字面值.
