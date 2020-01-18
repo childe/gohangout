@@ -167,7 +167,7 @@ $.store.book[?(@.price < 10)].title
 
 ### 格式5 除了1,2,3,4 之外的其它
 
-在不同Filter中, 可能意义不同. 像 Date 中的 src: logtime, 是说取 logtime 字段的值.  
+在不同Filter中, 可能意义不同. 像 Date 中的 src: logtime, 是说取 logtime 字段的值.
 Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就是字面值.
 
 
@@ -317,7 +317,7 @@ Elasticsearch:
 
 #### index_time_location
 
-渲染索引名字时, 使用什么时区. 默认是 UTC. 北京时间 2019-10-25 07:00:00 的日志, 会写到 2019.10.24 这个索引中. 
+渲染索引名字时, 使用什么时区. 默认是 UTC. 北京时间 2019-10-25 07:00:00 的日志, 会写到 2019.10.24 这个索引中.
 
 内容如 `Asia/Shanghai` 等, 参考 [https://timezonedb.com/time-zones](https://timezonedb.com/time-zones)
 
@@ -540,6 +540,9 @@ Convert:
             to: bool
             remove_if_fail: false
             setto_if_fail: true
+        map_struct:
+            to: string
+            setto_if_fail: ""
 ```
 
 #### remove_if_fail
@@ -550,6 +553,8 @@ Convert:
 
 如果转换失败, 刚将此字段的值设置为 XX . 优先级比 remove_if_fail 低.  如果 remove_if_fail 设置为 true, 则setto_if_fail 无效.
 
+#### to: string
+将一个任意数据类型通过json.Marshal序列化成字符串
 ### Date
 
 ```
@@ -691,8 +696,8 @@ IPIP:
 
 配置如下
 
-如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.  
-trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.   
+如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.
+trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.
 trimkey和trim类似, 处理的是字段名称.
 
 ```
@@ -783,7 +788,7 @@ LinkMetric:
 
 #### accumulateMode
 
-两种聚合模式. 
+两种聚合模式.
 
 1. cumulative 累加模式. 假设batchWindow 是300, reserveWindow 是 1800. 在每5分钟时, 会输出过去5分钟的一批聚合数据, 同时因为延时的存在, 可能还会有(过去10分钟-过去5分钟)之间的一批数据. cumulative 配置下, 会保留(过去10分钟-过去5分钟)之前count值的内存中, 新的数据进来时, 累加到一起, 下个5分钟时, 输出一个累加值.
 
