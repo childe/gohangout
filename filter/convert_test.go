@@ -42,7 +42,7 @@ func TestConvertFilter(t *testing.T) {
 	if event["timeTaken"].(float64) != 0.01 {
 		t.Error("timeTaken should be 0.01")
 	}
-    if event["toString"].(string) != "{\"a\":5,\"b\":7}" {
+    if event["toString"].(string) != `{"a":5,"b":7}` {
 	    t.Error("toString is unexpected")
 	}
 	event = map[string]interface{}{

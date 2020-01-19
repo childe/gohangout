@@ -15,7 +15,7 @@
 .glide/
 
 build/
-build/*
+
 .ropeproject/
 vendor/
 
