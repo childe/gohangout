@@ -440,21 +440,27 @@ Drop:
 
 也支持括号, 像 `Exist(a) && (Exist(b) || Exist(c))`
 
-目前支持的函数: **只有 EQ 函数需要使用双引号代表字符串, 因为 EQ 也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
+目前支持的函数如下:
+
+注意:
+
+**只有 EQ 函数需要使用双引号代表字符串, 因为 EQ 也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
+
+**EQ HasPrefix HasSuffix Contains Match , 这几个函数可以使用 jsonpath 表示, 除 EQ 外需要使用双引号**
 
 - `Exist(user,name)` [user][name]存在
 
-- `EQ(user,age,20)` [user][age]存在并等于20
+- `EQ(user,age,20)` `EQ($.user.age,20)` [user][age]存在并等于20
 
-- `EQ(user,age,"20")` [user][age]存在并等于"20" (字符串)
+- `EQ(user,age,"20")` `EQ($.user.age,20)` [user][age]存在并等于"20" (字符串)
 
-- `HasPrefix(user,name,liu)` [user][name]存在并以 liu 开头
+- `HasPrefix(user,name,liu)` `HasPrefix($.user.name,"liu")` [user][name]存在并以 liu 开头
 
-- `HasSuffix(user,name,jia)` [user][name]存在并以 jia 结尾
+- `HasSuffix(user,name,jia)` `HasSuffix($.user.name,"jia")` [user][name]存在并以 jia 结尾
 
-- `Contains(user,name,jia)` [user][name]存在并包含 jia
+- `Contains(user,name,jia)` `Contains($.user.name,"jia")` [user][name]存在并包含 jia
 
-- `Match(user,name,^liu.*a$)` [user][name]存在并能匹配正则 `^liu.*a$`
+- `Match(user,name,^liu.*a$)` `Match($.user.name,"^liu.*a$")` [user][name]存在并能匹配正则 `^liu.*a$`
 
 - `Random(20)` 1/20 的概率返回 true
 
