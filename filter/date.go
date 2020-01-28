@@ -56,18 +56,18 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 	var (
 		rst time.Time
 	)
-	if reflect.TypeOf(t).String() == "json.Number" {
-		t1, err := t.(json.Number).Int64()
+	if v, ok := t.(json.Number); ok {
+		t1, err := v.Int64()
 		if err != nil {
 			return rst, err
 		}
 		return time.Unix(t1, 0), nil
 	}
-	switch reflect.TypeOf(t).Kind() {
-	case reflect.String:
-		t1, err := strconv.Atoi(t.(string))
+
+	if v, ok := t.(string); ok {
+		t1, err := strconv.Atoi(v)
 		if err != nil {
-			f, err := strconv.ParseFloat(t.(string), 64)
+			f, err := strconv.ParseFloat(v, 64)
 			if err != nil {
 				return rst, err
 			}
@@ -75,15 +75,15 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 			return time.Unix(int64(t1), int64(1000000000*(f-t1))), nil
 		}
 		return time.Unix(int64(t1), 0), nil
-	case reflect.Int:
-		t1 := int64(t.(int))
-		return time.Unix(t1, 0), nil
-	case reflect.Int64:
-		t1 := t.(int64)
-		return time.Unix(t1, 0), nil
-	default:
-		return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 	}
+
+	if t1, ok := t.(int); ok {
+		return time.Unix(int64(t1), 0), nil
+	}
+	if t1, ok := t.(int64); ok {
+		return time.Unix(t1, 0), nil
+	}
+	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 }
 
 type UnixMSParser struct{}
