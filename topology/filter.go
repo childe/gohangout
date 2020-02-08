@@ -64,13 +64,13 @@ func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
 
 func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
 	if success {
+		for fs, v := range f.addFields {
+			event = fs.SetField(event, v.Render(event), "", false)
+		}
 		if f.removeFields != nil {
 			for _, d := range f.removeFields {
 				d.Delete(event)
 			}
-		}
-		for fs, v := range f.addFields {
-			event = fs.SetField(event, v.Render(event), "", false)
 		}
 	} else {
 		if f.failTag != "" {
