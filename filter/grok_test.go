@@ -30,8 +30,37 @@ func TestGrokFilter(t *testing.T) {
 		}
 	}
 }
+func TestTarget(t *testing.T) {
+	config := make(map[interface{}]interface{})
+	match := make([]interface{}, 2)
+	match[0] = `(?P<logtime>\S+ \S+) \[(?P<level>\w+)\] (?P<msg>.*)$`
+	match[1] = `(?P<logtime>\S+ \S+)`
+	config["match"] = match
+	config["src"] = "message"
+	config["target"] = "grok"
 
-func TestTranslate(t *testing.T) {
+	f := methodLibrary.NewGrokFilter(config)
+
+	event := make(map[string]interface{})
+	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
+
+	event, ok := f.Filter(event)
+	t.Log(event)
+
+	if ok == false {
+		t.Error("grok filter fail")
+	}
+
+	if grok, ok := event["grok"]; ok {
+		if msg, ok := grok.(map[string]interface{})["msg"]; !ok || msg.(string) != "message" {
+			t.Error("msg field do not match")
+		}
+	} else {
+		t.Error("grok field should exist")
+	}
+}
+
+func TestPattern(t *testing.T) {
 	grok := &Grok{}
 	grok.patterns = map[string]string{
 		"USERNAME": "[a-zA-Z0-9._-]+",
