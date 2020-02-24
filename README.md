@@ -122,7 +122,7 @@ fields:
     type: 'weblog'
     hostname: '[host]'
     name: '{{.firstname}}.{{.lastname}}'
-	name2: '$.name'
+    name2: '$.name'
     city: '[geo][cityname]'
     '[a][b]': '[stored][message]'
 ```
@@ -648,6 +648,10 @@ Grok:
 #### src
 
 源字段, 默认 message
+
+#### target
+
+目标字段, 默认为空, 直接写入根下. 如果不为空, 则创建target字段, 并把解析后的字段写到target下.
 
 #### match
 
