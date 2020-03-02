@@ -215,6 +215,7 @@ TCP:
 
 ```
 Kafka:
+    decorate_events: false
     topic:
         weblog: 1
     #assign:
@@ -232,6 +233,12 @@ Kafka:
 ```
 
 **特别注意** 参数需要是字符串, 像 `auto.commit.interval.ms: '5000'` , 以及 `from.beginning: 'true'` , 等等
+
+#### decorate_events
+
+默认为 false
+配置为 true 的话, 可以把 topic/partition/offset 信息添加到 ["@metadata"]["kafka"] 字段中
+
 
 #### topic
 
