@@ -10,7 +10,8 @@ import (
 )
 
 type KafkaInput struct {
-	config map[interface{}]interface{}
+	config         map[interface{}]interface{}
+	decorateEvents bool
 
 	messages chan *healer.FullMessage
 
@@ -22,9 +23,10 @@ type KafkaInput struct {
 
 func (l *MethodLibrary) NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
 	var (
-		codertype string = "plain"
-		topics    map[interface{}]interface{}
-		assign    map[string][]int
+		codertype      string = "plain"
+		decorateEvents        = false
+		topics         map[interface{}]interface{}
+		assign         map[string][]int
 	)
 
 	consumer_settings := make(map[string]interface{})
@@ -67,14 +69,18 @@ func (l *MethodLibrary) NewKafkaInput(config map[interface{}]interface{}) *Kafka
 		glog.Fatal("topic and assign can not be both set")
 	}
 
-	if v, ok := config["codec"]; ok {
-		codertype = v.(string)
+	if codecV, ok := config["codec"]; ok {
+		codertype = codecV.(string)
+	}
+
+	if decorateEventsV, ok := config["decorate_events"]; ok {
+		decorateEvents = decorateEventsV.(bool)
 	}
 
 	kafkaInput := &KafkaInput{
-
-		config:   config,
-		messages: make(chan *healer.FullMessage, 10),
+		config:         config,
+		decorateEvents: decorateEvents,
+		messages:       make(chan *healer.FullMessage, 10),
 
 		decoder: codec.NewDecoder(codertype),
 	}
@@ -132,7 +138,15 @@ func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 		glog.Error("kafka message carries error: ", message.Error)
 		return nil
 	}
-	return p.decoder.Decode(message.Message.Value)
+	event := p.decoder.Decode(message.Message.Value)
+	if p.decorateEvents {
+		kafkaMeta := make(map[string]interface{})
+		kafkaMeta["topic"] = message.TopicName
+		kafkaMeta["partition"] = message.PartitionID
+		kafkaMeta["offset"] = message.Message.Offset
+		event["@metadata"] = map[string]interface{}{"kafka": kafkaMeta}
+	}
+	return event
 }
 
 func (p *KafkaInput) Shutdown() {
