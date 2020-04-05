@@ -378,6 +378,15 @@ bytes_source_field优先级高于source_field.  bytes_source_field是指字段�
 
 增加这个配置的来由是这样的. 上游数据源已经是 json.dump之后的[]byte数据, 做一次json.parse, 然后再json.dump, 耗费了大量CPU做无用功.
 
+### Kafka
+
+```
+Kafka:
+    topic: applog
+    bootstrap.servers: node1.kafka.corp.com:9092,node2.kafka.corp.com:9092,node3.kafka.corp.com:9092
+    flush.interval.ms: 10000
+```
+
 ### clickhouse
 
 ```
