@@ -67,7 +67,7 @@ func buildPluginLink(config map[string]interface{}) []*input.InputBox {
 
 			inputPlugin = input.GetInput(inputType, inputConfig)
 
-			box := input.NewInputBox(inputPlugin, config)
+			box := input.NewInputBox(inputPlugin, inputConfig, config)
 			boxes = append(boxes, box)
 		}
 	}

@@ -4,9 +4,11 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/filter"
 	"github.com/childe/gohangout/output"
 	"github.com/childe/gohangout/topology"
+	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
 
@@ -17,15 +19,30 @@ type InputBox struct {
 	stop               bool
 	once               sync.Once
 	shutdownChan       chan bool
+
+	addFields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewInputBox(input topology.Input, config map[string]interface{}) *InputBox {
-	return &InputBox{
+func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, config map[string]interface{}) *InputBox {
+	b := &InputBox{
 		input:        input,
 		config:       config,
 		stop:         false,
 		shutdownChan: make(chan bool, 1),
 	}
+	if add_fields, ok := inputConfig["add_fields"]; ok {
+		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
+		for k, v := range add_fields.(map[interface{}]interface{}) {
+			fieldSetter := field_setter.NewFieldSetter(k.(string))
+			if fieldSetter == nil {
+				glog.Fatalf("could build field setter from %s", k.(string))
+			}
+			b.addFields[fieldSetter] = value_render.GetValueRender(v.(string))
+		}
+	} else {
+		b.addFields = nil
+	}
+	return b
 }
 
 func (box *InputBox) beat(workerIdx int) {
@@ -43,6 +60,9 @@ func (box *InputBox) beat(workerIdx int) {
 				box.shutdown()
 			}
 			return
+		}
+		for fs, v := range box.addFields {
+			event = fs.SetField(event, v.Render(event), "", false)
 		}
 		firstNode.Process(event)
 	}
