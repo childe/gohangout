@@ -4,6 +4,8 @@ github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e h1:4DdAsml94WFp
 github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/childe/healer v0.1.1 h1:ZPUIPk4m4pCbaWksJMEgCuvoYenIM2mEWWVuPYBf5C0=
 github.com/childe/healer v0.1.1/go.mod h1:ljvP4Pzj3Iu24CdJzEIG+YQtRRpSyCtZQrwFDx/niXg=
+github.com/childe/healer v0.1.2 h1:vXa+ZKg0CVG+jN6VUGDQat4QoHaFA0zaeorUIHpwHW0=
+github.com/childe/healer v0.1.2/go.mod h1:ljvP4Pzj3Iu24CdJzEIG+YQtRRpSyCtZQrwFDx/niXg=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 h1:YEetp8/yCZMuEPMUDHG0CW/brkkEp8mzqk2+ODEitlw=
