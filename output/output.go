@@ -30,7 +30,7 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *topolog
 		}
 		output, err = getOutputFromPlugin(outputType, config)
 		if err != nil {
-			glog.Fatal("could not load plugin from %s. try %s.so", outputType, outputType)
+			glog.Fatalf("could not load plugin from %s. try %s.so", outputType, outputType)
 		}
 	}
 
