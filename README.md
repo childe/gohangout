@@ -319,6 +319,7 @@ Elasticsearch:
     flush_interval: 60
     concurrent: 3
     compress: false
+    es_version: 7
     retry_response_code: [401, 502]
 ```
 
@@ -360,6 +361,10 @@ bulk 的goroutine 最大值, 默认1
 #### compress
 
 默认 true, http请求时做zip压缩
+
+#### es_version
+
+默认为6，可以适配es6的版本，如果设置为7，则可以适配Elasticsearch7以上版本
 
 #### retry_response_code
 
