@@ -27,7 +27,8 @@ func GetInput(inputType string, config map[interface{}]interface{}) topology.Inp
 	}
 	p, err := getInputFromPlugin(inputType, config)
 	if err != nil {
-		glog.Fatal("could not load plugin from %s. try %s.so", inputType, inputType)
+		glog.Errorf("could not load plugin from %s, err: %v", inputType, err)
+		return nil
 	}
 	return p
 }
