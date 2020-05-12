@@ -35,7 +35,8 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 		for k, v := range add_fields.(map[interface{}]interface{}) {
 			fieldSetter := field_setter.NewFieldSetter(k.(string))
 			if fieldSetter == nil {
-				glog.Fatalf("could build field setter from %s", k.(string))
+				glog.Errorf("could build field setter from %s", k.(string))
+				return nil
 			}
 			b.addFields[fieldSetter] = value_render.GetValueRender(v.(string))
 		}
