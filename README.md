@@ -169,7 +169,7 @@ $.store.book[?(@.price < 10)].title
 
 ### 格式4 %{XXX}
 
-含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} {%time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
+含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} %{time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
 
 2006 01 02 15 06 05 这几个数字是 golang 里面特定的数字, 代表年月日时分秒. 1月2号3点4分5秒06年. 其实就像hangout里面的YYYY MM dd HH mm SS
 
