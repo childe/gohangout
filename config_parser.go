@@ -2,7 +2,11 @@ package main
 
 import (
 	"errors"
+	"regexp"
 	"strings"
+
+	"github.com/golang/glog"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type Config map[string]interface{}
@@ -18,4 +22,32 @@ func parseConfig(filename string) (map[string]interface{}, error) {
 		return yp.parse(filename)
 	}
 	return nil, errors.New("unknown config format. config filename should ends with yaml|yml")
+}
+
+// remove sensitive info before output
+func removeSensitiveInfo(config map[string]interface{}) string {
+	re := regexp.MustCompile(`(.*password:\s+)(.*)`)
+	re2 := regexp.MustCompile(`(http(s)?://\w+:)\w+`)
+
+	b, err := yaml.Marshal(config)
+	if err != nil {
+		glog.Errorf("marshal config error: %s", err)
+		return ""
+	}
+
+	output := make([]string, 0, 0)
+	for _, l := range strings.Split(string(b), "\n") {
+		println(l)
+		if re.MatchString(l) {
+			output = append(output, re.ReplaceAllString(l, "${1}xxxxxx"))
+			continue
+		}
+		if re2.MatchString(l) {
+			output = append(output, re2.ReplaceAllString(l, "${1}xxxxxx"))
+			continue
+		}
+		output = append(output, l)
+	}
+
+	return strings.Join(output, "\n")
 }
