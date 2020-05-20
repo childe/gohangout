@@ -3,10 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/childe/gohangout/input"
-	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
-	jsoniter "github.com/json-iterator/go"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -15,6 +11,11 @@ import (
 	"runtime/pprof"
 	"sync"
 	"syscall"
+
+	"github.com/childe/gohangout/input"
+	"github.com/childe/gohangout/topology"
+	"github.com/golang/glog"
+	jsoniter "github.com/json-iterator/go"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -153,7 +154,7 @@ func main() {
 		if err != nil {
 			glog.Fatalf("could not parse config:%s", err)
 		}
-		glog.Infof("%v", config)
+		glog.Infof("config:\n%s", removeSensitiveInfo(config))
 		configChannel <- config
 	}
 
@@ -206,7 +207,7 @@ func ListenSignal() {
 				glog.Errorf("could not parse config:%s", err)
 				continue
 			}
-			glog.Infof("%v", config)
+			glog.Infof("config:\n%s", removeSensitiveInfo(config))
 			configChannel <- config
 		}
 
