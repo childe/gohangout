@@ -6,11 +6,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"os/signal"
 	"runtime"
 	"runtime/pprof"
 	"sync"
-	"syscall"
 
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/topology"
@@ -158,7 +156,7 @@ func main() {
 		configChannel <- config
 	}
 
-	ListenSignal()
+	listenSignal()
 }
 
 var boxes []*input.InputBox
@@ -184,35 +182,4 @@ func StopBoxesBeat() {
 	}
 
 	boxes = make([]*input.InputBox, 0)
-}
-
-func ListenSignal() {
-	c := make(chan os.Signal, 1)
-	var stop bool
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
-
-	defer glog.Infof("listen signal stop, exit...")
-
-	for sig := range c {
-		glog.Infof("capture signal: %v", sig)
-		switch sig {
-		case syscall.SIGINT, syscall.SIGTERM:
-			StopBoxesBeat()
-			close(configChannel)
-			stop = true
-		case syscall.SIGUSR1:
-			// `kill -USR1 pid`也会触发重新加载
-			config, err := parseConfig(options.config)
-			if err != nil {
-				glog.Errorf("could not parse config:%s", err)
-				continue
-			}
-			glog.Infof("config:\n%s", removeSensitiveInfo(config))
-			configChannel <- config
-		}
-
-		if stop {
-			break
-		}
-	}
 }
