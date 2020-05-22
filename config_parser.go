@@ -37,7 +37,6 @@ func removeSensitiveInfo(config map[string]interface{}) string {
 
 	output := make([]string, 0, 0)
 	for _, l := range strings.Split(string(b), "\n") {
-		println(l)
 		if re.MatchString(l) {
 			output = append(output, re.ReplaceAllString(l, "${1}xxxxxx"))
 			continue
