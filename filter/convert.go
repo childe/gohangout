@@ -56,6 +56,20 @@ type BoolConverter struct{}
 func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
 	return strconv.ParseBool(v.(string))
 }
+type StringConverter struct{}
+
+func (c *StringConverter) convert(v interface{}) (interface{}, error) {
+    if reflect.TypeOf(v).Kind() == reflect.String {
+	    return v, nil
+	} else {
+	    jsonString, err := json.Marshal(v)
+		if err != nil {
+		    return nil, ConvertUnknownFormat
+		} else {
+		    return string(jsonString), nil
+		}
+	}
+}
 
 type ConveterAndRender struct {
 	converter    Converter
@@ -97,6 +111,8 @@ func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *Co
 				converter = &IntConverter{}
 			} else if to == "bool" {
 				converter = &BoolConverter{}
+			} else if to == "string" {
+				converter = &StringConverter{}
 			} else {
 				glog.Fatal("can only convert to int/float/bool")
 			}
