@@ -552,6 +552,8 @@ Add:
       '[a][b]': '[stored][message]'
 ```
 
+**更多写法参见 [字段格式约定](https://github.com/childe/gohangout/#%E5%AD%97%E6%AE%B5%E6%A0%BC%E5%BC%8F%E7%BA%A6%E5%AE%9A)**
+
 1. 增加 name 字段, 内容是 childe
 2. 增加 hostname 字段, 内容是原 host 字段中的内容. (相当于改名)
 3. 增加 logtime 字段, 内容是 date 和 time 两个字段的拼接
