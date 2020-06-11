@@ -30,6 +30,11 @@
 
   > go get github.com/childe/gohangout
 
+### 第三方 Plugin
+
+- 开发 Plugin 的例子 [gohangout-plugin-examples](https://github.com/childe/gohangout-plugin-examples)
+- [使用sarama的 Kafka Input](https://github.com/DukeAnn/gohangout-input-kafka_sarama)
+- [Redis Input](https://github.com/childe/gohangout-input-redis)
 
 
 ## 运行
