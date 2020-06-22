@@ -53,13 +53,6 @@ func init() {
 }
 
 func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, err error) {
-	defer func() {
-		// 一些强制类型转换出错导致panic的保护
-		if e := recover(); e != nil {
-			err = fmt.Errorf("[PANIC] %v", e)
-		}
-	}()
-
 	boxes = make([]*input.InputBox, 0)
 
 	for inputIdx, inputI := range config["inputs"].([]interface{}) {
