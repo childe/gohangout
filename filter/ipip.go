@@ -42,17 +42,20 @@ func (l *MethodLibrary) NewIPIPFilter(config map[interface{}]interface{}) *IPIPF
 	}
 	if database, ok := config["database"]; ok {
 		plugin.database = database.(string)
-		var city unsafe.Pointer
-		var err error
+		var (
+			c1 *datx.City
+			c2 *ipdb.City
+			err error
+		)
 		if plugin.data_type == "datx" {
-			*city, err = datx.NewCity(plugin.database)
+			c1, err = datx.NewCity(plugin.database)
+			plugin.city = unsafe.Pointer(c1)
 		} else {
-			*city, err = ipdb.NewCity(plugin.database)
+			c2, err = ipdb.NewCity(plugin.database)
+			plugin.city = unsafe.Pointer(c2)
 		}
 		if err != nil {
 			glog.Fatalf("could not load %s: %s", plugin.database, err)
-		} else {
-			plugin.city = city
 		}
 	} else {
 		glog.Fatal("database must be set in IPIP filter plugin")
