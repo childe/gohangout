@@ -724,11 +724,18 @@ IPIP:
     src: clientip
     target: geoip
     database: /opt/gohangout/mydata4vipday2.datx
+    type: datx
 ```
 
 #### database
 
 数据库地址. 数据可以在 [https://www.ipip.net/](https://www.ipip.net/) 下载
+
+#### type
+数据文件的类型，可选值ipdb和datx，默认是datx
+
+#### language
+ipdb查找城市时候需要传入语言，默认是CN
 
 #### src
 
