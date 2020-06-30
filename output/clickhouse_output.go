@@ -227,6 +227,8 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 					glog.Errorf("clickhouse ping error: %s", err)
 				}
 			} else {
+				// 设置连接过期时间1分钟，必须小于ck的连接过期时间lifetime
+				db.SetConnMaxLifetime(time.Minute)
 				dbs = append(dbs, db)
 			}
 		} else {
