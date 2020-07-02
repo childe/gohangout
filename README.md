@@ -569,6 +569,8 @@ overwrite: true 的情况下, 这些新字段会覆盖老字段(如果有的话)
 
 ### Convert
 
+现在只支持转成 float/int/string/bool 这四种类型
+
 ```
 Convert:
     fields:
