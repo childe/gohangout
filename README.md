@@ -574,7 +574,8 @@ Convert:
     fields:
         time_taken:
             remove_if_fail: false
-            setto_if_fail: 0
+            setto_if_nil: 0.0
+            setto_if_fail: 0.0
             to: float
         sc_bytes:
             to: int
@@ -596,8 +597,11 @@ Convert:
 
 如果转换失败, 刚将此字段的值设置为 XX . 优先级比 remove_if_fail 低.  如果 remove_if_fail 设置为 true, 则setto_if_fail 无效.
 
-#### to: string
-将一个任意数据类型通过json.Marshal序列化成字符串
+#### setto_if_nil: XX
+
+如果没有这个字段, 刚将此字段的值设置为 XX . 优先级最高
+
+
 ### Date
 
 ```
