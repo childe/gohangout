@@ -21,5 +21,4 @@ func NewFieldSetter(template string) FieldSetter {
 	} else {
 		return NewOneLevelFieldSetter(template)
 	}
-	return nil
 }
