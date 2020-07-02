@@ -56,17 +56,18 @@ type BoolConverter struct{}
 func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
 	return strconv.ParseBool(v.(string))
 }
+
 type StringConverter struct{}
 
 func (c *StringConverter) convert(v interface{}) (interface{}, error) {
-    if reflect.TypeOf(v).Kind() == reflect.String {
-	    return v, nil
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		return v, nil
 	} else {
-	    jsonString, err := json.Marshal(v)
+		jsonString, err := json.Marshal(v)
 		if err != nil {
-		    return nil, ConvertUnknownFormat
+			return nil, ConvertUnknownFormat
 		} else {
-		    return string(jsonString), nil
+			return string(jsonString), nil
 		}
 	}
 }
@@ -76,6 +77,7 @@ type ConveterAndRender struct {
 	valueRender  value_render.ValueRender
 	removeIfFail bool
 	settoIfFail  interface{}
+	settoIfNil   interface{}
 }
 
 type ConvertFilter struct {
@@ -103,6 +105,7 @@ func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *Co
 				remove_if_fail = I.(bool)
 			}
 			setto_if_fail := v["setto_if_fail"]
+			setto_if_nil := v["setto_if_nil"]
 
 			var converter Converter
 			if to == "float" {
@@ -117,10 +120,11 @@ func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *Co
 				glog.Fatal("can only convert to int/float/bool")
 			}
 			plugin.fields[fieldSetter] = ConveterAndRender{
-				converter,
-				value_render.GetValueRender2(f.(string)),
-				remove_if_fail,
-				setto_if_fail,
+				converter:    converter,
+				valueRender:  value_render.GetValueRender2(f.(string)),
+				removeIfFail: remove_if_fail,
+				settoIfFail:  setto_if_fail,
+				settoIfNil:   setto_if_nil,
 			}
 		}
 	} else {
@@ -133,6 +137,9 @@ func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]in
 	for fs, conveterAndRender := range plugin.fields {
 		originanV := conveterAndRender.valueRender.Render(event)
 		if originanV == nil {
+			if conveterAndRender.settoIfNil != nil {
+				event = fs.SetField(event, conveterAndRender.settoIfNil, "", true)
+			}
 			continue
 		}
 		v, err := conveterAndRender.converter.convert(originanV)
