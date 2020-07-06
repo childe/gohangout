@@ -216,6 +216,11 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
 	glog.V(5).Infof("query: %s", p.query)
 
+	connMaxLifetime := 0
+	if v, ok := config["conn_max_life_time"]; ok {
+		connMaxLifetime = v.(int)
+	}
+
 	dbs := make([]*sql.DB, 0)
 	for _, host := range p.hosts {
 		dataSourceName := fmt.Sprintf("%s?username=%s&password=%s", host, p.username, p.password)
@@ -227,6 +232,7 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 					glog.Errorf("clickhouse ping error: %s", err)
 				}
 			} else {
+				db.SetConnMaxLifetime(time.Second * time.Duration(connMaxLifetime))
 				dbs = append(dbs, db)
 			}
 		} else {
