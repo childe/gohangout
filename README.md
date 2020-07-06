@@ -411,6 +411,7 @@ Kafka:
 ```
 Clickhouse:
     table: 'hotel.weblog'
+    conn_max_life_time: 10
 	username: admin
 	password: XXX
     hosts:
@@ -445,6 +446,10 @@ clickhouse 节点列表. 必须配置
 #### concurrent
 
 bulk 的goroutine 最大值, 默认1
+
+#### conn_max_life_time
+
+到 ClickHouse 的连接的生存时间, 单位为分钟. 默认不设置, 也就是生存时间无限长.
 
 ## FILTER
 
