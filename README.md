@@ -35,6 +35,7 @@
 - 开发 Plugin 的例子 [gohangout-plugin-examples](https://github.com/childe/gohangout-plugin-examples)
 - [使用sarama的 Kafka Input](https://github.com/DukeAnn/gohangout-input-kafka_sarama)
 - [Redis Input](https://github.com/childe/gohangout-input-redis)
+- [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) 一条消息Split 成多条
 
 
 ## 运行
