@@ -5,6 +5,45 @@ import (
 	"time"
 )
 
+func TestInJsonpath(t *testing.T) {
+	var condition string
+	var event map[string]interface{} = make(map[string]interface{})
+	event["tags"] = []interface{}{"app", "error", 10, 11.11}
+
+	// single test
+	condition = `IN($.tags,"error")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// combined condition
+	condition = `IN($.tags,"error") && IN($.tags,10)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// combined condition
+	condition = `IN($.tags,"web") || IN($.tags,10.10)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("pass should fail. `%s` %#v", condition, event)
+	}
+}
+
 func TestEQJsonpathSyntaxError(t *testing.T) {
 	condition := `EQ($.name.first,jia) && EQ($.name.last,liu)`
 	_, err := parseBoolTree(condition)
