@@ -493,7 +493,7 @@ Drop:
 
 - `EQ(user,age,20)` `EQ($.user.age,20)` [user][age]存在并等于20
 
-- `EQ(user,age,"20")` `EQ($.user.age,20)` [user][age]存在并等于"20" (字符串)
+- `EQ(user,age,"20")` `EQ($.user.age,"20")` [user][age]存在并等于"20" (字符串)
 
 - `HasPrefix(user,name,liu)` `HasPrefix($.user.name,"liu")` [user][name]存在并以 liu 开头
 
