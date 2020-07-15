@@ -485,15 +485,17 @@ Drop:
 
 注意:
 
-**只有 EQ 函数需要使用双引号代表字符串, 因为 EQ 也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
+**EQ/IN 函数需要使用双引号代表字符串, 因为他们也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
 
-**EQ HasPrefix HasSuffix Contains Match , 这几个函数可以使用 jsonpath 表示, 除 EQ 外需要使用双引号**
+**EQ IN HasPrefix HasSuffix Contains Match , 这几个函数可以使用 jsonpath 表示, 除 EQ/IN 外需要使用双引号**
 
 - `Exist(user,name)` [user][name]存在
 
 - `EQ(user,age,20)` `EQ($.user.age,20)` [user][age]存在并等于20
 
 - `EQ(user,age,"20")` `EQ($.user.age,"20")` [user][age]存在并等于"20" (字符串)
+
+- `IN(tags,"app")` `IN($.tags,"app")` "app"存在于 tags 数组中, tags 一定要是数组,否则认为条件不成立
 
 - `HasPrefix(user,name,liu)` `HasPrefix($.user.name,"liu")` [user][name]存在并以 liu 开头
 
