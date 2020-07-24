@@ -487,7 +487,7 @@ Drop:
 
 **EQ/IN 函数需要使用双引号代表字符串, 因为他们也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
 
-**EQ IN HasPrefix HasSuffix Contains Match , 这几个函数可以使用 jsonpath 表示, 除 EQ/IN 外需要使用双引号**
+**EQ IN HasPrefix HasSuffix Contains Match , 这几个函数可以使用 [jsonpath](https://github.com/oliveagle/jsonpath) 表示, 除 EQ/IN 外需要使用双引号**
 
 - `Exist(user,name)` [user][name]存在
 
