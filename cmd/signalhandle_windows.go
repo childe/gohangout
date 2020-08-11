@@ -1,3 +1,5 @@
+// +build windows
+
 package main
 
 import (
@@ -10,7 +12,6 @@ import (
 
 func listenSignal() {
 	c := make(chan os.Signal, 1)
-	var stop bool
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
 	defer glog.Infof("listen signal stop, exit...")
@@ -19,13 +20,7 @@ func listenSignal() {
 		glog.Infof("capture signal: %v", sig)
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
-			StopBoxesBeat()
-			close(configChannel)
-			stop = true
-		}
-
-		if stop {
-			break
+			return
 		}
 	}
 }

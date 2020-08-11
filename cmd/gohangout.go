@@ -13,10 +13,8 @@ import (
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
-	jsoniter "github.com/json-iterator/go"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var options = &struct {
 	config     string
 	autoReload bool // 配置文件更新自动重启
@@ -26,19 +24,20 @@ var options = &struct {
 	memprofile string
 }{}
 
-var gitCommit string
-
 func printVersion() {
 	glog.Info("Current build version: ", gitCommit)
 }
 
 var (
-	worker = flag.Int("worker", 1, "worker thread count")
+	gitCommit       string
+	worker          = flag.Int("worker", 1, "worker thread count")
+	boxes           []*input.InputBox
+	reloadBoxedLock sync.Mutex
 )
 
 func init() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
-	flag.BoolVar(&options.autoReload, "reload", options.autoReload, "if auto reload while config file changed")
+	flag.BoolVar(&options.autoReload, "reload", true, "if auto reload while config file changed")
 
 	flag.BoolVar(&options.pprof, "pprof", false, "if pprof")
 	flag.StringVar(&options.pprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
@@ -87,21 +86,12 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 func main() {
 	// flush保证停止的时候日志都写入了文件中
 	defer glog.Flush()
+	defer stopBoxesBeat()
 
 	if options.pprof {
 		go func() {
 			http.ListenAndServe(options.pprofAddr, nil)
 		}()
-	}
-	if options.cpuprofile != "" {
-		f, err := os.Create(options.cpuprofile)
-		if err != nil {
-			glog.Fatalf("could not create CPU profile: %s", err)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			glog.Fatalf("could not start CPU profile: %s", err)
-		}
-		defer pprof.StopCPUProfile()
 	}
 
 	if options.memprofile != "" {
@@ -118,20 +108,22 @@ func main() {
 		}()
 	}
 
+	if options.cpuprofile != "" {
+		f, err := os.Create(options.cpuprofile)
+		if err != nil {
+			glog.Fatalf("could not create CPU profile: %s", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			glog.Fatalf("could not start CPU profile: %s", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	// 监听配置文件更新
+	configChannel := make(chan map[string]interface{})
 	go func() {
-		// 监听配置文件更新
 		for cfg := range configChannel {
-			// 停止所有的流水线
-			StopBoxesBeat()
-			// 重新根据配置文件加载流水线
-			newBoxes, err := buildPluginLink(cfg)
-			if err == nil {
-				boxes = newBoxes
-				// 如果没报错才会执行更新
-				go StartBoxesBeat()
-			} else {
-				glog.Errorf("build plugin link fail: %s", err)
-			}
+			ReloadBoxes(cfg)
 		}
 	}()
 
@@ -145,34 +137,41 @@ func main() {
 		if err != nil {
 			glog.Fatalf("could not parse config:%s", err)
 		}
-		glog.Infof("config:\n%s", removeSensitiveInfo(config))
-		configChannel <- config
+		ReloadBoxes(config)
 	}
 
 	listenSignal()
 }
 
-var boxes []*input.InputBox
-var configChannel = make(chan map[string]interface{})
+// ReloadBoxes stop current boxes and start new ones.
+// it will do nothing if config is not valid
+func ReloadBoxes(config map[string]interface{}) {
+	reloadBoxedLock.Lock()
+	defer reloadBoxedLock.Unlock()
 
-func StartBoxesBeat() {
-	var wg sync.WaitGroup
-	wg.Add(len(boxes))
+	glog.Infof("config:\n%s", removeSensitiveInfo(config))
 
-	for i := range boxes {
+	newBoxes, err := buildPluginLink(config)
+	if err != nil {
+		glog.Errorf("could not build plugins from config: %s", err)
+		return
+	}
+	stopBoxesBeat()
+	startBoxesBeat(newBoxes)
+}
+
+func startBoxesBeat(newBoxes []*input.InputBox) {
+	for i := range newBoxes {
 		go func(i int) {
-			defer wg.Done()
-			boxes[i].Beat(*worker)
+			newBoxes[i].Beat(*worker)
 		}(i)
 	}
 
-	wg.Wait()
+	boxes = newBoxes
 }
 
-func StopBoxesBeat() {
+func stopBoxesBeat() {
 	for _, box := range boxes {
 		box.Shutdown()
 	}
-
-	boxes = make([]*input.InputBox, 0)
 }

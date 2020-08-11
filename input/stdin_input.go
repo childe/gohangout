@@ -32,7 +32,7 @@ func (l *MethodLibrary) NewStdinInput(config map[interface{}]interface{}) *Stdin
 	}
 
 	go func() {
-		for p.scanner.Scan() && !p.stop {
+		for !p.stop && p.scanner.Scan() {
 			t := p.scanner.Bytes()
 			msg := make([]byte, len(t))
 			copy(msg, t)

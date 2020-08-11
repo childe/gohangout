@@ -1,27 +1,22 @@
 package main
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 )
 
-type Config map[string]interface{}
-
-type Parser interface {
-	parse(filename string) (map[string]interface{}, error)
-}
-
 func parseConfig(filename string) (map[string]interface{}, error) {
-	lowerFilename := strings.ToLower(filename)
-	if strings.HasSuffix(lowerFilename, ".yaml") || strings.HasSuffix(lowerFilename, ".yml") {
-		yp := &YamlParser{}
-		return yp.parse(filename)
+	vp := viper.New()
+	vp.SetConfigFile(filename)
+	err := vp.ReadInConfig()
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("unknown config format. config filename should ends with yaml|yml")
+	return vp.AllSettings(), nil
 }
 
 // remove sensitive info before output

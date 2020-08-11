@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/fsnotify/fsnotify"
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
@@ -21,6 +22,7 @@ func watchConfig(filename string, configChannel chan<- map[string]interface{}) e
 type FileWatcher struct{}
 
 func (f FileWatcher) watch(filename string, configChannel chan<- map[string]interface{}) error {
+	glog.Infof("watch %s", filename)
 	vp := viper.New()
 	vp.SetConfigFile(filename)
 	vp.WatchConfig()

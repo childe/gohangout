@@ -28,7 +28,7 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 		input:        input,
 		config:       config,
 		stop:         false,
-		shutdownChan: make(chan bool, 1),
+		shutdownChan: make(chan bool),
 	}
 	if add_fields, ok := inputConfig["add_fields"]; ok {
 		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
@@ -60,6 +60,7 @@ func (box *InputBox) beat(workerIdx int) {
 				glog.Info("receive nil message. shutdown...")
 				box.shutdown()
 			}
+			glog.Infof("stoped, drop event: %v", event)
 			return
 		}
 		for fs, v := range box.addFields {
@@ -108,25 +109,20 @@ func (box *InputBox) Beat(worker int) {
 	for i := 0; i < worker; i++ {
 		go box.beat(i)
 	}
-
-	<-box.shutdownChan
 }
 
 func (box *InputBox) shutdown() {
 	box.once.Do(func() {
-
-		glog.Infof("try to shutdown input %T", box.input)
+		glog.Infof("shutdown input %T ...", box.input)
 		box.input.Shutdown()
 
 		for i, outputs := range box.outputsInAllWorker {
 			for _, o := range outputs {
-				glog.Infof("try to shutdown output %T in worker %d", o, i)
+				glog.Infof("shutdown output %T in worker %d ...", o, i)
 				o.Output.Shutdown()
 			}
 		}
 	})
-
-	box.shutdownChan <- true
 }
 
 func (box *InputBox) Shutdown() {
