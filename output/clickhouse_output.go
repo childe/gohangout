@@ -156,6 +156,10 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			c.defaultValue[columnName] = 0
 		case "Float32", "Float64":
 			c.defaultValue[columnName] = 0.0
+		case "IPv4":
+			c.defaultValue[columnName] = "0.0.0.0"
+		case "IPv6":
+			c.defaultValue[columnName] = "::"
 		case "Array(String)":
 			c.defaultValue[columnName] = []string{}
 		default:
