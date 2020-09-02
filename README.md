@@ -479,7 +479,7 @@ Drop:
       - 'Before(-24h) || After(24h)'
 ```
 
-也支持括号, 像 `Exist(a) && (Exist(b) || Exist(c))`
+也支持括号和逻辑运算符, 像 `Exist(a) && (!Exist(b) || !Exist(c))`
 
 目前支持的函数如下:
 
