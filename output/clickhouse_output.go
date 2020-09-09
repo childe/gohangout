@@ -150,7 +150,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 		switch d.Type {
 		case "String", "LowCardinality(String)":
 			c.defaultValue[columnName] = ""
-		case "Date", "DateTime":
+		case "Date", "DateTime", "DateTime64":
 			c.defaultValue[columnName] = time.Unix(0, 0)
 		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
 			c.defaultValue[columnName] = 0
