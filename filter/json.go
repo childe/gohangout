@@ -52,7 +52,7 @@ func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]inter
 
 		if plugin.target == "" {
 			if reflect.TypeOf(o).Kind() != reflect.Map {
-				glog.Infof("%s field is not map type, `target` must be set in config file", plugin.field)
+				glog.V(5).Infof("%s field is not map type, `target` must be set in config file", plugin.field)
 				return event, false
 			}
 			if plugin.overwrite {
