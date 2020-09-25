@@ -29,5 +29,4 @@ func NewDecoder(t string) Decoder {
 		}
 		return newFunc.(func() interface{})().(Decoder)
 	}
-	return nil
 }
