@@ -10,9 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	clickhouse "github.com/ClickHouse/clickhouse-go"
 	"github.com/golang/glog"
-
-	"github.com/kshvakov/clickhouse"
 )
 
 const (
