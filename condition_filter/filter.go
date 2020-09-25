@@ -1,6 +1,7 @@
 package condition_filter
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -221,7 +222,7 @@ func NewEQCondition(c string) (*EQCondition, error) {
 		}
 	}
 	if s, err := strconv.ParseInt(value, 0, 32); err == nil {
-		return &EQCondition{pat, paths, int(s), len(paths)}, nil
+		return &EQCondition{pat, paths, s, len(paths)}, nil
 	} else {
 		return nil, err
 	}
@@ -230,7 +231,7 @@ func NewEQCondition(c string) (*EQCondition, error) {
 func (c *EQCondition) Pass(event map[string]interface{}) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
-		return err == nil && v == c.value
+		return err == nil && equal(v, c.value)
 	}
 
 	var (
@@ -248,9 +249,29 @@ func (c *EQCondition) Pass(event map[string]interface{}) bool {
 	}
 
 	if v, ok := o[c.paths[c.fn-1]]; ok {
-		return v == c.value
+		return equal(v, c.value)
 	}
 	return false
+}
+
+func equal(src, target interface{}) bool {
+	if n, ok := src.(json.Number); ok {
+		if tValue, ok := target.(int64); ok {
+			if intV, err := n.Int64(); err == nil {
+				return intV == tValue
+			} else {
+				return false
+			}
+		}
+		if tValue, ok := target.(float64); ok {
+			if floatV, err := n.Float64(); err == nil {
+				return floatV == tValue
+			} else {
+				return false
+			}
+		}
+	}
+	return src == target
 }
 
 type HasPrefixCondition struct {
