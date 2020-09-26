@@ -197,7 +197,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			// 需要要求列声明的最小枚举值为 ''
 			c.defaultValue[columnName] = ""
 		default:
-			glog.Errorf("column: %s, type: %s. unsupported column type, ignore", columnName, d.Type)
+			glog.Errorf("column: %s, type: %s. unsupported column type, ignore.", columnName, d.Type)
 			continue
 		}
 	}
