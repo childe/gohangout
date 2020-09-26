@@ -72,6 +72,41 @@ func (c *StringConverter) convert(v interface{}) (interface{}, error) {
 	}
 }
 
+type ArrayIntConverter struct{}
+
+func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
+	if v1, ok1 := v.([]interface{}); ok1 {
+		var t2 = []int{}
+		for _, i := range v1 {
+			j, err := i.(json.Number).Int64()
+			// j, err := strconv.ParseInt(i.String(), 0, 64)
+			if err != nil {
+				return nil, ConvertUnknownFormat
+			}
+			t2 = append(t2, (int)(j))
+		}
+		return t2, nil
+	}
+	return nil, ConvertUnknownFormat
+}
+
+type ArrayFloatConverter struct{}
+
+func (c *ArrayFloatConverter) convert(v interface{}) (interface{}, error) {
+	if v1, ok1 := v.([]interface{}); ok1 {
+		var t2 = []float64{}
+		for _, i := range v1 {
+			j, err := i.(json.Number).Float64()
+			if err != nil {
+				return nil, ConvertUnknownFormat
+			}
+			t2 = append(t2, (float64)(j))
+		}
+		return t2, nil
+	}
+	return nil, ConvertUnknownFormat
+}
+
 type ConveterAndRender struct {
 	converter    Converter
 	valueRender  value_render.ValueRender
@@ -116,9 +151,14 @@ func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *Co
 				converter = &BoolConverter{}
 			} else if to == "string" {
 				converter = &StringConverter{}
+			} else if to == "array(int)" {
+				converter = &ArrayIntConverter{}
+			} else if to == "array(float)" {
+				converter = &ArrayFloatConverter{}
 			} else {
-				glog.Fatal("can only convert to int/float/bool")
+				glog.Fatal("can only convert to int/float/bool/array(int)/array(float)")
 			}
+
 			plugin.fields[fieldSetter] = ConveterAndRender{
 				converter:    converter,
 				valueRender:  value_render.GetValueRender2(f.(string)),
