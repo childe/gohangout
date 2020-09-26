@@ -22,3 +22,6 @@ vendor/
 !test/*.yml
 
 .DS_Store
+
+.idea/
+.vscode/
