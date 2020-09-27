@@ -94,7 +94,16 @@ func (c *ClickhouseOutput) setTableDesc() {
 
 			descMap := make(map[string]string)
 			for i, c := range columns {
-				descMap[c] = *values[i].(*string)
+				value := *values[i].(*string)
+				if c == "type" {
+					// 特殊处理枚举类型
+					if strings.HasPrefix(value, "Enum16") {
+						value = "Enum16"
+					} else if strings.HasPrefix(value, "Enum8") {
+						value = "Enum8"
+					}
+				}
+				descMap[c] = value
 			}
 
 			b, err := json.Marshal(descMap)
@@ -159,13 +168,48 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			c.defaultValue[columnName] = "0.0.0.0"
 		case "IPv6":
 			c.defaultValue[columnName] = "::"
-		case "Array(String)":
-			c.defaultValue[columnName] = []string{}
+		case "Array(String)", "Array(IPv4)", "Array(IPv6)", "Array(Date)", "Array(DateTime)":
+			c.defaultValue[columnName] = clickhouse.Array([]string{})
+		case "Array(UInt8)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint8{})
+		case "Array(UInt16)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint16{})
+		case "Array(UInt32)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint32{})
+		case "Array(UInt64)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint64{})
+		case "Array(Int8)":
+			c.defaultValue[columnName] = clickhouse.Array([]int8{})
+		case "Array(Int16)":
+			c.defaultValue[columnName] = clickhouse.Array([]int16{})
+		case "Array(Int32)":
+			c.defaultValue[columnName] = clickhouse.Array([]int32{})
+		case "Array(Int64)":
+			c.defaultValue[columnName] = clickhouse.Array([]int64{})
+		case "Array(Float32)":
+			c.defaultValue[columnName] = clickhouse.Array([]float32{})
+		case "Array(Float64)":
+			c.defaultValue[columnName] = clickhouse.Array([]float64{})
+		case "Enum16":
+			// 需要要求列声明的最小枚举值为 ''
+			c.defaultValue[columnName] = ""
+		case "Enum8":
+			// 需要要求列声明的最小枚举值为 ''
+			c.defaultValue[columnName] = ""
 		default:
-			glog.Errorf("column: %s, type: %s. unsupported column type, ignore", columnName, d.Type)
+			glog.Errorf("column: %s, type: %s. unsupported column type, ignore.", columnName, d.Type)
 			continue
 		}
 	}
+}
+
+func (c *ClickhouseOutput) getDatabase() string {
+	dbAndTable := strings.Split(c.table, ".")
+	dbName := "default"
+	if len(dbAndTable) == 2 {
+		dbName = dbAndTable[0]
+	}
+	return dbName
 }
 
 func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
@@ -225,8 +269,9 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	}
 
 	dbs := make([]*sql.DB, 0)
+
 	for _, host := range p.hosts {
-		dataSourceName := fmt.Sprintf("%s?username=%s&password=%s", host, p.username, p.password)
+		dataSourceName := fmt.Sprintf("%s?database=%s&username=%s&password=%s", host, p.getDatabase(), p.username, p.password)
 		if db, err := sql.Open("clickhouse", dataSourceName); err == nil {
 			if err := db.Ping(); err != nil {
 				if exception, ok := err.(*clickhouse.Exception); ok {
