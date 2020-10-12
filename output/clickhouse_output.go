@@ -2,6 +2,7 @@ package output
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -30,6 +31,8 @@ type ClickhouseOutput struct {
 
 	fieldsLength int
 	query        string
+	desc         map[string]*rowDesc
+	defaultValue map[string]interface{} // columnName -> defaultValue
 
 	bulkChan chan []map[string]interface{}
 
@@ -40,6 +43,164 @@ type ClickhouseOutput struct {
 
 	mux sync.Mutex
 	wg  sync.WaitGroup
+}
+
+type rowDesc struct {
+	Name              string `json:"name"`
+	Type              string `json:"type"`
+	DefaultType       string `json:"default_type"`
+	DefaultExpression string `json:"default_expression"`
+}
+
+func (c *ClickhouseOutput) setTableDesc() {
+	c.desc = make(map[string]*rowDesc)
+
+	query := fmt.Sprintf("desc table %s", c.table)
+	glog.V(5).Info(query)
+
+	for i := 0; i < c.dbSelector.Size(); i++ {
+		nextdb := c.dbSelector.Next()
+
+		db := nextdb.(*sql.DB)
+
+		rows, err := db.Query(query)
+		if err != nil {
+			glog.Errorf("query %q error: %s", query, err)
+			continue
+		}
+		defer rows.Close()
+
+		columns, err := rows.Columns()
+		if err != nil {
+			glog.Fatalf("could not get columns from query `%s`: %s", query, err)
+		}
+		glog.V(10).Infof("desc table columns: %v", columns)
+
+		descMap := make(map[string]string)
+		for _, c := range columns {
+			descMap[c] = ""
+		}
+
+		for rows.Next() {
+			values := make([]interface{}, 0)
+			for range columns {
+				var a string
+				values = append(values, &a)
+			}
+
+			if err := rows.Scan(values...); err != nil {
+				glog.Fatalf("scan rows error: %s", err)
+			}
+
+			descMap := make(map[string]string)
+			for i, c := range columns {
+				value := *values[i].(*string)
+				if c == "type" {
+					// 特殊处理枚举类型
+					if strings.HasPrefix(value, "Enum16") {
+						value = "Enum16"
+					} else if strings.HasPrefix(value, "Enum8") {
+						value = "Enum8"
+					}
+				}
+				descMap[c] = value
+			}
+
+			b, err := json.Marshal(descMap)
+			if err != nil {
+				glog.Fatalf("marshal desc error: %s", err)
+			}
+
+			rowDesc := rowDesc{}
+			err = json.Unmarshal(b, &rowDesc)
+			if err != nil {
+				glog.Fatalf("marshal desc error: %s", err)
+			}
+
+			glog.V(5).Infof("row desc: %#v", rowDesc)
+
+			c.desc[rowDesc.Name] = &rowDesc
+		}
+
+		return
+	}
+}
+
+func (c *ClickhouseOutput) checkColumnDefault() {
+	fields := make(map[string]bool)
+	for _, f := range c.fields {
+		fields[f] = true
+	}
+
+	for column, d := range c.desc {
+		if _, ok := fields[column]; !ok {
+			continue
+		}
+
+		// TODO default expression should be supported
+		switch d.DefaultType {
+		case "MATERIALIZED", "ALIAS", "DEFAULT":
+			glog.Fatal("MATERIALIZED, ALIAS, DEFAULT field not supported")
+		}
+	}
+}
+
+func (c *ClickhouseOutput) setColumnDefault() {
+	c.setTableDesc()
+
+	c.defaultValue = make(map[string]interface{})
+
+	for columnName, d := range c.desc {
+		if d.DefaultType != "" {
+			c.defaultValue[columnName] = d.DefaultExpression
+			continue
+		}
+		switch d.Type {
+		case "String", "LowCardinality(String)":
+			c.defaultValue[columnName] = ""
+		case "Date", "DateTime":
+			c.defaultValue[columnName] = time.Unix(0, 0)
+		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
+			c.defaultValue[columnName] = 0
+		case "Float32", "Float64":
+			c.defaultValue[columnName] = 0.0
+		case "IPv4":
+			c.defaultValue[columnName] = "0.0.0.0"
+		case "IPv6":
+			c.defaultValue[columnName] = "::"
+		case "Array(String)", "Array(IPv4)", "Array(IPv6)", "Array(Date)", "Array(DateTime)":
+			c.defaultValue[columnName] = clickhouse.Array([]string{})
+		case "Array(UInt8)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint8{})
+		case "Array(UInt16)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint16{})
+		case "Array(UInt32)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint32{})
+		case "Array(UInt64)":
+			c.defaultValue[columnName] = clickhouse.Array([]uint64{})
+		case "Array(Int8)":
+			c.defaultValue[columnName] = clickhouse.Array([]int8{})
+		case "Array(Int16)":
+			c.defaultValue[columnName] = clickhouse.Array([]int16{})
+		case "Array(Int32)":
+			c.defaultValue[columnName] = clickhouse.Array([]int32{})
+		case "Array(Int64)":
+			c.defaultValue[columnName] = clickhouse.Array([]int64{})
+		case "Array(Float32)":
+			c.defaultValue[columnName] = clickhouse.Array([]float32{})
+		case "Array(Float64)":
+			c.defaultValue[columnName] = clickhouse.Array([]float64{})
+		case "Enum16":
+			// 需要要求列声明的最小枚举值为 ''
+			c.defaultValue[columnName] = ""
+		case "Enum8":
+			// 需要要求列声明的最小枚举值为 ''
+			c.defaultValue[columnName] = ""
+		default:
+			glog.Errorf("column: %s, type: %s. unsupported column type, ignore.", columnName, d.Type)
+			continue
+		}
+	}
 }
 
 func (c *ClickhouseOutput) getDatabase() string {
@@ -138,6 +299,9 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	}
 	p.dbSelector = NewRRHostSelector(dbsI, 3)
 
+	p.setColumnDefault()
+	p.checkColumnDefault()
+
 	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
 		concurrent = v.(int)
@@ -213,7 +377,15 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		for _, event := range events {
 			args := make([]interface{}, p.fieldsLength)
 			for i, field := range p.fields {
-				args[i] = event[field]
+				if v, ok := event[field]; ok && v != nil {
+					args[i] = v
+				} else {
+					if vv, ok := p.defaultValue[field]; ok {
+						args[i] = vv
+					} else { // this should not happen
+						args[i] = ""
+					}
+				}
 			}
 			if _, err := stmt.Exec(args...); err != nil {
 				glog.Errorf("exec clickhouse insert %v error: %s", event, err)
