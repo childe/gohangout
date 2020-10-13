@@ -424,6 +424,8 @@ Clickhouse:
     concurrent: 1
 ```
 
+*Notice:* 如果表中字段有 default 值, 目前只支持字符串,数字和 IP 类型的 DEFAULT 表达式.
+
 #### table
 
 表名. 必须配置
