@@ -162,22 +162,24 @@ func (c *ClickhouseOutput) setColumnDefault() {
 		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
 			if defaultValue == nil {
 				c.defaultValue[columnName] = 0
-			}
-			i, e := strconv.ParseInt(*defaultValue, 10, 64)
-			if e == nil {
-				c.defaultValue[columnName] = i
 			} else {
-				glog.Fatalf("parse default value `%v` error: %v", e)
+				i, e := strconv.ParseInt(*defaultValue, 10, 64)
+				if e == nil {
+					c.defaultValue[columnName] = i
+				} else {
+					glog.Fatalf("parse default value `%v` error: %v", e)
+				}
 			}
 		case "Float32", "Float64":
 			if defaultValue == nil {
 				c.defaultValue[columnName] = 0
-			}
-			i, e := strconv.ParseFloat(*defaultValue, 64)
-			if e == nil {
-				c.defaultValue[columnName] = i
 			} else {
-				glog.Fatalf("parse default value `%v` error: %v", e)
+				i, e := strconv.ParseFloat(*defaultValue, 64)
+				if e == nil {
+					c.defaultValue[columnName] = i
+				} else {
+					glog.Fatalf("parse default value `%v` error: %v", e)
+				}
 			}
 		case "IPv4":
 			if defaultValue == nil {
