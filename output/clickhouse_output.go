@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -126,44 +127,59 @@ func (c *ClickhouseOutput) setTableDesc() {
 	}
 }
 
-func (c *ClickhouseOutput) checkColumnDefault() {
-	fields := make(map[string]bool)
-	for _, f := range c.fields {
-		fields[f] = true
-	}
-
-	for column, d := range c.desc {
-		if _, ok := fields[column]; !ok {
-			continue
-		}
-
-		// TODO default expression should be supported
-		switch d.DefaultType {
-		case "MATERIALIZED", "ALIAS", "DEFAULT":
-			glog.Fatal("MATERIALIZED, ALIAS, DEFAULT field not supported")
-		}
-	}
-}
-
+// TODO only string, number and ip DEFAULT expression is supported for now
 func (c *ClickhouseOutput) setColumnDefault() {
 	c.setTableDesc()
 
 	c.defaultValue = make(map[string]interface{})
 
+	var defaultValue *string
+
 	for columnName, d := range c.desc {
-		if d.DefaultType != "" {
-			c.defaultValue[columnName] = d.DefaultExpression
-			continue
+		switch d.DefaultType {
+		case "DEFAULT":
+			defaultValue = &(d.DefaultExpression)
+		case "MATERIALIZED":
+			glog.Fatal("parse default value: MATERIALIZED expression not supported")
+		case "ALIAS":
+			glog.Fatal("parse default value: ALIAS expression not supported")
+		case "":
+			defaultValue = nil
+		default:
+			glog.Fatal("parse default value: only DEFAULT expression supported")
 		}
+
 		switch d.Type {
 		case "String", "LowCardinality(String)":
-			c.defaultValue[columnName] = ""
+			if defaultValue == nil {
+				c.defaultValue[columnName] = ""
+			} else {
+				c.defaultValue[columnName] = *defaultValue
+			}
 		case "Date", "DateTime":
 			c.defaultValue[columnName] = time.Unix(0, 0)
 		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
-			c.defaultValue[columnName] = 0
+			if defaultValue == nil {
+				c.defaultValue[columnName] = 0
+			} else {
+				i, e := strconv.ParseInt(*defaultValue, 10, 64)
+				if e == nil {
+					c.defaultValue[columnName] = i
+				} else {
+					glog.Fatalf("parse default value `%v` error: %v", e)
+				}
+			}
 		case "Float32", "Float64":
-			c.defaultValue[columnName] = 0.0
+			if defaultValue == nil {
+				c.defaultValue[columnName] = 0
+			} else {
+				i, e := strconv.ParseFloat(*defaultValue, 64)
+				if e == nil {
+					c.defaultValue[columnName] = i
+				} else {
+					glog.Fatalf("parse default value `%v` error: %v", e)
+				}
+			}
 		case "IPv4":
 			c.defaultValue[columnName] = "0.0.0.0"
 		case "IPv6":
@@ -300,7 +316,6 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	p.dbSelector = NewRRHostSelector(dbsI, 3)
 
 	p.setColumnDefault()
-	p.checkColumnDefault()
 
 	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
