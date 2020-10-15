@@ -136,16 +136,15 @@ func (c *ClickhouseOutput) setColumnDefault() {
 	var defaultValue *string
 
 	for columnName, d := range c.desc {
-		defaultValue = nil
 		switch d.DefaultType {
 		case "DEFAULT":
-			*defaultValue = d.DefaultExpression
+			defaultValue = &(d.DefaultExpression)
 		case "MATERIALIZED":
 			glog.Fatal("parse default value: MATERIALIZED expression not supported")
 		case "ALIAS":
 			glog.Fatal("parse default value: ALIAS expression not supported")
 		case "":
-			break
+			defaultValue = nil
 		default:
 			glog.Fatal("parse default value: only DEFAULT expression supported")
 		}
@@ -182,17 +181,9 @@ func (c *ClickhouseOutput) setColumnDefault() {
 				}
 			}
 		case "IPv4":
-			if defaultValue == nil {
-				c.defaultValue[columnName] = "0.0.0.0"
-			} else {
-				c.defaultValue[columnName] = defaultValue
-			}
+			c.defaultValue[columnName] = "0.0.0.0"
 		case "IPv6":
-			if defaultValue == nil {
-				c.defaultValue[columnName] = "::"
-			} else {
-				c.defaultValue[columnName] = defaultValue
-			}
+			c.defaultValue[columnName] = "::"
 		case "Array(String)", "Array(IPv4)", "Array(IPv6)", "Array(Date)", "Array(DateTime)":
 			c.defaultValue[columnName] = clickhouse.Array([]string{})
 		case "Array(UInt8)":
