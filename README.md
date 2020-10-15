@@ -424,6 +424,8 @@ Clickhouse:
     concurrent: 1
 ```
 
+*Notice:* 如果表中字段有 default 值, 目前只支持字符串和数字 的 DEFAULT 表达式解析和处理, 如果像 IPv4设置了default 值, 是处理不了的. 代码中写死了 IPv4 和 IPv6 的默认值都是0 
+
 #### table
 
 表名. 必须配置
