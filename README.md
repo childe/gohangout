@@ -400,11 +400,18 @@ bytes_source_field优先级高于source_field.  bytes_source_field是指字段�
 
 ### Kafka
 
+**特别注意** 参数需要是字符串, 像 `flush.interval.ms: "3000"` , 等等
+
 ```
 Kafka:
     topic: applog
-    bootstrap.servers: node1.kafka.corp.com:9092,node2.kafka.corp.com:9092,node3.kafka.corp.com:9092
-    flush.interval.ms: 10000
+    producer_settings:
+        bootstrap.servers: node1.kafka.corp.com:9092,node2.kafka.corp.com:9092,node3.kafka.corp.com:9092
+        flush.interval.ms: "3000"
+        metadata.max.age.ms: "10000"
+        # sasl.mechanism: PLAIN
+        # sasl.user: admin
+        # sasl.password: admin-secret
 ```
 
 ### clickhouse
