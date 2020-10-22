@@ -84,15 +84,13 @@ func NewINCondition(c string) (*INCondition, error) {
 	if strings.Contains(value, ".") {
 		if s, err := strconv.ParseFloat(value, 64); err == nil {
 			return &INCondition{pat, paths, s, len(paths)}, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	if s, err := strconv.ParseInt(value, 0, 32); err == nil {
 		return &INCondition{pat, paths, int(s), len(paths)}, nil
-	} else {
-		return nil, err
 	}
+	return nil, err
 }
 
 func (c *INCondition) Pass(event map[string]interface{}) bool {
@@ -217,9 +215,8 @@ func NewEQCondition(c string) (*EQCondition, error) {
 	if strings.Contains(value, ".") {
 		if s, err := strconv.ParseFloat(value, 64); err == nil {
 			return &EQCondition{pat, paths, s, len(paths)}, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	if s, err := strconv.ParseInt(value, 0, 32); err == nil {
 		return &EQCondition{pat, paths, s, len(paths)}, nil
@@ -259,16 +256,14 @@ func equal(src, target interface{}) bool {
 		if tValue, ok := target.(int64); ok {
 			if intV, err := n.Int64(); err == nil {
 				return intV == tValue
-			} else {
-				return false
 			}
+			return false
 		}
 		if tValue, ok := target.(float64); ok {
 			if floatV, err := n.Float64(); err == nil {
 				return floatV == tValue
-			} else {
-				return false
 			}
+			return false
 		}
 	}
 	return src == target

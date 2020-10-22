@@ -15,28 +15,19 @@ type Converter interface {
 	convert(v interface{}) (interface{}, error)
 }
 
-var ConvertUnknownFormat error = errors.New("unknown format")
+var ErrConvertUnknownFormat error = errors.New("unknown format")
 
 type IntConverter struct{}
 
 func (c *IntConverter) convert(v interface{}) (interface{}, error) {
 	if reflect.TypeOf(v).String() == "json.Number" {
-		i, err := v.(json.Number).Int64()
-		if err == nil {
-			return (int)(i), err
-		} else {
-			return i, err
-		}
+		return v.(json.Number).Int64()
 	}
+
 	if reflect.TypeOf(v).Kind() == reflect.String {
-		i, err := strconv.ParseInt(v.(string), 0, 64)
-		if err == nil {
-			return (int)(i), err
-		} else {
-			return i, err
-		}
+		return strconv.ParseInt(v.(string), 0, 64)
 	}
-	return nil, ConvertUnknownFormat
+	return nil, ErrConvertUnknownFormat
 }
 
 type FloatConverter struct{}
@@ -48,7 +39,7 @@ func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
 	if reflect.TypeOf(v).Kind() == reflect.String {
 		return strconv.ParseFloat(v.(string), 64)
 	}
-	return nil, ConvertUnknownFormat
+	return nil, ErrConvertUnknownFormat
 }
 
 type BoolConverter struct{}
@@ -62,14 +53,12 @@ type StringConverter struct{}
 func (c *StringConverter) convert(v interface{}) (interface{}, error) {
 	if reflect.TypeOf(v).Kind() == reflect.String {
 		return v, nil
-	} else {
-		jsonString, err := json.Marshal(v)
-		if err != nil {
-			return nil, ConvertUnknownFormat
-		} else {
-			return string(jsonString), nil
-		}
 	}
+	jsonString, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
 }
 
 type ArrayIntConverter struct{}
@@ -81,13 +70,13 @@ func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
 			j, err := i.(json.Number).Int64()
 			// j, err := strconv.ParseInt(i.String(), 0, 64)
 			if err != nil {
-				return nil, ConvertUnknownFormat
+				return nil, ErrConvertUnknownFormat
 			}
 			t2 = append(t2, (int)(j))
 		}
 		return t2, nil
 	}
-	return nil, ConvertUnknownFormat
+	return nil, ErrConvertUnknownFormat
 }
 
 type ArrayFloatConverter struct{}
@@ -98,13 +87,13 @@ func (c *ArrayFloatConverter) convert(v interface{}) (interface{}, error) {
 		for _, i := range v1 {
 			j, err := i.(json.Number).Float64()
 			if err != nil {
-				return nil, ConvertUnknownFormat
+				return nil, ErrConvertUnknownFormat
 			}
 			t2 = append(t2, (float64)(j))
 		}
 		return t2, nil
 	}
-	return nil, ConvertUnknownFormat
+	return nil, ErrConvertUnknownFormat
 }
 
 type ConveterAndRender struct {
