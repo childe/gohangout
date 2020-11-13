@@ -29,7 +29,7 @@ func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		glog.Errorf("read from %s->%s error: %s", c.RemoteAddr(), c.LocalAddr(), err)
+		glog.Errorf("read from %v->%v error: %v", c.RemoteAddr(), c.LocalAddr(), err)
 	}
 	c.Close()
 }
