@@ -174,6 +174,14 @@ $.store.book[?(@.price < 10)].title
 
 如果含有 `{{XXX}}` 的内容, 就认为是 golang template 格式, 具体语法可以参考 [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/). 前后及中间可以含有别的内容, 像 `name: 'my name is {{.firstname}}.{{.lastname}}'`
 
+来举个例子吧, Date Filter 得到一个 Time 类型的字段, 然后按自己的格式格式化一个字符串出来
+
+```
+Add:
+  fields:
+    ts: '{{ .ts.Format "2006.01.02" }}'
+```
+
 ### 格式4 %{XXX}
 
 含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} %{time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
@@ -641,6 +649,10 @@ Date:
         - 'UNIX_MS'
     remove_fields: ["logtime"]
 ```
+
+Date Filter 的作用是把一个字符串类型的字段, 转成一个 Time 类型的字段, 存到 target 里面去.
+
+一个比较常见的问题是, 如果写数据到 Clickhouse, 其中有 Datetime 类型的字段, 比如叫 createTime, 建议先用 Date Filter 转成(生成)一个 Time 类型的字段,  存到 createTime 里面.
 
 如果源字段不存在, 返回 false. 如果所有 formats 都匹配失败, 返回 false
 
