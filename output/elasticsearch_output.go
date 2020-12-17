@@ -12,6 +12,7 @@ import (
 
 const (
 	DEFAULT_INDEX_TYPE = "logs"
+	DEFAULT_ES_VERSION = 6
 )
 
 var (
@@ -26,6 +27,7 @@ type Action struct {
 	routing    string
 	event      map[string]interface{}
 	rawSource  []byte
+	es_version int
 }
 
 func (action *Action) Encode() []byte {
@@ -38,9 +40,11 @@ func (action *Action) Encode() []byte {
 	index, _ := f().Encode(action.index)
 	meta = append(meta, index...)
 
-	meta = append(meta, `,"_type":`...)
-	index_type, _ := f().Encode(action.index_type)
-	meta = append(meta, index_type...)
+	if action.es_version <= DEFAULT_ES_VERSION {
+		meta = append(meta, `,"_type":`...)
+		index_type, _ := f().Encode(action.index_type)
+		meta = append(meta, index_type...)
+	}
 
 	if action.id != "" {
 		meta = append(meta, `,"_id":`...)
@@ -100,8 +104,8 @@ type ElasticsearchOutput struct {
 	routing            value_render.ValueRender
 	source_field       value_render.ValueRender
 	bytes_source_field value_render.ValueRender
-
-	bulkProcessor BulkProcessor
+	es_version         int
+	bulkProcessor      BulkProcessor
 }
 
 func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkRequest) ([]int, []int, BulkRequest) {
@@ -228,6 +232,12 @@ func (l *MethodLibrary) NewElasticsearchOutput(config map[interface{}]interface{
 		rst.bytes_source_field = nil
 	}
 
+	if v, ok := config["es_version"]; ok {
+		rst.es_version = v.(int)
+	} else {
+		rst.es_version = DEFAULT_ES_VERSION
+	}
+
 	var (
 		bulk_size, bulk_actions, flush_interval, concurrent int
 		compress                                            bool
@@ -308,6 +318,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		index      string = p.index.Render(event).(string)
 		index_type string = p.index_type.Render(event).(string)
 		op         string = "index"
+		es_version int    = p.es_version
 		id         string
 		routing    string
 	)
@@ -336,20 +347,20 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	}
 
 	if p.source_field == nil && p.bytes_source_field == nil {
-		p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil})
+		p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil, es_version})
 	} else if p.bytes_source_field != nil {
 		t := p.bytes_source_field.Render(event)
 		if t == nil {
-			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil})
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil, es_version})
 		} else {
-			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, (t.([]byte))})
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, (t.([]byte)), es_version})
 		}
 	} else {
 		t := p.source_field.Render(event)
 		if t == nil {
-			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil})
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil, es_version})
 		} else {
-			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, []byte(t.(string))})
+			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, []byte(t.(string)), es_version})
 		}
 	}
 }
