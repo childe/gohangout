@@ -43,8 +43,8 @@ func (l *MethodLibrary) NewIPIPFilter(config map[interface{}]interface{}) *IPIPF
 	if database, ok := config["database"]; ok {
 		plugin.database = database.(string)
 		var (
-			c1 *datx.City
-			c2 *ipdb.City
+			c1  *datx.City
+			c2  *ipdb.City
 			err error
 		)
 		if plugin.data_type == "datx" {
@@ -96,6 +96,7 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 		event["country_name"] = a[0]
 		event["province_name"] = a[1]
 		event["city_name"] = a[2]
+		event["isp"] = a[4]
 		if len(a) >= 10 {
 			latitude, _ := strconv.ParseFloat(a[5], 10)
 			longitude, _ := strconv.ParseFloat(a[6], 10)
@@ -109,6 +110,7 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 		target["country_name"] = a[0]
 		target["province_name"] = a[1]
 		target["city_name"] = a[2]
+		target["isp"] = a[4]
 		if len(a) >= 10 {
 			latitude, _ := strconv.ParseFloat(a[5], 10)
 			longitude, _ := strconv.ParseFloat(a[6], 10)
