@@ -341,20 +341,23 @@ func (l *MethodLibrary) NewElasticsearchOutput(config map[interface{}]interface{
 		}
 		rst.hosts = hosts
 
-		go func() {
-			for range time.NewTicker(time.Second * time.Duration(sniff["refresh_interval"].(int))).C {
-				hosts, err = sniffNodes(config)
-				if err != nil {
-					glog.Errorf("could not sniff hosts: %v", err)
-				} else {
-					if !reflect.DeepEqual(rst.hosts, hosts) {
-						glog.Infof("new hosts after sniff: %v", hosts)
-						rst.hosts = hosts
-						rst.bulkProcessor.(*HTTPBulkProcessor).resetHosts(rst.assebleHosts())
+		refreshInterval := sniff["refresh_interval"].(int)
+		if refreshInterval > 0 {
+			go func() {
+				for range time.NewTicker(time.Second * time.Duration(refreshInterval)).C {
+					hosts, err = sniffNodes(config)
+					if err != nil {
+						glog.Errorf("could not sniff hosts: %v", err)
+					} else {
+						if !reflect.DeepEqual(rst.hosts, hosts) {
+							glog.Infof("new hosts after sniff: %v", hosts)
+							rst.hosts = hosts
+							rst.bulkProcessor.(*HTTPBulkProcessor).resetHosts(rst.assebleHosts())
+						}
 					}
 				}
-			}
-		}()
+			}()
+		}
 	}
 	rst.bulkProcessor = NewHTTPBulkProcessor(headers, rst.assebleHosts(), requestMethod, retryResponseCode, bulk_size, bulk_actions, flush_interval, concurrent, compress, f, esGetRetryEvents)
 	return rst
