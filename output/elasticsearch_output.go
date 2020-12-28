@@ -2,10 +2,17 @@ package output
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"reflect"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -106,6 +113,10 @@ type ElasticsearchOutput struct {
 	bytes_source_field value_render.ValueRender
 	es_version         int
 	bulkProcessor      BulkProcessor
+
+	hosts    []string
+	user     string
+	password string
 }
 
 func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkRequest) ([]int, []int, BulkRequest) {
@@ -272,15 +283,6 @@ func (l *MethodLibrary) NewElasticsearchOutput(config map[interface{}]interface{
 		compress = true
 	}
 
-	var hosts []string
-	if v, ok := config["hosts"]; ok {
-		for _, h := range v.([]interface{}) {
-			hosts = append(hosts, h.(string)+"/_bulk")
-		}
-	} else {
-		glog.Fatal("hosts must be set in elasticsearch output")
-	}
-
 	var headers = map[string]string{"Content-Type": "application/x-ndjson"}
 	if v, ok := config["headers"]; ok {
 		for keyI, valueI := range v.(map[interface{}]interface{}) {
@@ -309,10 +311,165 @@ func (l *MethodLibrary) NewElasticsearchOutput(config map[interface{}]interface{
 		}
 	}
 
-	rst.bulkProcessor = NewHTTPBulkProcessor(headers, hosts, requestMethod, retryResponseCode, bulk_size, bulk_actions, flush_interval, concurrent, compress, f, esGetRetryEvents)
+	var hosts []string = make([]string, 0)
+	if v, ok := config["hosts"]; ok {
+		for _, h := range v.([]interface{}) {
+			user, password, host := getUserPasswordAndHost(h.(string))
+			if host == "" {
+				glog.Fatalf("invalid host: %q", host)
+			}
+			rst.user = user
+			rst.password = password
+			hosts = append(hosts, host)
+		}
+	} else {
+		glog.Fatal("hosts must be set in elasticsearch output")
+	}
+	rst.hosts = hosts
+
+	var err error
+	if sniff, ok := config["sniff"]; ok {
+		glog.Infof("sniff hosts in es cluster")
+		sniff := sniff.(map[interface{}]interface{})
+		hosts, err = sniffNodes(config)
+		glog.Infof("new hosts after sniff: %v", hosts)
+		if err != nil {
+			glog.Fatalf("could not sniff hosts: %v", err)
+		}
+		if len(hosts) == 0 {
+			glog.Fatal("no available hosts after sniff")
+		}
+		rst.hosts = hosts
+
+		go func() {
+			for range time.NewTicker(time.Second * time.Duration(sniff["refresh_interval"].(int))).C {
+				hosts, err = sniffNodes(config)
+				if err != nil {
+					glog.Errorf("could not sniff hosts: %v", err)
+				} else {
+					if !reflect.DeepEqual(rst.hosts, hosts) {
+						glog.Infof("new hosts after sniff: %v", hosts)
+						rst.hosts = hosts
+						rst.bulkProcessor.(*HTTPBulkProcessor).resetHosts(rst.assebleHosts())
+					}
+				}
+			}
+		}()
+	}
+	rst.bulkProcessor = NewHTTPBulkProcessor(headers, rst.assebleHosts(), requestMethod, retryResponseCode, bulk_size, bulk_actions, flush_interval, concurrent, compress, f, esGetRetryEvents)
 	return rst
 }
 
+func getUserPasswordAndHost(url string) (user, password, host string) {
+	p := regexp.MustCompile(`^(?i)(?:http(?:s?)://)(?:([^:]+):([^@]+)@)?(\S+)$`)
+	r := p.FindStringSubmatch(url)
+	if len(r) == 4 {
+		user = r[1]
+		password = r[2]
+		host = strings.TrimRight(r[3], "/")
+		return
+	} else if len(r) == 2 {
+		host = strings.TrimRight(r[1], "/")
+		return
+	} else {
+		glog.Infof("%q is invalid host format", host)
+		return
+	}
+}
+
+func sniffNodes(config map[interface{}]interface{}) ([]string, error) {
+	sniff := config["sniff"].(map[interface{}]interface{})
+	var (
+		match string
+		ok    bool
+	)
+	v, _ := sniff["match"]
+	if v != nil {
+		match, ok = v.(string)
+		if !ok {
+			glog.Fatal("match in sniff settings must be string")
+		}
+	}
+	for _, host := range config["hosts"].([]interface{}) {
+		host := host.(string)
+		if nodes, err := sniffNodesFromOneHost(host, match); err == nil {
+			return nodes, err
+		} else {
+			glog.Errorf("sniff nodes error from %s: %v", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"), err)
+		}
+	}
+	return nil, errors.New("sniff nodes error from all hosts")
+}
+
+func sniffNodesFromOneHost(host string, match string) ([]string, error) {
+	url := strings.TrimRight(host, "/") + "/_nodes/_all/http"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("%s:%d", url, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	v := make(map[string]interface{})
+	err = json.Unmarshal(respBody, &v)
+	if err != nil {
+		return nil, err
+	}
+
+	return filterNodesIPList(v, match)
+}
+
+// filterNodesIPList gets ip lists from what is returned from _nodes/_all/info
+// it uses `match` config to filter the nodes you what
+func filterNodesIPList(v map[string]interface{}, match string) ([]string, error) {
+	if len(match) > 0 {
+		f := condition_filter.NewCondition(match)
+		IPList := make([]string, 0)
+		for _, info := range v["nodes"].(map[string]interface{}) {
+			if f.Pass(info.(map[string]interface{})) {
+				info := info.(map[string]interface{})
+				publishAddress := (info["http"].(map[string]interface{}))["publish_address"].(string)
+				IPList = append(IPList, publishAddress)
+			}
+		}
+		return IPList, nil
+	}
+
+	IPList := make([]string, 0)
+	for _, info := range v["nodes"].([]interface{}) {
+		info := info.(map[string]interface{})
+		publishAddress := (info["http"].(map[string]interface{}))["publish_address"].(string)
+		IPList = append(IPList, publishAddress)
+	}
+	return IPList, nil
+}
+
+// create ES host list using user, password and hosts
+func (p *ElasticsearchOutput) assebleHosts() (hosts []string) {
+	hosts = make([]string, 0)
+	for _, host := range p.hosts {
+		if len(p.user) > 0 {
+			hosts = append(hosts, fmt.Sprintf("http://%s:%s@%s", p.user, p.password, host))
+		} else {
+			hosts = append(hosts, fmt.Sprintf("http://%s", host))
+		}
+	}
+	return
+}
+
+// Emit adds the event to bulkProcessor
 func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	var (
 		index      string = p.index.Render(event).(string)
