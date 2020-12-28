@@ -335,6 +335,9 @@ Elasticsearch:
     hosts:
         - 'http://10.0.0.100:9200'
         - 'http://admin:password@10.0.0.101:9200'
+    # sniff:
+        # refresh_interval: 3600
+        # match: 'EQ($.attributes.type,"hot")'
     index: 'web-%{appid}-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
     index_time_location: 'Local'
     index_type: "logs"
@@ -348,6 +351,15 @@ Elasticsearch:
     es_version: 7
     retry_response_code: [401, 502]
 ```
+
+#### sniff
+
+[功能需求 es output 支持特定节点名的 sniffer](#117) 
+
+- refresh_interval 是指多后台长时间去 Sniff 一次, 设置为 0 的话不会在后台刷新
+- match 是过滤条件, 符合条件的节点才会加到 Bulk 使用的列表中
+
+Sniff 会调用 `_nodes/_all/http` 获取节点信息, 返回 `publish_address` 信息
 
 #### index_time_location
 
