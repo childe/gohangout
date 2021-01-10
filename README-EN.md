@@ -158,7 +158,7 @@ for example, render index name in Elasticsearch output: `web-%{appid}-%{+2006-01
 
 All settings in below plugins could be checked in [Chinese doc](https://github.com/childe/gohangout/blob/master/README.md#input). 
 
-Setting and explanation will be added later.
+Setting and explanation in English doc will be added later.
 
 - Stdin
 - TCP
