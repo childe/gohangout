@@ -327,7 +327,10 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 		go func() {
 			for {
 				events := <-p.bulkChan
+
+				p.wg.Add(1)
 				p.innerFlush(events)
+				p.wg.Done()
 			}
 		}()
 	}
@@ -354,15 +357,8 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 }
 
 func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
-	if len(events) == 0 {
-		return
-	}
-
 	execution_id := atomic.AddUint64(&p.execution_id, 1)
 	glog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
-
-	p.wg.Add(1)
-	defer p.wg.Done()
 
 	for {
 		nextdb := p.dbSelector.Next()
@@ -460,9 +456,20 @@ func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
 		}()
 	}()
 
+	p.mux.Lock()
+
+	if len(p.events) <= 0 {
+		p.mux.Unlock()
+		return
+	}
+
+	events := p.events
+	p.events = make([]map[string]interface{}, 0, p.bulk_actions)
+	p.mux.Unlock()
+
 	p.wg.Add(1)
 	go func() {
-		p.Flush()
+		p.innerFlush(events)
 		p.wg.Done()
 	}()
 }
