@@ -467,23 +467,38 @@ func (c *ClickhouseOutput) awaitclose(timeout time.Duration) {
 	}()
 
 	glog.Info("try to write remaining docs to clickhouse")
+
 	c.mux.Lock()
 	if len(c.events) <= 0 {
 		glog.Info("no docs remain, return")
 		c.mux.Unlock()
-		return
+	} else {
+		events := c.events
+		c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+		c.mux.Unlock()
+
+		glog.Infof("ramain %d docs, write them to clickhouse", len(events))
+		c.wg.Add(1)
+		go func() {
+			c.innerFlush(events)
+			c.wg.Done()
+		}()
 	}
 
-	events := c.events
-	c.events = make([]map[string]interface{}, 0, c.bulk_actions)
-	c.mux.Unlock()
+	glog.Info("check if there are events blocking in bulk channel")
 
-	glog.Infof("ramain %d docs, write them to clickhouse", len(events))
-	c.wg.Add(1)
-	go func() {
-		c.innerFlush(events)
-		c.wg.Done()
-	}()
+	for {
+		select {
+		case events := <-c.bulkChan:
+			c.wg.Add(1)
+			go func() {
+				c.innerFlush(events)
+				c.wg.Done()
+			}()
+		default:
+			return
+		}
+	}
 }
 
 // Shutdown would stop receiving message and emiting
