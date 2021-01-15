@@ -35,15 +35,17 @@ type ClickhouseOutput struct {
 	desc         map[string]*rowDesc
 	defaultValue map[string]interface{} // columnName -> defaultValue
 
-	bulkChan chan []map[string]interface{}
+	bulkChan   chan []map[string]interface{}
+	concurrent int
 
 	events       []map[string]interface{}
 	execution_id uint64
 
 	dbSelector HostSelector
 
-	mux sync.Mutex
-	wg  sync.WaitGroup
+	mux       sync.Mutex
+	wg        sync.WaitGroup
+	closeChan chan bool
 }
 
 type rowDesc struct {
@@ -321,16 +323,21 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	if v, ok := config["concurrent"]; ok {
 		concurrent = v.(int)
 	}
+	p.concurrent = concurrent
+	p.closeChan = make(chan bool, concurrent)
 
 	p.bulkChan = make(chan []map[string]interface{}, concurrent)
 	for i := 0; i < concurrent; i++ {
 		go func() {
+			p.wg.Add(1)
 			for {
-				events := <-p.bulkChan
-
-				p.wg.Add(1)
-				p.innerFlush(events)
-				p.wg.Done()
+				select {
+				case events := <-p.bulkChan:
+					p.innerFlush(events)
+				case <-p.closeChan:
+					p.wg.Done()
+					return
+				}
 			}
 		}()
 	}
@@ -349,19 +356,19 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	}
 	go func() {
 		for range time.NewTicker(time.Second * time.Duration(flush_interval)).C {
-			p.Flush()
+			p.flush()
 		}
 	}()
 
 	return p
 }
 
-func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
-	execution_id := atomic.AddUint64(&p.execution_id, 1)
+func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
+	execution_id := atomic.AddUint64(&c.execution_id, 1)
 	glog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
 
 	for {
-		nextdb := p.dbSelector.Next()
+		nextdb := c.dbSelector.Next()
 
 		/*** not ReduceWeight for now , so this should not happen
 		if nextdb == nil {
@@ -378,7 +385,7 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		}
 		defer tx.Rollback()
 
-		stmt, err := tx.Prepare(p.query)
+		stmt, err := tx.Prepare(c.query)
 		if err != nil {
 			glog.Errorf("transaction prepare statement error: %s", err)
 			return
@@ -386,12 +393,12 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		defer stmt.Close()
 
 		for _, event := range events {
-			args := make([]interface{}, p.fieldsLength)
-			for i, field := range p.fields {
+			args := make([]interface{}, c.fieldsLength)
+			for i, field := range c.fields {
 				if v, ok := event[field]; ok && v != nil {
 					args[i] = v
 				} else {
-					if vv, ok := p.defaultValue[field]; ok {
+					if vv, ok := c.defaultValue[field]; ok {
 						args[i] = vv
 					} else { // this should not happen
 						args[i] = ""
@@ -413,34 +420,37 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	}
 }
 
-func (p *ClickhouseOutput) Flush() {
-	p.mux.Lock()
-	if len(p.events) > 0 {
-		events := p.events
-		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-		p.bulkChan <- events
+func (c *ClickhouseOutput) flush() {
+	c.mux.Lock()
+	if len(c.events) > 0 {
+		events := c.events
+		c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+		c.bulkChan <- events
 	}
-	p.mux.Unlock()
+	c.mux.Unlock()
 }
 
-func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
-	p.mux.Lock()
-	p.events = append(p.events, event)
-
-	if len(p.events) >= p.bulk_actions {
-		events := p.events
-		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-		p.bulkChan <- events
+// Emit appends event to c.events, and push to bulkChan if needed
+func (c *ClickhouseOutput) Emit(event map[string]interface{}) {
+	c.mux.Lock()
+	c.events = append(c.events, event)
+	if len(c.events) < c.bulk_actions {
+		c.mux.Unlock()
+		return
 	}
 
-	p.mux.Unlock()
+	events := c.events
+	c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+	c.mux.Unlock()
+
+	c.bulkChan <- events
 }
 
-func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
-	c := make(chan bool)
+func (c *ClickhouseOutput) awaitclose(timeout time.Duration) {
+	exit := make(chan bool)
 	defer func() {
 		select {
-		case <-c:
+		case <-exit:
 			glog.Info("all clickhouse flush job done. return")
 			return
 		case <-time.After(timeout):
@@ -451,29 +461,35 @@ func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
 
 	defer func() {
 		go func() {
-			p.wg.Wait()
-			c <- true
+			c.wg.Wait()
+			exit <- true
 		}()
 	}()
 
-	p.mux.Lock()
-
-	if len(p.events) <= 0 {
-		p.mux.Unlock()
+	glog.Info("try to write remaining docs to clickhouse")
+	c.mux.Lock()
+	if len(c.events) <= 0 {
+		glog.Info("no docs remain, return")
+		c.mux.Unlock()
 		return
 	}
 
-	events := p.events
-	p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-	p.mux.Unlock()
+	events := c.events
+	c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+	c.mux.Unlock()
 
-	p.wg.Add(1)
+	glog.Infof("ramain %d docs, write them to clickhouse", len(events))
+	c.wg.Add(1)
 	go func() {
-		p.innerFlush(events)
-		p.wg.Done()
+		c.innerFlush(events)
+		c.wg.Done()
 	}()
 }
 
-func (p *ClickhouseOutput) Shutdown() {
-	p.awaitclose(30 * time.Second)
+// Shutdown would stop receiving message and emiting
+func (c *ClickhouseOutput) Shutdown() {
+	for i := 0; i < c.concurrent; i++ {
+		c.closeChan <- true
+	}
+	c.awaitclose(30 * time.Second)
 }
