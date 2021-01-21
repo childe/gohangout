@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -18,7 +19,11 @@ type StdinInput struct {
 	stop bool
 }
 
-func (l *MethodLibrary) NewStdinInput(config map[interface{}]interface{}) *StdinInput {
+func init() {
+	Register("Stdin", newStdinInput)
+}
+
+func newStdinInput(config map[interface{}]interface{}) topology.Input {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
