@@ -4,10 +4,15 @@ import (
 	"encoding/json"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
 )
+
+func init() {
+	Register("Kafka", newKafkaOutput)
+}
 
 type KafkaOutput struct {
 	config map[interface{}]interface{}
@@ -18,7 +23,7 @@ type KafkaOutput struct {
 	key      value_render.ValueRender
 }
 
-func (l *MethodLibrary) NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
+func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 	p := &KafkaOutput{
 		config: config,
 	}

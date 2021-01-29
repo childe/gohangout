@@ -7,8 +7,13 @@ import (
 	"time"
 
 	"github.com/childe/gohangout/simplejson"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
+
+func init() {
+	Register("TCP", newTCPOutput)
+}
 
 type TCPOutput struct {
 	config    map[interface{}]interface{}
@@ -25,7 +30,7 @@ type TCPOutput struct {
 	dialLock sync.Mutex
 }
 
-func (l *MethodLibrary) NewTCPOutput(config map[interface{}]interface{}) *TCPOutput {
+func newTCPOutput(config map[interface{}]interface{}) topology.Output {
 	p := &TCPOutput{
 		config:     config,
 		concurrent: 1,

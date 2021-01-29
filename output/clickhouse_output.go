@@ -12,6 +12,7 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -230,7 +231,11 @@ func (c *ClickhouseOutput) getDatabase() string {
 	return dbName
 }
 
-func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
+func init() {
+	Register("Clickhouse", newClickhouseOutput)
+}
+
+func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
 		config: config,

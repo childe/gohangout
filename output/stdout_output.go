@@ -4,15 +4,20 @@ import (
 	"fmt"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
+
+func init() {
+	Register("Stdout", newStdoutOutput)
+}
 
 type StdoutOutput struct {
 	config  map[interface{}]interface{}
 	encoder codec.Encoder
 }
 
-func (l *MethodLibrary) NewStdoutOutput(config map[interface{}]interface{}) *StdoutOutput {
+func newStdoutOutput(config map[interface{}]interface{}) topology.Output {
 	p := &StdoutOutput{
 		config: config,
 	}
