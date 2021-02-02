@@ -10,7 +10,7 @@ func TestSettoIfNil(t *testing.T) {
 		"setto_if_nil": 0.0,
 	}
 	config["fields"] = fields
-	f := methodLibrary.NewConvertFilter(config)
+	f := BuildFilter("Convert", config)
 	event := map[string]interface{}{}
 
 	event, ok := f.Filter(event)
@@ -42,7 +42,7 @@ func TestConvertFilter(t *testing.T) {
 		"remove_if_fail": true,
 	}
 	config["fields"] = fields
-	f := methodLibrary.NewConvertFilter(config)
+	f := BuildFilter("Convert", config)
 
 	case1 := map[string]int{"a": 5, "b": 7}
 	event := map[string]interface{}{
@@ -59,7 +59,7 @@ func TestConvertFilter(t *testing.T) {
 		t.Error("ConvertFilter fail")
 	}
 
-	if event["responseSize"].(int) != 10 {
+	if event["responseSize"].(int64) != 10 {
 		t.Error("responseSize should be 10")
 	}
 	if event["timeTaken"].(float64) != 0.01 {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -141,7 +142,11 @@ type DateFilter struct {
 	targetFS    field_setter.FieldSetter
 }
 
-func (l *MethodLibrary) NewDateFilter(config map[interface{}]interface{}) *DateFilter {
+func init() {
+	Register("Date", newDateFilter)
+}
+
+func newDateFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &DateFilter{
 		config:      config,
 		overwrite:   true,

@@ -10,7 +10,7 @@ func TestGrokFilter(t *testing.T) {
 	config["match"] = match
 	config["src"] = "message"
 
-	f := methodLibrary.NewGrokFilter(config)
+	f := BuildFilter("Grok", config)
 
 	event := make(map[string]interface{})
 	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
@@ -39,7 +39,7 @@ func TestTarget(t *testing.T) {
 	config["src"] = "message"
 	config["target"] = "grok"
 
-	f := methodLibrary.NewGrokFilter(config)
+	f := BuildFilter("Grok", config)
 
 	event := make(map[string]interface{})
 	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
@@ -81,7 +81,7 @@ func TestPattern(t *testing.T) {
 	config["match"] = match
 	config["src"] = "message"
 
-	f := methodLibrary.NewGrokFilter(config)
+	f := BuildFilter("Grok", config)
 
 	event := make(map[string]interface{})
 	event["message"] = "10.10.10.255 childe [info] message"

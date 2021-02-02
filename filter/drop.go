@@ -1,10 +1,16 @@
 package filter
 
+import "github.com/childe/gohangout/topology"
+
 type DropFilter struct {
 	config map[interface{}]interface{}
 }
 
-func (l *MethodLibrary) NewDropFilter(config map[interface{}]interface{}) *DropFilter {
+func init() {
+	Register("Drop", newDropFilter)
+}
+
+func newDropFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &DropFilter{
 		config: config,
 	}

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -21,7 +22,11 @@ type ReplaceFilter struct {
 	fields []replaceConfig
 }
 
-func (l *MethodLibrary) NewReplaceFilter(config map[interface{}]interface{}) *ReplaceFilter {
+func init() {
+	Register("Replace", newReplaceFilter)
+}
+
+func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
 	p := &ReplaceFilter{
 		config: config,
 		fields: make([]replaceConfig, 0),
