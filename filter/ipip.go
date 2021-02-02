@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 	datx "github.com/ipipdotnet/datx-go"
@@ -22,7 +23,11 @@ type IPIPFilter struct {
 	overwrite bool
 }
 
-func (l *MethodLibrary) NewIPIPFilter(config map[interface{}]interface{}) *IPIPFilter {
+func init() {
+	Register("IPIP", newIPIPFilter)
+}
+
+func newIPIPFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &IPIPFilter{
 		config:    config,
 		target:    "geoip",

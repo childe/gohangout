@@ -1,56 +1,45 @@
 package filter
 
 import (
-	"fmt"
 	"plugin"
-	"reflect"
 	"strings"
 
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
-type MethodLibrary struct{}
+type BuildFilterFunc func(map[interface{}]interface{}) topology.Filter
 
-var methodLibrary *MethodLibrary = &MethodLibrary{}
+var registeredFilter map[string]BuildFilterFunc = make(map[string]BuildFilterFunc)
 
-func BuildFilter(filterType string, config map[interface{}]interface{}) topology.Filter {
-	method := reflect.ValueOf(methodLibrary).MethodByName("New" + filterType + "Filter")
-	if method.IsValid() {
-		return method.Call([]reflect.Value{reflect.ValueOf(config)})[0].Interface().(topology.Filter)
+// Register is used by input plugins to register themselves
+func Register(filterType string, bf BuildFilterFunc) {
+	if _, ok := registeredFilter[filterType]; ok {
+		glog.Errorf("%s has been registered, ignore %T", filterType, bf)
+		return
 	}
-
-	glog.Info("use third party plugin")
-
-	if !strings.HasSuffix(filterType, ".so") {
-		filterType = filterType + ".so"
-	}
-	p, err := getFilterFromPlugin(filterType, config)
-	if err != nil {
-		glog.Fatalf("could not load plugin from %s. %s", filterType, err)
-	}
-	return p
+	registeredFilter[filterType] = bf
 }
 
-func getFilterFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Filter, error) {
-	p, err := plugin.Open(pluginPath)
-	if err != nil {
-		return nil, fmt.Errorf("could not open %s: %s", pluginPath, err)
+func BuildFilter(filterType string, config map[interface{}]interface{}) topology.Filter {
+	if v, ok := registeredFilter[filterType]; ok {
+		return v(config)
 	}
-	newFunc, err := p.Lookup("New")
+	glog.Infof("could not load %s filter plugin, try third party plugin", filterType)
+
+	pluginPath := filterType
+	if !strings.HasSuffix(pluginPath, ".so") {
+		pluginPath = filterType + ".so"
+	}
+	_, err := plugin.Open(pluginPath)
 	if err != nil {
-		return nil, fmt.Errorf("could not find `New` function in %s: %s", pluginPath, err)
+		glog.Errorf("could not open %s: %s", pluginPath, err)
+		return nil
 	}
 
-	f, ok := newFunc.(func(map[interface{}]interface{}) interface{})
-	if !ok {
-		return nil, fmt.Errorf("`New` func in %s format error", pluginPath)
+	if v, ok := registeredFilter[filterType]; ok {
+		return v(config)
 	}
-
-	rst := f(config)
-	if filter, ok := rst.(topology.Filter); !ok {
-		return nil, fmt.Errorf("`New` func in %s dose not return Filter Interface", pluginPath)
-	} else {
-		return filter, nil
-	}
+	glog.Errorf("could not load %s filter plugin", filterType)
+	return nil
 }

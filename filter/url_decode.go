@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -14,7 +15,11 @@ type URLDecodeFilter struct {
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func (l *MethodLibrary) NewURLDecodeFilter(config map[interface{}]interface{}) *URLDecodeFilter {
+func init() {
+	Register("URLDecode", newURLDecodeFilter)
+}
+
+func newURLDecodeFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &URLDecodeFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),

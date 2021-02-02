@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -14,7 +15,11 @@ type LowercaseFilter struct {
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func (l *MethodLibrary) NewLowercaseFilter(config map[interface{}]interface{}) *LowercaseFilter {
+func init() {
+	Register("Lowercase", newLowercaseFilter)
+}
+
+func newLowercaseFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &LowercaseFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),

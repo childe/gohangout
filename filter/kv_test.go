@@ -9,7 +9,7 @@ func TestIncludeKeys(t *testing.T) {
 	config["src"] = "message"
 	config["include_keys"] = []interface{}{"a", "b", "c", "xyz"}
 	config["exclude_keys"] = []interface{}{"c"}
-	f := methodLibrary.NewKVFilter(config)
+	f := BuildFilter("KV", config)
 
 	event := make(map[string]interface{})
 	event["message"] = "a=aaa b=bbb c=ccc xyz=\txyzxyz\t d=ddd"
@@ -43,7 +43,7 @@ func TestKVFilter(t *testing.T) {
 	config["field_split"] = " "
 	config["value_split"] = "="
 	config["src"] = "message"
-	f := methodLibrary.NewKVFilter(config)
+	f := BuildFilter("KV", config)
 
 	event := make(map[string]interface{})
 	event["message"] = "a=aaa b=bbb c=ccc xyz=\txyzxyz\t d=ddd"
@@ -78,7 +78,7 @@ func TestKVFilter(t *testing.T) {
 	config["trim"] = "\t \""
 	config["trim_key"] = `"`
 	config["src"] = "message"
-	f = methodLibrary.NewKVFilter(config)
+	f = BuildFilter("KV", config)
 
 	event = make(map[string]interface{})
 	event["message"] = "a=aaa b=bbb xyz=\"\txyzxyz\t\" d=ddd"
