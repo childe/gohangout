@@ -1,6 +1,6 @@
 hash:=$(shell git rev-parse --short HEAD)
 
-.PHONY: gohangout all clean check
+.PHONY: gohangout all clean check test
 
 GIT_COMMIT := $(shell git rev-list -1 HEAD)
 
@@ -8,8 +8,7 @@ gohangout:
 	mkdir -p build/
 	go build -o build/gohangout -ldflags "-X main.gitCommit=$(GIT_COMMIT)"
 
-all:
-	make check
+all: check
 	@echo $(hash)
 	mkdir -p build/
 
@@ -24,3 +23,10 @@ clean:
 
 check:
 	git diff-index --quiet HEAD --
+
+test:
+	go test input/*.go
+	go test output/*.go
+	go test filter/*.go
+	go test condition_filter/*.go
+	go test value_render/*.go
