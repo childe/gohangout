@@ -26,7 +26,7 @@ func GetInput(inputType string, config map[interface{}]interface{}) topology.Inp
 	if v, ok := registeredInput[inputType]; ok {
 		return v(config)
 	}
-	glog.Info("could not load %s input plugin, try third party plugin", inputType)
+	glog.Infof("could not load %s input plugin, try third party plugin", inputType)
 
 	pluginPath := inputType
 	if !strings.HasSuffix(pluginPath, ".so") {
