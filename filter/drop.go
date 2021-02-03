@@ -2,7 +2,7 @@ package filter
 
 import "github.com/childe/gohangout/topology"
 
-type DropFilter struct {
+type dropFilter struct {
 	config map[interface{}]interface{}
 }
 
@@ -11,12 +11,12 @@ func init() {
 }
 
 func newDropFilter(config map[interface{}]interface{}) topology.Filter {
-	plugin := &DropFilter{
+	plugin := &dropFilter{
 		config: config,
 	}
 	return plugin
 }
 
-func (plugin *DropFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *dropFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	return nil, true
 }
