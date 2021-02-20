@@ -1,8 +1,8 @@
 package input
 
 import (
+	"fmt"
 	"plugin"
-	"strings"
 
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
@@ -29,18 +29,31 @@ func GetInput(inputType string, config map[interface{}]interface{}) topology.Inp
 	glog.Infof("could not load %s input plugin, try third party plugin", inputType)
 
 	pluginPath := inputType
-	if !strings.HasSuffix(pluginPath, ".so") {
-		pluginPath = inputType + ".so"
-	}
-	_, err := plugin.Open(pluginPath)
+	output, err := getInputFromPlugin(pluginPath, config)
 	if err != nil {
-		glog.Errorf("could not open %s: %s", pluginPath, err)
+		glog.Errorf("could not load %s: %v", pluginPath, err)
 		return nil
 	}
+	return output
+}
 
-	if v, ok := registeredInput[inputType]; ok {
-		return v(config)
+func getInputFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Input, error) {
+	p, err := plugin.Open(pluginPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open %s: %v", pluginPath, err)
 	}
-	glog.Errorf("could not load %s input plugin", inputType)
-	return nil
+	newFunc, err := p.Lookup("New")
+	if err != nil {
+		return nil, fmt.Errorf("could not find `New` function in %s: %s", pluginPath, err)
+	}
+	f, ok := newFunc.(func(map[interface{}]interface{}) interface{})
+	if !ok {
+		return nil, fmt.Errorf("`New` func in %s format error", pluginPath)
+	}
+	rst := f(config)
+	input, ok := rst.(topology.Input)
+	if !ok {
+		return nil, fmt.Errorf("`New` func in %s dose not return Input Interface", pluginPath)
+	}
+	return input, nil
 }
