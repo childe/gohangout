@@ -263,6 +263,11 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		p.password = v.(string)
 	}
 
+	debug := false
+	if v, ok := config["debug"]; ok {
+		debug = v.(bool)
+	}
+
 	if v, ok := config["fields"]; ok {
 		for _, f := range v.([]interface{}) {
 			p.fields = append(p.fields, f.(string))
@@ -276,7 +281,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	p.fieldsLength = len(p.fields)
 
 	fields := make([]string, p.fieldsLength)
-	for i, _ := range fields {
+	for i := range fields {
 		fields[i] = fmt.Sprintf(`"%s"`, p.fields[i])
 	}
 	questionMarks := make([]string, p.fieldsLength)
@@ -294,7 +299,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	dbs := make([]*sql.DB, 0)
 
 	for _, host := range p.hosts {
-		dataSourceName := fmt.Sprintf("%s?database=%s&username=%s&password=%s", host, p.getDatabase(), p.username, p.password)
+		dataSourceName := fmt.Sprintf("%s?database=%s&username=%s&password=%s&debug=%v", host, p.getDatabase(), p.username, p.password, debug)
 		if db, err := sql.Open("clickhouse", dataSourceName); err == nil {
 			if err := db.Ping(); err != nil {
 				if exception, ok := err.(*clickhouse.Exception); ok {
