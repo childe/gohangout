@@ -21,6 +21,7 @@ func Register(filterType string, bf BuildFilterFunc) {
 	registeredFilter[filterType] = bf
 }
 
+// BuildFilter builds Filter from filter type and config. it firstly tries built-in filter, and then try 3rd party plugin
 func BuildFilter(filterType string, config map[interface{}]interface{}) topology.Filter {
 	if v, ok := registeredFilter[filterType]; ok {
 		return v(config)
@@ -28,16 +29,12 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) topology
 	glog.Infof("could not load %s filter plugin, try third party plugin", filterType)
 
 	pluginPath := filterType
-	_, err := getFilterFromPlugin(pluginPath, config)
+	filter, err := getFilterFromPlugin(pluginPath, config)
 	if err != nil {
 		glog.Errorf("could not open %s: %s", pluginPath, err)
 		return nil
 	}
-
-	if v, ok := registeredFilter[filterType]; ok {
-		return v(config)
-	}
-	return nil
+	return filter
 }
 
 func getFilterFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Filter, error) {
