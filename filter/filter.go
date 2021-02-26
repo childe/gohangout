@@ -3,33 +3,38 @@ package filter
 import (
 	"fmt"
 	"plugin"
-	"reflect"
-	"strings"
 
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
-type MethodLibrary struct{}
+type BuildFilterFunc func(map[interface{}]interface{}) topology.Filter
 
-var methodLibrary *MethodLibrary = &MethodLibrary{}
+var registeredFilter map[string]BuildFilterFunc = make(map[string]BuildFilterFunc)
 
+// Register is used by input plugins to register themselves
+func Register(filterType string, bf BuildFilterFunc) {
+	if _, ok := registeredFilter[filterType]; ok {
+		glog.Errorf("%s has been registered, ignore %T", filterType, bf)
+		return
+	}
+	registeredFilter[filterType] = bf
+}
+
+// BuildFilter builds Filter from filter type and config. it firstly tries built-in filter, and then try 3rd party plugin
 func BuildFilter(filterType string, config map[interface{}]interface{}) topology.Filter {
-	method := reflect.ValueOf(methodLibrary).MethodByName("New" + filterType + "Filter")
-	if method.IsValid() {
-		return method.Call([]reflect.Value{reflect.ValueOf(config)})[0].Interface().(topology.Filter)
+	if v, ok := registeredFilter[filterType]; ok {
+		return v(config)
 	}
+	glog.Infof("could not load %s filter plugin, try third party plugin", filterType)
 
-	glog.Info("use third party plugin")
-
-	if !strings.HasSuffix(filterType, ".so") {
-		filterType = filterType + ".so"
-	}
-	p, err := getFilterFromPlugin(filterType, config)
+	pluginPath := filterType
+	filter, err := getFilterFromPlugin(pluginPath, config)
 	if err != nil {
-		glog.Fatalf("could not load plugin from %s. %s", filterType, err)
+		glog.Errorf("could not open %s: %s", pluginPath, err)
+		return nil
 	}
-	return p
+	return filter
 }
 
 func getFilterFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Filter, error) {
@@ -48,9 +53,9 @@ func getFilterFromPlugin(pluginPath string, config map[interface{}]interface{}) 
 	}
 
 	rst := f(config)
-	if filter, ok := rst.(topology.Filter); !ok {
+	filter, ok := rst.(topology.Filter)
+	if !ok {
 		return nil, fmt.Errorf("`New` func in %s dose not return Filter Interface", pluginPath)
-	} else {
-		return filter, nil
 	}
+	return filter, nil
 }

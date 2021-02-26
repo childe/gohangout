@@ -8,14 +8,13 @@ import (
 func TestDropFilter(t *testing.T) {
 	var (
 		config map[interface{}]interface{}
-		f      *DropFilter
 		event  map[string]interface{}
 		ok     bool
 	)
 
 	// test DropFilter without any condition
 	config = make(map[interface{}]interface{})
-	f = methodLibrary.NewDropFilter(config)
+	f := BuildFilter("Drop", config)
 
 	event = make(map[string]interface{})
 	event["@timestamp"] = time.Now().Unix()

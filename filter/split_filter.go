@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -22,7 +23,11 @@ type SplitFilter struct {
 	dynamicSep   bool
 }
 
-func (l *MethodLibrary) NewSplitFilter(config map[interface{}]interface{}) *SplitFilter {
+func init() {
+	Register("Split", newSplitFilter)
+}
+
+func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &SplitFilter{
 		config:      config,
 		fields:      make([]field_setter.FieldSetter, 0),

@@ -2,6 +2,7 @@ package filter
 
 import (
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -12,7 +13,11 @@ type AddFilter struct {
 	overwrite bool
 }
 
-func (l *MethodLibrary) NewAddFilter(config map[interface{}]interface{}) *AddFilter {
+func init() {
+	Register("Add", newAddFilter)
+}
+
+func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &AddFilter{
 		config:    config,
 		fields:    make(map[field_setter.FieldSetter]value_render.ValueRender),

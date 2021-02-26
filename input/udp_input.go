@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -20,7 +21,11 @@ type UDPInput struct {
 	stop     bool
 }
 
-func (lib *MethodLibrary) NewUDPInput(config map[interface{}]interface{}) *UDPInput {
+func init() {
+	Register("UDP", newUDPInput)
+}
+
+func newUDPInput(config map[interface{}]interface{}) topology.Input {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)

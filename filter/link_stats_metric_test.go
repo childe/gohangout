@@ -31,7 +31,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 	config["windowOffset"] = windowOffset
 	config["drop_original_event"] = drop_original_event
 
-	f = methodLibrary.NewLinkStatsMetricFilter(config)
+	f = (BuildFilter("LinkStatsMetric", config)).(*LinkStatsMetricFilter)
 	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
@@ -127,7 +127,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	config["windowOffset"] = windowOffset
 	config["drop_original_event"] = drop_original_event
 
-	f = methodLibrary.NewLinkStatsMetricFilter(config)
+	f = (BuildFilter("LinkStatsMetric", config)).(*LinkStatsMetricFilter)
 	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
@@ -280,7 +280,7 @@ func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
 	config["accumulateMode"] = accumulateMode
 	config["drop_original_event"] = drop_original_event
 
-	f = methodLibrary.NewLinkStatsMetricFilter(config)
+	f = (BuildFilter("LinkStatsMetric", config)).(*LinkStatsMetricFilter)
 	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()
@@ -317,7 +317,7 @@ func TestLinkStatsMetricFilterSeparateMode(t *testing.T) {
 	config["accumulateMode"] = accumulateMode
 	config["drop_original_event"] = drop_original_event
 
-	f = methodLibrary.NewLinkStatsMetricFilter(config)
+	f = (BuildFilter("LinkStatsMetric", config)).(*LinkStatsMetricFilter)
 	f.SetBelongTo(topology.NewFilterBox(config))
 
 	now := time.Now().Unix()

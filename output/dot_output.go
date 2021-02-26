@@ -1,15 +1,23 @@
 package output
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/childe/gohangout/topology"
+)
 
 type DotOutput struct {
 	config map[interface{}]interface{}
 }
 
-func (l *MethodLibrary) NewDotOutput(config map[interface{}]interface{}) *DotOutput {
+func newDotOutput(config map[interface{}]interface{}) topology.Output {
 	return &DotOutput{
 		config: config,
 	}
+}
+
+func init() {
+	Register("Dot", newDotOutput)
 }
 
 func (outputPlugin *DotOutput) Emit(event map[string]interface{}) {

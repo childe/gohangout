@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -14,7 +15,11 @@ type JsonFilter struct {
 	overwrite bool
 }
 
-func (l *MethodLibrary) NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
+func init() {
+	Register("Json", newJsonFilter)
+}
+
+func newJsonFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &JsonFilter{
 		overwrite: true,
 		target:    "",

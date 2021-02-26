@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -183,7 +184,11 @@ type GrokFilter struct {
 	vr        value_render.ValueRender
 }
 
-func (l *MethodLibrary) NewGrokFilter(config map[interface{}]interface{}) *GrokFilter {
+func init() {
+	Register("Grok", newGrokFilter)
+}
+
+func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
 	var patternPaths []string = make([]string, 0)
 	if i, ok := config["pattern_paths"]; ok {
 		for _, p := range i.([]interface{}) {

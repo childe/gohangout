@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -14,7 +15,11 @@ type UppercaseFilter struct {
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func (l *MethodLibrary) NewUppercaseFilter(config map[interface{}]interface{}) *UppercaseFilter {
+func init() {
+	Register("Uppercase", newUppercaseFilter)
+}
+
+func newUppercaseFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &UppercaseFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
