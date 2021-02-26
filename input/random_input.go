@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -19,7 +20,11 @@ type RandomInput struct {
 	count       int
 }
 
-func (l *MethodLibrary) NewRandomInput(config map[interface{}]interface{}) *RandomInput {
+func init() {
+	Register("Random", newRandomInput)
+}
+
+func newRandomInput(config map[interface{}]interface{}) topology.Input {
 	var codertype string = "plain"
 
 	p := &RandomInput{

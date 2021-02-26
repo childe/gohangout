@@ -13,10 +13,8 @@ import (
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
-	jsoniter "github.com/json-iterator/go"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var options = &struct {
 	config     string
 	autoReload bool // 配置文件更新自动重启
@@ -26,10 +24,10 @@ var options = &struct {
 	memprofile string
 }{}
 
-var gitCommit string
+var version string = "1.6.0"
 
 func printVersion() {
-	glog.Info("Current build version: ", gitCommit)
+	fmt.Printf("gohangout version %s\n", version)
 }
 
 var (
@@ -46,10 +44,6 @@ func init() {
 	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
 
 	flag.Parse()
-}
-
-func init() {
-	printVersion()
 }
 
 func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, err error) {
@@ -85,7 +79,7 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 }
 
 func main() {
-	// flush保证停止的时候日志都写入了文件中
+	printVersion()
 	defer glog.Flush()
 
 	if options.pprof {

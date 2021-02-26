@@ -9,6 +9,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -63,7 +64,11 @@ func (plugin *TranslateFilter) parseDict() error {
 	return nil
 }
 
-func (l *MethodLibrary) NewTranslateFilter(config map[interface{}]interface{}) *TranslateFilter {
+func init() {
+	Register("Translate", newTranslateFilter)
+}
+
+func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &TranslateFilter{
 		config: config,
 	}

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -109,7 +110,11 @@ type ConvertFilter struct {
 	fields map[field_setter.FieldSetter]ConveterAndRender
 }
 
-func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
+func init() {
+	Register("Convert", newConvertFilter)
+}
+
+func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &ConvertFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]ConveterAndRender),

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -35,15 +36,17 @@ type ClickhouseOutput struct {
 	desc         map[string]*rowDesc
 	defaultValue map[string]interface{} // columnName -> defaultValue
 
-	bulkChan chan []map[string]interface{}
+	bulkChan   chan []map[string]interface{}
+	concurrent int
 
 	events       []map[string]interface{}
 	execution_id uint64
 
 	dbSelector HostSelector
 
-	mux sync.Mutex
-	wg  sync.WaitGroup
+	mux       sync.Mutex
+	wg        sync.WaitGroup
+	closeChan chan bool
 }
 
 type rowDesc struct {
@@ -166,7 +169,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 				if e == nil {
 					c.defaultValue[columnName] = i
 				} else {
-					glog.Fatalf("parse default value `%v` error: %v", e)
+					glog.Fatalf("parse default value `%v` error: %v", defaultValue, e)
 				}
 			}
 		case "Float32", "Float64":
@@ -177,7 +180,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 				if e == nil {
 					c.defaultValue[columnName] = i
 				} else {
-					glog.Fatalf("parse default value `%v` error: %v", e)
+					glog.Fatalf("parse default value `%v` error: %v", defaultValue, e)
 				}
 			}
 		case "IPv4":
@@ -228,7 +231,11 @@ func (c *ClickhouseOutput) getDatabase() string {
 	return dbName
 }
 
-func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) *ClickhouseOutput {
+func init() {
+	Register("Clickhouse", newClickhouseOutput)
+}
+
+func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
 		config: config,
@@ -256,6 +263,11 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 		p.password = v.(string)
 	}
 
+	debug := false
+	if v, ok := config["debug"]; ok {
+		debug = v.(bool)
+	}
+
 	if v, ok := config["fields"]; ok {
 		for _, f := range v.([]interface{}) {
 			p.fields = append(p.fields, f.(string))
@@ -269,7 +281,7 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	p.fieldsLength = len(p.fields)
 
 	fields := make([]string, p.fieldsLength)
-	for i, _ := range fields {
+	for i := range fields {
 		fields[i] = fmt.Sprintf(`"%s"`, p.fields[i])
 	}
 	questionMarks := make([]string, p.fieldsLength)
@@ -287,7 +299,7 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	dbs := make([]*sql.DB, 0)
 
 	for _, host := range p.hosts {
-		dataSourceName := fmt.Sprintf("%s?database=%s&username=%s&password=%s", host, p.getDatabase(), p.username, p.password)
+		dataSourceName := fmt.Sprintf("%s?database=%s&username=%s&password=%s&debug=%v", host, p.getDatabase(), p.username, p.password, debug)
 		if db, err := sql.Open("clickhouse", dataSourceName); err == nil {
 			if err := db.Ping(); err != nil {
 				if exception, ok := err.(*clickhouse.Exception); ok {
@@ -321,13 +333,21 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	if v, ok := config["concurrent"]; ok {
 		concurrent = v.(int)
 	}
+	p.concurrent = concurrent
+	p.closeChan = make(chan bool, concurrent)
 
 	p.bulkChan = make(chan []map[string]interface{}, concurrent)
 	for i := 0; i < concurrent; i++ {
 		go func() {
+			p.wg.Add(1)
 			for {
-				events := <-p.bulkChan
-				p.innerFlush(events)
+				select {
+				case events := <-p.bulkChan:
+					p.innerFlush(events)
+				case <-p.closeChan:
+					p.wg.Done()
+					return
+				}
 			}
 		}()
 	}
@@ -346,26 +366,19 @@ func (l *MethodLibrary) NewClickhouseOutput(config map[interface{}]interface{}) 
 	}
 	go func() {
 		for range time.NewTicker(time.Second * time.Duration(flush_interval)).C {
-			p.Flush()
+			p.flush()
 		}
 	}()
 
 	return p
 }
 
-func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
-	if len(events) == 0 {
-		return
-	}
-
-	execution_id := atomic.AddUint64(&p.execution_id, 1)
+func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
+	execution_id := atomic.AddUint64(&c.execution_id, 1)
 	glog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
 
-	p.wg.Add(1)
-	defer p.wg.Done()
-
 	for {
-		nextdb := p.dbSelector.Next()
+		nextdb := c.dbSelector.Next()
 
 		/*** not ReduceWeight for now , so this should not happen
 		if nextdb == nil {
@@ -382,7 +395,7 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		}
 		defer tx.Rollback()
 
-		stmt, err := tx.Prepare(p.query)
+		stmt, err := tx.Prepare(c.query)
 		if err != nil {
 			glog.Errorf("transaction prepare statement error: %s", err)
 			return
@@ -390,12 +403,12 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		defer stmt.Close()
 
 		for _, event := range events {
-			args := make([]interface{}, p.fieldsLength)
-			for i, field := range p.fields {
+			args := make([]interface{}, c.fieldsLength)
+			for i, field := range c.fields {
 				if v, ok := event[field]; ok && v != nil {
 					args[i] = v
 				} else {
-					if vv, ok := p.defaultValue[field]; ok {
+					if vv, ok := c.defaultValue[field]; ok {
 						args[i] = vv
 					} else { // this should not happen
 						args[i] = ""
@@ -417,34 +430,37 @@ func (p *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	}
 }
 
-func (p *ClickhouseOutput) Flush() {
-	p.mux.Lock()
-	if len(p.events) > 0 {
-		events := p.events
-		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-		p.bulkChan <- events
+func (c *ClickhouseOutput) flush() {
+	c.mux.Lock()
+	if len(c.events) > 0 {
+		events := c.events
+		c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+		c.bulkChan <- events
 	}
-	p.mux.Unlock()
+	c.mux.Unlock()
 }
 
-func (p *ClickhouseOutput) Emit(event map[string]interface{}) {
-	p.mux.Lock()
-	p.events = append(p.events, event)
-
-	if len(p.events) >= p.bulk_actions {
-		events := p.events
-		p.events = make([]map[string]interface{}, 0, p.bulk_actions)
-		p.bulkChan <- events
+// Emit appends event to c.events, and push to bulkChan if needed
+func (c *ClickhouseOutput) Emit(event map[string]interface{}) {
+	c.mux.Lock()
+	c.events = append(c.events, event)
+	if len(c.events) < c.bulk_actions {
+		c.mux.Unlock()
+		return
 	}
 
-	p.mux.Unlock()
+	events := c.events
+	c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+	c.mux.Unlock()
+
+	c.bulkChan <- events
 }
 
-func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
-	c := make(chan bool)
+func (c *ClickhouseOutput) awaitclose(timeout time.Duration) {
+	exit := make(chan bool)
 	defer func() {
 		select {
-		case <-c:
+		case <-exit:
 			glog.Info("all clickhouse flush job done. return")
 			return
 		case <-time.After(timeout):
@@ -455,18 +471,50 @@ func (p *ClickhouseOutput) awaitclose(timeout time.Duration) {
 
 	defer func() {
 		go func() {
-			p.wg.Wait()
-			c <- true
+			c.wg.Wait()
+			exit <- true
 		}()
 	}()
 
-	p.wg.Add(1)
-	go func() {
-		p.Flush()
-		p.wg.Done()
-	}()
+	glog.Info("try to write remaining docs to clickhouse")
+
+	c.mux.Lock()
+	if len(c.events) <= 0 {
+		glog.Info("no docs remain, return")
+		c.mux.Unlock()
+	} else {
+		events := c.events
+		c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+		c.mux.Unlock()
+
+		glog.Infof("ramain %d docs, write them to clickhouse", len(events))
+		c.wg.Add(1)
+		go func() {
+			c.innerFlush(events)
+			c.wg.Done()
+		}()
+	}
+
+	glog.Info("check if there are events blocking in bulk channel")
+
+	for {
+		select {
+		case events := <-c.bulkChan:
+			c.wg.Add(1)
+			go func() {
+				c.innerFlush(events)
+				c.wg.Done()
+			}()
+		default:
+			return
+		}
+	}
 }
 
-func (p *ClickhouseOutput) Shutdown() {
-	p.awaitclose(30 * time.Second)
+// Shutdown would stop receiving message and emiting
+func (c *ClickhouseOutput) Shutdown() {
+	for i := 0; i < c.concurrent; i++ {
+		c.closeChan <- true
+	}
+	c.awaitclose(30 * time.Second)
 }

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -114,6 +115,14 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 	return bulkProcessor
 }
 
+func (p *HTTPBulkProcessor) resetHosts(hosts []string) {
+	hostsI := make([]interface{}, 0)
+	for _, h := range hosts {
+		hostsI = append(hostsI, h)
+	}
+	p.hostSelector = NewRRHostSelector(hostsI, 3)
+}
+
 func (p *HTTPBulkProcessor) add(event Event) {
 	p.mux.Lock()
 	p.bulkRequest.add(event)
@@ -153,7 +162,7 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 
 		glog.Infof("try to bulk with host (%s)", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"))
 
-		url := host
+		url := strings.TrimRight(host, "/") + "/_bulk"
 		success, shouldRetry, noRetry, newBulkRequest := p.tryOneBulk(url, bulkRequest)
 		if success {
 			_finishTime := float64(time.Now().UnixNano()/1000000) / 1000

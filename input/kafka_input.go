@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
 )
@@ -21,7 +22,11 @@ type KafkaInput struct {
 	consumers      []*healer.Consumer
 }
 
-func (l *MethodLibrary) NewKafkaInput(config map[interface{}]interface{}) *KafkaInput {
+func init() {
+	Register("Kafka", newKafkaInput)
+}
+
+func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 	var (
 		codertype      string = "plain"
 		decorateEvents        = false
@@ -128,6 +133,8 @@ func (l *MethodLibrary) NewKafkaInput(config map[interface{}]interface{}) *Kafka
 	return kafkaInput
 }
 
+// ReadOneEvent implement method in topology.Input.
+// gohangout call this method to get one event and pass it to filter or output
 func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 	message, more := <-p.messages
 	if !more {
@@ -149,6 +156,7 @@ func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 	return event
 }
 
+// Shutdown implement method in topology.Input. It closes all consumers
 func (p *KafkaInput) Shutdown() {
 	if len(p.groupConsumers) > 0 {
 		for _, c := range p.groupConsumers {

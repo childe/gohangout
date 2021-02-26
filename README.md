@@ -1,3 +1,5 @@
+[ENG](https://github.com/childe/gohangout/blob/master/README-EN.md#input)
+
 之前因为 [logstash](https://www.elastic.co/products/logstash) 处理数据的效率比较低, 用 java 模仿 Logstash 写了一个java版本的 [https://github.com/childe/hangout](https://github.com/childe/hangout).  不知道现在 Logstash 效率怎么样了, 很久不用了.
 
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
@@ -51,7 +53,7 @@ gohangout --config config.yml
 日志打印出标准错误
 
 -  -v 5
-设置日志级别.  我这边一般设置到 5 , 数字越大, 日志级别越详细.
+设置日志级别.  我这边一般设置到 5. 如果要看更详细的日志, 可以设置到 10 或者20
 
 ### pprof debug
 
@@ -333,6 +335,9 @@ Elasticsearch:
     hosts:
         - 'http://10.0.0.100:9200'
         - 'http://admin:password@10.0.0.101:9200'
+    # sniff:
+        # refresh_interval: 3600
+        # match: 'EQ($.attributes.type,"hot")'
     index: 'web-%{appid}-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
     index_time_location: 'Local'
     index_type: "logs"
@@ -346,6 +351,15 @@ Elasticsearch:
     es_version: 7
     retry_response_code: [401, 502]
 ```
+
+#### sniff
+
+[功能需求 es output 支持特定节点名的 sniffer](#117) 
+
+- refresh_interval 是指多后台长时间去 Sniff 一次, 设置为 0 的话不会在后台刷新
+- match 是过滤条件, 符合条件的节点才会加到 Bulk 使用的列表中
+
+Sniff 会调用 `_nodes/_all/http` 获取节点信息, 返回 `publish_address` 信息
 
 #### index_time_location
 
