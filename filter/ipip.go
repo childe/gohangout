@@ -101,7 +101,9 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 		event["country_name"] = a[0]
 		event["province_name"] = a[1]
 		event["city_name"] = a[2]
-		event["isp"] = a[4]
+		if len(a) >= 5 {
+			event["isp"] = a[4]
+		}
 		if len(a) >= 10 {
 			latitude, _ := strconv.ParseFloat(a[5], 10)
 			longitude, _ := strconv.ParseFloat(a[6], 10)
@@ -115,7 +117,9 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 		target["country_name"] = a[0]
 		target["province_name"] = a[1]
 		target["city_name"] = a[2]
-		target["isp"] = a[4]
+		if len(a) >= 5 {
+			target["isp"] = a[4]
+		}
 		if len(a) >= 10 {
 			latitude, _ := strconv.ParseFloat(a[5], 10)
 			longitude, _ := strconv.ParseFloat(a[6], 10)
