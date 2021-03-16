@@ -20,15 +20,26 @@ type InputBox struct {
 	once               sync.Once
 	shutdownChan       chan bool
 
+	shutdownWhenNil    bool
+	mainThreadExitChan chan struct{}
+
 	addFields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, config map[string]interface{}) *InputBox {
+// SetShutdownWhenNil is used for benchmark.
+// Gohangout main thread would exit when one input box receive a nil message, such as Ctrl-D in Stdin input
+func (box *InputBox) SetShutdownWhenNil(shutdownWhenNil bool) {
+	box.shutdownWhenNil = shutdownWhenNil
+}
+
+func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, config map[string]interface{}, mainThreadExitChan chan struct{}) *InputBox {
 	b := &InputBox{
 		input:        input,
 		config:       config,
 		stop:         false,
 		shutdownChan: make(chan bool, 1),
+
+		mainThreadExitChan: mainThreadExitChan,
 	}
 	if add_fields, ok := inputConfig["add_fields"]; ok {
 		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
@@ -56,9 +67,9 @@ func (box *InputBox) beat(workerIdx int) {
 	for !box.stop {
 		event = box.input.ReadOneEvent()
 		if event == nil {
-			if !box.stop {
+			if !box.stop && box.shutdownWhenNil {
 				glog.Info("receive nil message. shutdown...")
-				box.shutdown()
+				box.mainThreadExitChan <- struct{}{}
 			}
 			return
 		}
