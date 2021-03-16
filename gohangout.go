@@ -34,6 +34,34 @@ var (
 	worker = flag.Int("worker", 1, "worker thread count")
 )
 
+type gohangoutInputs []*input.InputBox
+
+var inputs gohangoutInputs
+
+var mainThreadExitChan chan struct{} = make(chan struct{}, 0)
+
+func (inputs gohangoutInputs) start() {
+	boxes := ([]*input.InputBox)(inputs)
+	var wg sync.WaitGroup
+	wg.Add(len(boxes))
+
+	for i := range boxes {
+		go func(i int) {
+			defer wg.Done()
+			boxes[i].Beat(*worker)
+		}(i)
+	}
+
+	wg.Wait()
+}
+
+func (inputs gohangoutInputs) stop() {
+	boxes := ([]*input.InputBox)(inputs)
+	for _, box := range boxes {
+		box.Shutdown()
+	}
+}
+
 func init() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
 	flag.BoolVar(&options.autoReload, "reload", options.autoReload, "if auto reload while config file changed")
@@ -112,44 +140,45 @@ func main() {
 		}()
 	}
 
+	config, err := parseConfig(options.config)
+	if err != nil {
+		glog.Fatalf("could not parse config: %v", err)
+	}
+	boxes, err := buildPluginLink(config)
+	if err != nil {
+		glog.Fatalf("build plugin link error: %v", err)
+	}
+	inputs = gohangoutInputs(boxes)
+	go inputs.start()
+
 	go func() {
-		// 监听配置文件更新
 		for cfg := range configChannel {
-			// 停止所有的流水线
-			StopBoxesBeat()
-			// 重新根据配置文件加载流水线
-			newBoxes, err := buildPluginLink(cfg)
+			inputs.stop()
+			boxes, err := buildPluginLink(cfg)
 			if err == nil {
-				boxes = newBoxes
-				// 如果没报错才会执行更新
-				go StartBoxesBeat()
+				inputs = gohangoutInputs(boxes)
+				go inputs.start()
 			} else {
-				glog.Errorf("build plugin link fail: %s", err)
+				glog.Errorf("build plugin link error: %v", err)
+				exit()
 			}
 		}
 	}()
 
-	// 初始化配置文件
 	if options.autoReload {
 		if err := watchConfig(options.config, configChannel); err != nil {
 			glog.Fatalf("watch config fail: %s", err)
 		}
-	} else {
-		config, err := parseConfig(options.config)
-		if err != nil {
-			glog.Fatalf("could not parse config:%s", err)
-		}
-		glog.Infof("config:\n%s", removeSensitiveInfo(config))
-		configChannel <- config
 	}
 
-	listenSignal()
+	go listenSignal()
+
+	<-mainThreadExitChan
 }
 
-var boxes []*input.InputBox
 var configChannel = make(chan map[string]interface{})
 
-func StartBoxesBeat() {
+func startBoxesBeat(boxes []*input.InputBox) {
 	var wg sync.WaitGroup
 	wg.Add(len(boxes))
 
@@ -163,10 +192,12 @@ func StartBoxesBeat() {
 	wg.Wait()
 }
 
-func StopBoxesBeat() {
+func stopBoxesBeat(boxes []*input.InputBox) {
 	for _, box := range boxes {
 		box.Shutdown()
 	}
+}
 
-	boxes = make([]*input.InputBox, 0)
+func exit() {
+	mainThreadExitChan <- struct{}{}
 }
