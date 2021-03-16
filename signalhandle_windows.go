@@ -1,3 +1,5 @@
+// +build windows
+
 package main
 
 import (
@@ -19,7 +21,7 @@ func listenSignal() {
 		glog.Infof("capture signal: %v", sig)
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
-			StopBoxesBeat()
+			inputs.stop()
 			close(configChannel)
 			stop = true
 		}
