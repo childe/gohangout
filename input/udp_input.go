@@ -1,7 +1,6 @@
 package input
 
 import (
-	"bufio"
 	"net"
 
 	"github.com/childe/gohangout/codec"
@@ -9,15 +8,20 @@ import (
 	"github.com/golang/glog"
 )
 
+type msg struct {
+	message []byte
+	addr    *net.UDPAddr
+}
 type UDPInput struct {
-	config  map[interface{}]interface{}
-	network string
-	address string
+	config        map[interface{}]interface{}
+	network       string
+	address       string
+	addRemoteAddr string
 
 	decoder codec.Decoder
 
 	conn     *net.UDPConn
-	messages chan []byte
+	messages chan msg
 	stop     bool
 }
 
@@ -34,7 +38,7 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 	p := &UDPInput{
 		config:   config,
 		decoder:  codec.NewDecoder(codertype),
-		messages: make(chan []byte, 10),
+		messages: make(chan msg, 10),
 	}
 
 	if v, ok := config["max_length"]; ok {
@@ -69,26 +73,28 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 	}
 	p.conn = conn
 
-	scanner := bufio.NewScanner(conn)
-	if v, ok := config["max_length"]; ok {
-		max := v.(int)
-		scanner.Buffer(make([]byte, 0, max), max)
+	if v, ok := config["add_remote_addr"]; ok {
+		p.addRemoteAddr = v.(string)
 	}
+
+	var max int = 65535
+	if v, ok := config["max_length"]; ok {
+		max = v.(int)
+	}
+
 	go func() {
-		for {
-			for scanner.Scan() {
-				t := scanner.Bytes()
-				buf := make([]byte, len(t))
-				copy(buf, t)
-				p.messages <- buf
+		for !p.stop {
+			buf := make([]byte, max)
+			n, addr, err := p.conn.ReadFromUDP(buf)
+			if err != nil {
+				if p.stop {
+					return
+				}
+				glog.Errorf("read from UDP error: %v", err)
 			}
-
-			if p.stop {
-				return
-			}
-
-			if err := scanner.Err(); err != nil {
-				glog.Errorf("read from %v->%v error: %v", p.conn.RemoteAddr(), p.conn.LocalAddr(), err)
+			p.messages <- msg{
+				message: buf[:n],
+				addr:    addr,
 			}
 		}
 	}()
@@ -96,11 +102,17 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 }
 
 func (p *UDPInput) ReadOneEvent() map[string]interface{} {
-	text, more := <-p.messages
-	if !more || text == nil {
+	msg, more := <-p.messages
+	if !more {
 		return nil
 	}
-	return p.decoder.Decode(text)
+	event := p.decoder.Decode(msg.message)
+
+	if p.addRemoteAddr != "" && msg.addr != nil {
+		event[p.addRemoteAddr] = msg.addr.IP.String()
+	}
+
+	return event
 }
 
 func (p *UDPInput) Shutdown() {
