@@ -482,7 +482,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	var (
 		index      string = p.index.Render(event).(string)
 		index_type string = p.index_type.Render(event).(string)
-		op         string = "index"
+		op         string = "create"
 		es_version int    = p.es_version
 		id         string
 		routing    string
