@@ -2,6 +2,7 @@ package filter
 
 import (
 	"github.com/childe/gohangout/field_deleter"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -10,7 +11,11 @@ type RemoveFilter struct {
 	fieldsDeleters []field_deleter.FieldDeleter
 }
 
-func (l *MethodLibrary) NewRemoveFilter(config map[interface{}]interface{}) *RemoveFilter {
+func init() {
+	Register("Remove", newRemoveFilter)
+}
+
+func newRemoveFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &RemoveFilter{
 		config:         config,
 		fieldsDeleters: make([]field_deleter.FieldDeleter, 0),

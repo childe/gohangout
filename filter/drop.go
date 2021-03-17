@@ -1,16 +1,22 @@
 package filter
 
-type DropFilter struct {
+import "github.com/childe/gohangout/topology"
+
+type dropFilter struct {
 	config map[interface{}]interface{}
 }
 
-func (l *MethodLibrary) NewDropFilter(config map[interface{}]interface{}) *DropFilter {
-	plugin := &DropFilter{
+func init() {
+	Register("Drop", newDropFilter)
+}
+
+func newDropFilter(config map[interface{}]interface{}) topology.Filter {
+	plugin := &dropFilter{
 		config: config,
 	}
 	return plugin
 }
 
-func (plugin *DropFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *dropFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	return nil, true
 }

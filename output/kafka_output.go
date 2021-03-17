@@ -1,11 +1,18 @@
 package output
 
 import (
+	"encoding/json"
+
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
 )
+
+func init() {
+	Register("Kafka", newKafkaOutput)
+}
 
 type KafkaOutput struct {
 	config map[interface{}]interface{}
@@ -16,7 +23,7 @@ type KafkaOutput struct {
 	key      value_render.ValueRender
 }
 
-func (l *MethodLibrary) NewKafkaOutput(config map[interface{}]interface{}) *KafkaOutput {
+func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 	p := &KafkaOutput{
 		config: config,
 	}
@@ -27,32 +34,33 @@ func (l *MethodLibrary) NewKafkaOutput(config map[interface{}]interface{}) *Kafk
 		p.encoder = codec.NewEncoder("json")
 	}
 
-	producerConfig := healer.DefaultProducerConfig()
+	pc, ok := config["producer_settings"]
+	if !ok {
+		glog.Fatal("kafka output must have producer_settings")
+	}
+	newPc := make(map[string]interface{})
+	for k, v := range pc.(map[interface{}]interface{}) {
+		newPc[k.(string)] = v
+	}
+	producer_settings := make(map[string]interface{})
+	if b, err := json.Marshal(newPc); err != nil {
+		glog.Fatalf("could not init kafka producer config: %v", err)
+	} else {
+		json.Unmarshal(b, &producer_settings)
+	}
+
+	glog.Info(producer_settings)
+
+	producerConfig, err := healer.GetProducerConfig(producer_settings)
+	if err != nil {
+		glog.Fatalf("could not init kafka producer config: %v", err)
+	}
 
 	var topic string
 	if v, ok := config["topic"]; !ok {
 		glog.Fatal("kafka output must have topic setting")
 	} else {
 		topic = v.(string)
-	}
-
-	if v, ok := config["bootstrap.servers"]; !ok {
-		glog.Fatal("kafka output must have bootstrap.servers setting")
-	} else {
-		producerConfig.BootstrapServers = v.(string)
-	}
-
-	if v, ok := config["compression.type"]; ok {
-		producerConfig.CompressionType = v.(string)
-	}
-	if v, ok := config["message.max.count"]; ok {
-		producerConfig.MessageMaxCount = v.(int)
-	}
-	if v, ok := config["flush.interval.ms"]; ok {
-		producerConfig.FlushIntervalMS = v.(int)
-	}
-	if v, ok := config["metadata.max.age.ms"]; ok {
-		producerConfig.MetadataMaxAgeMS = v.(int)
 	}
 
 	p.producer = healer.NewProducer(topic, producerConfig)

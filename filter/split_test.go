@@ -10,7 +10,7 @@ func TestSplitFilter(t *testing.T) {
 	config["sep"] = " "
 	config["maxSplit"] = 4
 	config["trim"] = "[]"
-	f := methodLibrary.NewSplitFilter(config)
+	f := BuildFilter("Split", config)
 
 	event := make(map[string]interface{})
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`
@@ -44,7 +44,7 @@ func TestSplitFilter(t *testing.T) {
 	config["sep"] = "] "
 	config["maxSplit"] = 3
 	config["trim"] = "[]"
-	f = methodLibrary.NewSplitFilter(config)
+	f = BuildFilter("Split", config)
 
 	event = make(map[string]interface{})
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`
@@ -76,7 +76,7 @@ func TestSplitFilter(t *testing.T) {
 	config["dynamicSep"] = true
 	config["maxSplit"] = 3
 	config["trim"] = "[]"
-	f = methodLibrary.NewSplitFilter(config)
+	f = BuildFilter("Split", config)
 
 	event = make(map[string]interface{})
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`

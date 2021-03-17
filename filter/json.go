@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -14,7 +15,11 @@ type JsonFilter struct {
 	overwrite bool
 }
 
-func (l *MethodLibrary) NewJsonFilter(config map[interface{}]interface{}) *JsonFilter {
+func init() {
+	Register("Json", newJsonFilter)
+}
+
+func newJsonFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &JsonFilter{
 		overwrite: true,
 		target:    "",
@@ -52,7 +57,7 @@ func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]inter
 
 		if plugin.target == "" {
 			if reflect.TypeOf(o).Kind() != reflect.Map {
-				glog.Errorf("%s is not map. must set target", plugin.field)
+				glog.V(5).Infof("%s field is not map type, `target` must be set in config file", plugin.field)
 				return event, false
 			}
 			if plugin.overwrite {
@@ -73,5 +78,4 @@ func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]inter
 	} else {
 		return event, false
 	}
-	return event, false
 }

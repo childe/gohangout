@@ -1,3 +1,5 @@
+[ENG](https://github.com/childe/gohangout/blob/master/README-EN.md#input)
+
 之前因为 [logstash](https://www.elastic.co/products/logstash) 处理数据的效率比较低, 用 java 模仿 Logstash 写了一个java版本的 [https://github.com/childe/hangout](https://github.com/childe/hangout).  不知道现在 Logstash 效率怎么样了, 很久不用了.
 
 后来因为Java的太吃内存了, 而且自己对java不熟, 又加上想学习一下golang, 就用golang又写了一次. 内存问题得到了很大的缓解. 目前我们使用golang版本的gohangout每天处理2000亿条以上的数据.
@@ -30,6 +32,13 @@
 
   > go get github.com/childe/gohangout
 
+### 第三方 Plugin
+
+- 开发 Plugin 的例子 [gohangout-plugin-examples](https://github.com/childe/gohangout-plugin-examples)
+- [使用sarama 的Kafka Input](https://github.com/DukeAnn/gohangout-input-kafka_sarama)
+- [使用kafka-go 的Kafka Input](https://github.com/huangjacky/gohangout-input-kafkago)
+- [Redis Input](https://github.com/childe/gohangout-input-redis)
+- [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) 一条消息Split 成多条
 
 
 ## 运行
@@ -44,7 +53,7 @@ gohangout --config config.yml
 日志打印出标准错误
 
 -  -v 5
-设置日志级别.  我这边一般设置到 5 , 数字越大, 日志级别越详细.
+设置日志级别.  我这边一般设置到 5. 如果要看更详细的日志, 可以设置到 10 或者20
 
 ### pprof debug
 
@@ -68,6 +77,15 @@ pprof 的http地址
 最开始是没有这个配置的, 如果需要多线程并发处理数据, 依赖 Input 里面的配置, 比如说 Kafka 配置 `topicname: 2` 就是两个线程去消费(需要 Topic 有至少2个Partition, 保证每个线程可以消费到一个 Partition 里面的数据).
 
 但是后面出现一些矛盾, 比如说, Kafka 的 Consumer 个数多的情况下, 给 Kafka 带来更大压力, 可能导致 Rebalance 更频繁等. 所以如果 Kafka 消费数据没有瓶颈的情况下, 希望控制尽量少的 Consumer, 后面多线程的处理这些数据.
+
+### 自动更新配置
+
+默认不会监听文件系统更新，只在首次初始化时加载配置
+--reload
+
+开启这个参数后，当配置文件发生改变会马上触发shutdown，然后重新加载配置文件后运行
+
+除此之外，`kill -USR1 $pid`也会触发重新加载配置文件
 
 ## 开发新的插件
 
@@ -158,16 +176,24 @@ $.store.book[?(@.price < 10)].title
 
 如果含有 `{{XXX}}` 的内容, 就认为是 golang template 格式, 具体语法可以参考 [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/). 前后及中间可以含有别的内容, 像 `name: 'my name is {{.firstname}}.{{.lastname}}'`
 
+来举个例子吧, Date Filter 得到一个 Time 类型的字段, 然后按自己的格式格式化一个字符串出来
+
+```
+Add:
+  fields:
+    ts: '{{ .ts.Format "2006.01.02" }}'
+```
+
 ### 格式4 %{XXX}
 
-含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} {%time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
+含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} %{time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
 
 2006 01 02 15 06 05 这几个数字是 golang 里面特定的数字, 代表年月日时分秒. 1月2号3点4分5秒06年. 其实就像hangout里面的YYYY MM dd HH mm SS
 
 
 ### 格式5 除了1,2,3,4 之外的其它
 
-在不同Filter中, 可能意义不同. 像 Date 中的 src: logtime, 是说取 logtime 字段的值.  
+在不同Filter中, 可能意义不同. 像 Date 中的 src: logtime, 是说取 logtime 字段的值.
 Elasticsearch 中的 index_type: logs , 这里的 logs 不是指字段名, 就是字面值.
 
 
@@ -215,6 +241,7 @@ TCP:
 
 ```
 Kafka:
+    decorate_events: false
     topic:
         weblog: 1
     #assign:
@@ -232,6 +259,12 @@ Kafka:
 ```
 
 **特别注意** 参数需要是字符串, 像 `auto.commit.interval.ms: '5000'` , 以及 `from.beginning: 'true'` , 等等
+
+#### decorate_events
+
+默认为 false
+配置为 true 的话, 可以把 topic/partition/offset 信息添加到 ["@metadata"]["kafka"] 字段中
+
 
 #### topic
 
@@ -302,6 +335,9 @@ Elasticsearch:
     hosts:
         - 'http://10.0.0.100:9200'
         - 'http://admin:password@10.0.0.101:9200'
+    # sniff:
+        # refresh_interval: 3600
+        # match: 'EQ($.attributes.type,"hot")'
     index: 'web-%{appid}-%{+2006-01-02}' #golang里面的渲染方式就是用数字, 而不是用YYMM.
     index_time_location: 'Local'
     index_type: "logs"
@@ -312,12 +348,22 @@ Elasticsearch:
     flush_interval: 60
     concurrent: 3
     compress: false
+    es_version: 7
     retry_response_code: [401, 502]
 ```
 
+#### sniff
+
+[功能需求 es output 支持特定节点名的 sniffer](#117) 
+
+- refresh_interval 是指多后台长时间去 Sniff 一次, 设置为 0 的话不会在后台刷新
+- match 是过滤条件, 符合条件的节点才会加到 Bulk 使用的列表中
+
+Sniff 会调用 `_nodes/_all/http` 获取节点信息, 返回 `publish_address` 信息
+
 #### index_time_location
 
-渲染索引名字时, 使用什么时区. 默认是 UTC. 北京时间 2019-10-25 07:00:00 的日志, 会写到 2019.10.24 这个索引中. 
+渲染索引名字时, 使用什么时区. 默认是 UTC. 北京时间 2019-10-25 07:00:00 的日志, 会写到 2019.10.24 这个索引中.
 
 内容如 `Asia/Shanghai` 等, 参考 [https://timezonedb.com/time-zones](https://timezonedb.com/time-zones)
 
@@ -354,6 +400,10 @@ bulk 的goroutine 最大值, 默认1
 
 默认 true, http请求时做zip压缩
 
+#### es_version
+
+默认为6，可以适配es6的版本，如果设置为7，则可以适配Elasticsearch7以上版本
+
 #### retry_response_code
 
 默认 [401, 502] , 当Bulk请求的返回码是401或者502时, 会重试.
@@ -371,11 +421,28 @@ bytes_source_field优先级高于source_field.  bytes_source_field是指字段�
 
 增加这个配置的来由是这样的. 上游数据源已经是 json.dump之后的[]byte数据, 做一次json.parse, 然后再json.dump, 耗费了大量CPU做无用功.
 
+### Kafka
+
+**特别注意** 参数需要是字符串, 像 `flush.interval.ms: "3000"` , 等等
+
+```
+Kafka:
+    topic: applog
+    producer_settings:
+        bootstrap.servers: node1.kafka.corp.com:9092,node2.kafka.corp.com:9092,node3.kafka.corp.com:9092
+        flush.interval.ms: "3000"
+        metadata.max.age.ms: "10000"
+        # sasl.mechanism: PLAIN
+        # sasl.user: admin
+        # sasl.password: admin-secret
+```
+
 ### clickhouse
 
 ```
 Clickhouse:
     table: 'hotel.weblog'
+    conn_max_life_time: 1800
 	username: admin
 	password: XXX
     hosts:
@@ -386,6 +453,8 @@ Clickhouse:
     flush_interval: 30
     concurrent: 1
 ```
+
+*Notice:* 如果表中字段有 default 值, 目前只支持字符串和数字 的 DEFAULT 表达式解析和处理, 如果像 IPv4设置了default 值, 是处理不了的. 代码中写死了 IPv4 和 IPv6 的默认值都是0
 
 #### table
 
@@ -410,6 +479,10 @@ clickhouse 节点列表. 必须配置
 #### concurrent
 
 bulk 的goroutine 最大值, 默认1
+
+#### conn_max_life_time
+
+到 ClickHouse 的连接的生存时间, 单位为秒. 默认不设置, 也就是生存时间无限长.
 
 ## FILTER
 
@@ -438,21 +511,23 @@ Drop:
       - 'Before(-24h) || After(24h)'
 ```
 
-也支持括号, 像 `Exist(a) && (Exist(b) || Exist(c))`
+也支持括号和逻辑运算符, 像 `Exist(a) && (!Exist(b) || !Exist(c))`
 
 目前支持的函数如下:
 
 注意:
 
-**只有 EQ 函数需要使用双引号代表字符串, 因为 EQ 也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
+**EQ/IN 函数需要使用双引号代表字符串, 因为他们也可能做数字的比较, 其他所有函数都不需要双引号, 因为他们肯定是字符串函数**
 
-**EQ HasPrefix HasSuffix Contains Match , 这几个函数可以使用 jsonpath 表示, 除 EQ 外需要使用双引号**
+**EQ IN HasPrefix HasSuffix Contains Match , 这几个函数可以使用 [jsonpath](https://github.com/oliveagle/jsonpath) 表示, 除 EQ/IN 外需要使用双引号**
 
 - `Exist(user,name)` [user][name]存在
 
 - `EQ(user,age,20)` `EQ($.user.age,20)` [user][age]存在并等于20
 
-- `EQ(user,age,"20")` `EQ($.user.age,20)` [user][age]存在并等于"20" (字符串)
+- `EQ(user,age,"20")` `EQ($.user.age,"20")` [user][age]存在并等于"20" (字符串)
+
+- `IN(tags,"app")` `IN($.tags,"app")` "app"存在于 tags 数组中, tags 一定要是数组,否则认为条件不成立
 
 - `HasPrefix(user,name,liu)` `HasPrefix($.user.name,"liu")` [user][name]存在并以 liu 开头
 
@@ -522,6 +597,8 @@ Add:
       '[a][b]': '[stored][message]'
 ```
 
+**更多写法参见 [字段格式约定](https://github.com/childe/gohangout/#%E5%AD%97%E6%AE%B5%E6%A0%BC%E5%BC%8F%E7%BA%A6%E5%AE%9A)**
+
 1. 增加 name 字段, 内容是 childe
 2. 增加 hostname 字段, 内容是原 host 字段中的内容. (相当于改名)
 3. 增加 logtime 字段, 内容是 date 和 time 两个字段的拼接
@@ -532,12 +609,15 @@ overwrite: true 的情况下, 这些新字段会覆盖老字段(如果有的话)
 
 ### Convert
 
+现在只支持转成 float/int/string/bool 这四种类型
+
 ```
 Convert:
     fields:
         time_taken:
             remove_if_fail: false
-            setto_if_fail: 0
+            setto_if_nil: 0.0
+            setto_if_fail: 0.0
             to: float
         sc_bytes:
             to: int
@@ -546,6 +626,9 @@ Convert:
             to: bool
             remove_if_fail: false
             setto_if_fail: true
+        map_struct:
+            to: string
+            setto_if_fail: ""
 ```
 
 #### remove_if_fail
@@ -555,6 +638,11 @@ Convert:
 #### setto_if_fail: XX
 
 如果转换失败, 刚将此字段的值设置为 XX . 优先级比 remove_if_fail 低.  如果 remove_if_fail 设置为 true, 则setto_if_fail 无效.
+
+#### setto_if_nil: XX
+
+如果没有这个字段, 刚将此字段的值设置为 XX . 优先级最高
+
 
 ### Date
 
@@ -575,6 +663,10 @@ Date:
         - 'UNIX_MS'
     remove_fields: ["logtime"]
 ```
+
+Date Filter 的作用是把一个字符串类型的字段, 转成一个 Time 类型的字段, 存到 target 里面去.
+
+一个比较常见的问题是, 如果写数据到 Clickhouse, 其中有 Datetime 类型的字段, 比如叫 createTime, 建议先用 Date Filter 转成(生成)一个 Time 类型的字段,  存到 createTime 里面.
 
 如果源字段不存在, 返回 false. 如果所有 formats 都匹配失败, 返回 false
 
@@ -682,11 +774,18 @@ IPIP:
     src: clientip
     target: geoip
     database: /opt/gohangout/mydata4vipday2.datx
+    type: datx
 ```
 
 #### database
 
 数据库地址. 数据可以在 [https://www.ipip.net/](https://www.ipip.net/) 下载
+
+#### type
+数据文件的类型，可选值ipdb和datx，默认是datx
+
+#### language
+ipdb查找城市时候需要传入语言，默认是CN
 
 #### src
 
@@ -701,8 +800,8 @@ IPIP:
 
 配置如下
 
-如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.  
-trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.   
+如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.
+trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.
 trimkey和trim类似, 处理的是字段名称.
 
 ```
@@ -793,7 +892,7 @@ LinkMetric:
 
 #### accumulateMode
 
-两种聚合模式. 
+两种聚合模式.
 
 1. cumulative 累加模式. 假设batchWindow 是300, reserveWindow 是 1800. 在每5分钟时, 会输出过去5分钟的一批聚合数据, 同时因为延时的存在, 可能还会有(过去10分钟-过去5分钟)之间的一批数据. cumulative 配置下, 会保留(过去10分钟-过去5分钟)之前count值的内存中, 新的数据进来时, 累加到一起, 下个5分钟时, 输出一个累加值.
 

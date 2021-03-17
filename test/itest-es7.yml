@@ -1,0 +1,22 @@
+inputs:
+  - Random:
+      from: 1
+      to: 100
+      max_messages: 1000
+outputs:
+  #    - Stdout: {}
+  - Stdout: {}
+  - Elasticsearch:
+      hosts:
+        - 'http://username:password@10.0.0.2:9200'
+      index: 'web-%{+2006.01.02}'
+      index_time_location: 'UTC'
+      index_type: "logs"
+      bulk_actions: 10
+      bulk_size: 5
+      flush_interval: 5
+      concurrent: 1
+      compress: false
+      es_version: 7
+#      es_version: 6
+      retry_response_code: [401, 502]
