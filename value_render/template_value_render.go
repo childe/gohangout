@@ -18,6 +18,9 @@ type TemplateValueRender struct {
 
 var GOHANGOUT_TYPE_UNKNOWN_ERROR error = errors.New("field type unknown, it must be of json.Number|Int64|Int|int8")
 
+var ErrNotFloat64 error = errors.New("Only float64 type value could be calculated")
+var ErrNotInt64 error = errors.New("Only int64 type value could be calculated")
+
 var funcMap = template.FuncMap{}
 
 func convertToInt(x interface{}) (int, error) {
@@ -86,61 +89,46 @@ func init() {
 		return timestamp.(time.Time).After(dst)
 	}
 
-	funcMap["plus"] = func(x, y interface{}) (int, error) {
-		a, err := convertToInt(x)
-		if err != nil {
-			return 0, err
+	funcMap["plus"] = func(x, y interface{}) (float64, error) {
+		if xf, ok := x.(float64); ok {
+			if yf, ok := y.(float64); ok {
+				return xf + yf, nil
+			}
 		}
-		b, err := convertToInt(y)
-		if err != nil {
-			return 0, err
-		}
-		return a + b, nil
+		return 0, ErrNotFloat64
 	}
 
-	funcMap["minus"] = func(x, y interface{}) (int, error) {
-		a, err := convertToInt(x)
-		if err != nil {
-			return 0, err
+	funcMap["minus"] = func(x, y interface{}) (float64, error) {
+		if xf, ok := x.(float64); ok {
+			if yf, ok := y.(float64); ok {
+				return xf - yf, nil
+			}
 		}
-		b, err := convertToInt(y)
-		if err != nil {
-			return 0, err
-		}
-		return a - b, nil
+		return 0, ErrNotFloat64
 	}
-	funcMap["multiply"] = func(x, y interface{}) (int, error) {
-		a, err := convertToInt(x)
-		if err != nil {
-			return 0, err
+	funcMap["multiply"] = func(x, y interface{}) (float64, error) {
+		if xf, ok := x.(float64); ok {
+			if yf, ok := y.(float64); ok {
+				return xf * yf, nil
+			}
 		}
-		b, err := convertToInt(y)
-		if err != nil {
-			return 0, err
-		}
-		return a * b, nil
+		return 0, ErrNotFloat64
 	}
-	funcMap["divide"] = func(x, y interface{}) (int, error) {
-		a, err := convertToInt(x)
-		if err != nil {
-			return 0, err
+	funcMap["divide"] = func(x, y interface{}) (float64, error) {
+		if xf, ok := x.(float64); ok {
+			if yf, ok := y.(float64); ok {
+				return xf / yf, nil
+			}
 		}
-		b, err := convertToInt(y)
-		if err != nil {
-			return 0, err
-		}
-		return a / b, nil
+		return 0, ErrNotFloat64
 	}
-	funcMap["mod"] = func(x, y interface{}) (int, error) {
-		a, err := convertToInt(x)
-		if err != nil {
-			return 0, err
+	funcMap["mod"] = func(x, y interface{}) (int64, error) {
+		if xf, ok := x.(int64); ok {
+			if yf, ok := y.(int64); ok {
+				return xf % yf, nil
+			}
 		}
-		b, err := convertToInt(y)
-		if err != nil {
-			return 0, err
-		}
-		return a % b, nil
+		return 0, ErrNotInt64
 	}
 }
 

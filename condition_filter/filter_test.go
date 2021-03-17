@@ -1,9 +1,160 @@
 package condition_filter
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
+
+func TestInJsonpath(t *testing.T) {
+	var condition string
+	var event map[string]interface{} = make(map[string]interface{})
+	event["tags"] = []interface{}{"app", "error", 10, 11.11}
+
+	// single test
+	condition = `IN($.tags,"error")`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// combined condition
+	condition = `IN($.tags,"error") && IN($.tags,10)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// combined condition
+	condition = `IN($.tags,"web") || IN($.tags,10.10)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("pass should fail. `%s` %#v", condition, event)
+	}
+}
+
+func TestJsonNumberInEQ(t *testing.T) {
+	condition := `EQ(a,1)`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event := make(map[string]interface{})
+	d := json.NewDecoder(strings.NewReader(`{"a":1}`))
+	d.UseNumber()
+	d.Decode(&event)
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// === ===
+	condition = `EQ(a,1.1)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event = make(map[string]interface{})
+	d = json.NewDecoder(strings.NewReader(`{"a":1.1}`))
+	d.UseNumber()
+	d.Decode(&event)
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// === ===
+	condition = `EQ($.a,1.1)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event = make(map[string]interface{})
+	d = json.NewDecoder(strings.NewReader(`{"a":1.1}`))
+	d.UseNumber()
+	d.Decode(&event)
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// === ===
+	condition = `EQ($.a,1)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event = make(map[string]interface{})
+	d = json.NewDecoder(strings.NewReader(`{"a":1}`))
+	d.UseNumber()
+	d.Decode(&event)
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// === ===
+	condition = `EQ($.a,1)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event = make(map[string]interface{})
+	d = json.NewDecoder(strings.NewReader(`{"a":1}`))
+	d.Decode(&event)
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("pass should fail. `%s` %#v", condition, event)
+	}
+
+	// === ===
+	condition = `EQ($.a,1.0)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event = make(map[string]interface{})
+	d = json.NewDecoder(strings.NewReader(`{"a":1}`))
+	d.Decode(&event)
+	pass = root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	// === ===
+	condition = `EQ($.a,1)`
+	root, err = parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+
+	event = make(map[string]interface{})
+	d = json.NewDecoder(strings.NewReader(`{"a":1.0}`))
+	d.Decode(&event)
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("pass should fail. `%s` %#v", condition, event)
+	}
+}
 
 func TestEQJsonpathSyntaxError(t *testing.T) {
 	condition := `EQ($.name.first,jia) && EQ($.name.last,liu)`

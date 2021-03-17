@@ -26,7 +26,6 @@ func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc) []
 			outputType := outputTypeI.(string)
 			glog.Infof("output type: %s", outputType)
 			outputConfig := outputConfigI.(map[interface{}]interface{})
-			glog.Infof("output config: %v", outputConfig)
 			outputPlugin := buildOutput(outputType, outputConfig)
 			rst = append(rst, outputPlugin)
 		}

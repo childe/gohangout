@@ -11,7 +11,7 @@ func TestAddFilter(t *testing.T) {
 	fields["name"] = `{{.first}} {{.last}}`
 	fields["firstname"] = `$.first`
 	config["fields"] = fields
-	f := methodLibrary.NewAddFilter(config)
+	f := BuildFilter("Add", config)
 
 	event := make(map[string]interface{})
 	event["@timestamp"] = time.Now().Unix()

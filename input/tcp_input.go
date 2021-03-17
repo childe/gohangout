@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/childe/gohangout/codec"
+	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 )
 
@@ -29,12 +30,15 @@ func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		glog.Errorf("read from %s->%s error: %s", c.RemoteAddr(), c.LocalAddr(), err)
+		glog.Errorf("read from %v->%v error: %v", c.RemoteAddr(), c.LocalAddr(), err)
 	}
 	c.Close()
 }
 
-func (lib *MethodLibrary) NewTCPInput(config map[interface{}]interface{}) *TCPInput {
+func init() {
+	Register("TCP", newTCPInput)
+}
+func newTCPInput(config map[interface{}]interface{}) topology.Input {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)

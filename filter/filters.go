@@ -13,7 +13,11 @@ type FiltersFilter struct {
 	filterBoxes   []*topology.FilterBox
 }
 
-func (l *MethodLibrary) NewFiltersFilter(config map[interface{}]interface{}) *FiltersFilter {
+func init() {
+	Register("Filters", newFiltersFilter)
+}
+
+func newFiltersFilter(config map[interface{}]interface{}) topology.Filter {
 	f := &FiltersFilter{
 		config: config,
 	}

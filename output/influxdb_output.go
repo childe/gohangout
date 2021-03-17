@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -99,7 +100,11 @@ func influxdbGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *B
 	return nil, nil, nil
 }
 
-func (l *MethodLibrary) NewInfluxdbOutput(config map[interface{}]interface{}) *InfluxdbOutput {
+func init() {
+	Register("Influxdb", newInfluxdbOutput)
+}
+
+func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 	rst := &InfluxdbOutput{
 		config: config,
 	}

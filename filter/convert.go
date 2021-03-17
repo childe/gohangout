@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/childe/gohangout/field_setter"
+	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
 )
@@ -15,28 +16,19 @@ type Converter interface {
 	convert(v interface{}) (interface{}, error)
 }
 
-var ConvertUnknownFormat error = errors.New("unknown format")
+var ErrConvertUnknownFormat error = errors.New("unknown format")
 
 type IntConverter struct{}
 
 func (c *IntConverter) convert(v interface{}) (interface{}, error) {
 	if reflect.TypeOf(v).String() == "json.Number" {
-		i, err := v.(json.Number).Int64()
-		if err == nil {
-			return (int)(i), err
-		} else {
-			return i, err
-		}
+		return v.(json.Number).Int64()
 	}
+
 	if reflect.TypeOf(v).Kind() == reflect.String {
-		i, err := strconv.ParseInt(v.(string), 0, 64)
-		if err == nil {
-			return (int)(i), err
-		} else {
-			return i, err
-		}
+		return strconv.ParseInt(v.(string), 0, 64)
 	}
-	return nil, ConvertUnknownFormat
+	return nil, ErrConvertUnknownFormat
 }
 
 type FloatConverter struct{}
@@ -48,7 +40,7 @@ func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
 	if reflect.TypeOf(v).Kind() == reflect.String {
 		return strconv.ParseFloat(v.(string), 64)
 	}
-	return nil, ConvertUnknownFormat
+	return nil, ErrConvertUnknownFormat
 }
 
 type BoolConverter struct{}
@@ -57,11 +49,60 @@ func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
 	return strconv.ParseBool(v.(string))
 }
 
+type StringConverter struct{}
+
+func (c *StringConverter) convert(v interface{}) (interface{}, error) {
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		return v, nil
+	}
+	jsonString, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}
+
+type ArrayIntConverter struct{}
+
+func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
+	if v1, ok1 := v.([]interface{}); ok1 {
+		var t2 = []int{}
+		for _, i := range v1 {
+			j, err := i.(json.Number).Int64()
+			// j, err := strconv.ParseInt(i.String(), 0, 64)
+			if err != nil {
+				return nil, ErrConvertUnknownFormat
+			}
+			t2 = append(t2, (int)(j))
+		}
+		return t2, nil
+	}
+	return nil, ErrConvertUnknownFormat
+}
+
+type ArrayFloatConverter struct{}
+
+func (c *ArrayFloatConverter) convert(v interface{}) (interface{}, error) {
+	if v1, ok1 := v.([]interface{}); ok1 {
+		var t2 = []float64{}
+		for _, i := range v1 {
+			j, err := i.(json.Number).Float64()
+			if err != nil {
+				return nil, ErrConvertUnknownFormat
+			}
+			t2 = append(t2, (float64)(j))
+		}
+		return t2, nil
+	}
+	return nil, ErrConvertUnknownFormat
+}
+
 type ConveterAndRender struct {
 	converter    Converter
 	valueRender  value_render.ValueRender
 	removeIfFail bool
 	settoIfFail  interface{}
+	settoIfNil   interface{}
 }
 
 type ConvertFilter struct {
@@ -69,7 +110,11 @@ type ConvertFilter struct {
 	fields map[field_setter.FieldSetter]ConveterAndRender
 }
 
-func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *ConvertFilter {
+func init() {
+	Register("Convert", newConvertFilter)
+}
+
+func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &ConvertFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
@@ -89,6 +134,7 @@ func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *Co
 				remove_if_fail = I.(bool)
 			}
 			setto_if_fail := v["setto_if_fail"]
+			setto_if_nil := v["setto_if_nil"]
 
 			var converter Converter
 			if to == "float" {
@@ -97,14 +143,22 @@ func (l *MethodLibrary) NewConvertFilter(config map[interface{}]interface{}) *Co
 				converter = &IntConverter{}
 			} else if to == "bool" {
 				converter = &BoolConverter{}
+			} else if to == "string" {
+				converter = &StringConverter{}
+			} else if to == "array(int)" {
+				converter = &ArrayIntConverter{}
+			} else if to == "array(float)" {
+				converter = &ArrayFloatConverter{}
 			} else {
-				glog.Fatal("can only convert to int/float/bool")
+				glog.Fatal("can only convert to int/float/bool/array(int)/array(float)")
 			}
+
 			plugin.fields[fieldSetter] = ConveterAndRender{
-				converter,
-				value_render.GetValueRender2(f.(string)),
-				remove_if_fail,
-				setto_if_fail,
+				converter:    converter,
+				valueRender:  value_render.GetValueRender2(f.(string)),
+				removeIfFail: remove_if_fail,
+				settoIfFail:  setto_if_fail,
+				settoIfNil:   setto_if_nil,
 			}
 		}
 	} else {
@@ -117,6 +171,9 @@ func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]in
 	for fs, conveterAndRender := range plugin.fields {
 		originanV := conveterAndRender.valueRender.Render(event)
 		if originanV == nil {
+			if conveterAndRender.settoIfNil != nil {
+				event = fs.SetField(event, conveterAndRender.settoIfNil, "", true)
+			}
 			continue
 		}
 		v, err := conveterAndRender.converter.convert(originanV)
