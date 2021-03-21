@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	DEFAULT_INDEX_TYPE = "logs"
-	DEFAULT_ES_VERSION = 6
+	defaultIndexType = "logs"
+	defaultEsVersion = 6
+	defaultAction    = "index"
 )
 
 var (
@@ -48,7 +49,7 @@ func (action *Action) Encode() []byte {
 	index, _ := f().Encode(action.index)
 	meta = append(meta, index...)
 
-	if action.es_version <= DEFAULT_ES_VERSION {
+	if action.es_version <= defaultEsVersion {
 		meta = append(meta, `,"_type":`...)
 		index_type, _ := f().Encode(action.index_type)
 		meta = append(meta, index_type...)
@@ -106,6 +107,7 @@ func (br *ESBulkRequest) readBuf() []byte {
 type ElasticsearchOutput struct {
 	config map[interface{}]interface{}
 
+	action             string
 	index              value_render.ValueRender
 	index_type         value_render.ValueRender
 	id                 value_render.ValueRender
@@ -204,6 +206,12 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	}
 	f = func() codec.Encoder { return codec.NewEncoder(_codec) }
 
+	if v, ok := config["action"]; ok {
+		rst.action = v.(string)
+	} else {
+		rst.action = defaultAction
+	}
+
 	if v, ok := config["index"]; ok {
 		rst.index = value_render.GetValueRender(v.(string))
 	} else {
@@ -221,7 +229,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	if v, ok := config["index_type"]; ok {
 		rst.index_type = value_render.GetValueRender(v.(string))
 	} else {
-		rst.index_type = value_render.GetValueRender(DEFAULT_INDEX_TYPE)
+		rst.index_type = value_render.GetValueRender(defaultIndexType)
 	}
 
 	if v, ok := config["id"]; ok {
@@ -251,7 +259,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	if v, ok := config["es_version"]; ok {
 		rst.es_version = v.(int)
 	} else {
-		rst.es_version = DEFAULT_ES_VERSION
+		rst.es_version = defaultEsVersion
 	}
 
 	var (
@@ -482,7 +490,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	var (
 		index      string = p.index.Render(event).(string)
 		index_type string = p.index_type.Render(event).(string)
-		op         string = "index"
+		op         string = p.action
 		es_version int    = p.es_version
 		id         string
 		routing    string
