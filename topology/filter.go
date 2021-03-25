@@ -82,7 +82,7 @@ func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[
 				} else {
 				}
 			} else {
-				event["tags"] = []interface{}{f.failTag}
+				event["tags"] = f.failTag
 			}
 		}
 	}
