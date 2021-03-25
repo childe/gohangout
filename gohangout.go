@@ -24,7 +24,7 @@ var options = &struct {
 	memprofile string
 }{}
 
-var version string = "1.6.0"
+var version string = "1.6.6"
 
 func printVersion() {
 	fmt.Printf("gohangout version %s\n", version)
