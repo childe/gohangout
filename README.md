@@ -803,7 +803,7 @@ ipdb查找城市时候需要传入语言，默认是CN
 
 如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.
 trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.
-trimkey和trim类似, 处理的是字段名称.
+trim_key和trim类似, 处理的是字段名称.
 
 ```
 KV:
@@ -812,7 +812,7 @@ KV:
   field_split: ','
   value_split: '='
   trim: '\t "'
-  trimkey: '"'
+  trim_key: '"'
   tag_on_failure: "KVfail"
   remove_fields: ['msg']
 ```
