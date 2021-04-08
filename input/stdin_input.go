@@ -3,6 +3,7 @@ package input
 import (
 	"bufio"
 	"os"
+	"time"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
@@ -36,29 +37,21 @@ func newStdinInput(config map[interface{}]interface{}) topology.Input {
 		messages: make(chan []byte, 10),
 	}
 
-	go func() {
-		for p.scanner.Scan() && !p.stop {
-			t := p.scanner.Bytes()
-			msg := make([]byte, len(t))
-			copy(msg, t)
-			p.messages <- msg
-		}
-		if err := p.scanner.Err(); err != nil {
-			glog.Errorf("%s", err)
-		}
-
-		// trigger shutdown
-		close(p.messages)
-	}()
 	return p
 }
 
 func (p *StdinInput) ReadOneEvent() map[string]interface{} {
-	text, more := <-p.messages
-	if !more || text == nil {
-		return nil
+	if p.scanner.Scan() {
+		t := p.scanner.Bytes()
+		msg := make([]byte, len(t))
+		copy(msg, t)
+		return p.decoder.Decode(msg)
 	}
-	return p.decoder.Decode(text)
+	if err := p.scanner.Err(); err != nil {
+		glog.Errorf("stdin scan error: %v", err)
+	}
+	time.Sleep(time.Millisecond * 100)
+	return nil
 }
 
 func (p *StdinInput) Shutdown() {

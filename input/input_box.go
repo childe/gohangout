@@ -67,11 +67,16 @@ func (box *InputBox) beat(workerIdx int) {
 	for !box.stop {
 		event = box.input.ReadOneEvent()
 		if event == nil {
-			if !box.stop && box.shutdownWhenNil {
-				glog.Info("receive nil message. shutdown...")
-				box.mainThreadExitChan <- struct{}{}
+			glog.V(5).Info("received nil message.")
+			if box.stop {
+				break
 			}
-			return
+			if box.shutdownWhenNil {
+				glog.Info("received nil message. shutdown...")
+				box.mainThreadExitChan <- struct{}{}
+			} else {
+				continue
+			}
 		}
 		for fs, v := range box.addFields {
 			event = fs.SetField(event, v.Render(event), "", false)
