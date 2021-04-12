@@ -137,7 +137,7 @@ outputs:
 
 ```
 fields:
-    logtime: '%{date} {%time}'
+    logtime: '%{date} %{time}'
     type: 'weblog'
     hostname: '[host]'
     name: '{{.firstname}}.{{.lastname}}'
