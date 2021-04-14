@@ -69,7 +69,7 @@ func NewINCondition(c string) (*INCondition, error) {
 		value = r[2]
 	} else {
 		paths = make([]string, 0)
-		c = strings.TrimSuffix(strings.TrimPrefix(c, "EQ("), ")")
+		c = strings.TrimSuffix(strings.TrimPrefix(c, "IN("), ")")
 		for _, p := range strings.Split(c, ",") {
 			paths = append(paths, strings.Trim(p, " "))
 		}

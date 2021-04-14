@@ -39,6 +39,7 @@
 - [使用kafka-go 的Kafka Input](https://github.com/huangjacky/gohangout-input-kafkago)
 - [Redis Input](https://github.com/childe/gohangout-input-redis)
 - [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) 一条消息Split 成多条
+- [File Output](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-file-output) 输出到文件
 
 
 ## 运行
@@ -136,7 +137,7 @@ outputs:
 
 ```
 fields:
-    logtime: '%{date} {%time}'
+    logtime: '%{date} %{time}'
     type: 'weblog'
     hostname: '[host]'
     name: '{{.firstname}}.{{.lastname}}'
@@ -188,8 +189,8 @@ Add:
 
 含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} %{time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
 
-2006 01 02 15 06 05 这几个数字是 golang 里面特定的数字, 代表年月日时分秒. 1月2号3点4分5秒06年. 其实就像hangout里面的YYYY MM dd HH mm SS
-
+2006 01 02 15 04 05 这几个数字是 golang 里面特定的数字, 代表年月日时分秒. 1月2号3点4分5秒06年. 其实就像hangout里面的YYYY MM dd HH mm SS.
+如果日期月份包含英文，也可把01换成Jan，比如：02-Jan-2006.
 
 ### 格式5 除了1,2,3,4 之外的其它
 
@@ -802,7 +803,7 @@ ipdb查找城市时候需要传入语言，默认是CN
 
 如果targete有定义, 会把拆分出来字段放在这个字段中, 如果没有定义,放到在顶层.
 trim 是把拆分出来的字段内容做前后修整. 将不需要的字符去掉. 下面的示例就是说把双引号和tag都去掉.
-trimkey和trim类似, 处理的是字段名称.
+trim_key和trim类似, 处理的是字段名称.
 
 ```
 KV:
@@ -811,7 +812,7 @@ KV:
   field_split: ','
   value_split: '='
   trim: '\t "'
-  trimkey: '"'
+  trim_key: '"'
   tag_on_failure: "KVfail"
   remove_fields: ['msg']
 ```

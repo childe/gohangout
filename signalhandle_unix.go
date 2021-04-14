@@ -1,3 +1,5 @@
+// +build linux darwin
+
 package main
 
 import (
@@ -10,18 +12,16 @@ import (
 
 func listenSignal() {
 	c := make(chan os.Signal, 1)
-	var stop bool
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 
-	defer glog.Infof("listen signal stop, exit...")
-
+rangeC:
 	for sig := range c {
 		glog.Infof("capture signal: %v", sig)
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
-			StopBoxesBeat()
+			inputs.stop()
 			close(configChannel)
-			stop = true
+			break rangeC
 		case syscall.SIGUSR1:
 			// `kill -USR1 pid`也会触发重新加载
 			config, err := parseConfig(options.config)
@@ -32,9 +32,8 @@ func listenSignal() {
 			glog.Infof("config:\n%s", removeSensitiveInfo(config))
 			configChannel <- config
 		}
-
-		if stop {
-			break
-		}
 	}
+
+	glog.Infof("listen signal stops, exit...")
+	exit()
 }

@@ -35,6 +35,7 @@ go get github.com/childe/gohangout
 - [Kafka Input using kafka-go](https://github.com/huangjacky/gohangout-input-kafkago)
 - [Redis Input](https://github.com/childe/gohangout-input-redis)
 - [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) Split one message to multi
+- [File Output](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-file-output) file output
 
 ## Run
 
