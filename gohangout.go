@@ -26,12 +26,6 @@ var options = &struct {
 	exitWhenNil bool
 }{}
 
-var version string = "1.6.6"
-
-func printVersion() {
-	fmt.Printf("gohangout version %s\n", version)
-}
-
 var (
 	worker = flag.Int("worker", 1, "worker thread count")
 )
