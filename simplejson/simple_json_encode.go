@@ -135,10 +135,8 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 		d.string(reflect.ValueOf(v).String())
 	case reflect.Map:
 		return d.encodeMap(v.(map[string]interface{}))
-	case reflect.Slice:
-		return d.encodeArray(v.([]interface{}))
-	case reflect.Array:
-		return d.encodeArray(v.([]interface{}))
+	case reflect.Slice, reflect.Array:
+		return d.encodeSlice(v)
 	default:
 		if o, ok := v.(JSONMarshaler); ok {
 			if b, err := o.MarshalJSON(); err != nil {
@@ -150,6 +148,26 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 		}
 		return fmt.Errorf("unknownType %T", v)
 	}
+	return nil
+}
+
+func (d *SimpleJsonDecoder) encodeSlice(value interface{}) error {
+        switch value.(type) {
+	case []byte:
+                d.string(string(value.([]byte)))
+	default:
+	        t := reflect.ValueOf(value)           	
+                d.WriteByte('[')
+	        n := t.Len()
+	        for i := 0; i < n; i++ {
+                        if i > 0 {
+	                        d.WriteByte(',')
+                        }
+	                d.encodeV(t.Index(i).Interface())
+	       }
+	       d.WriteByte(']')
+	       return nil
+        }
 	return nil
 }
 
