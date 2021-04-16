@@ -26,6 +26,7 @@ const (
 
 var (
 	f func() codec.Encoder
+	defaultNormalResp = []byte(`"errors":false,`)
 )
 
 type Action struct {
@@ -126,7 +127,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 	//make a string index to avoid json decode for speed up over 90%+ scences
-	if bytes.Index(respBody, []byte(`"errors":false,`)) != -1 {
+	if bytes.Index(respBody, defaultNormalResp) != -1 {
 		return retry, noRetry, nil
 	}
 	var responseI interface{}
