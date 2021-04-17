@@ -1,6 +1,7 @@
 package output
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,7 +26,7 @@ const (
 )
 
 var (
-	f func() codec.Encoder
+	f                 func() codec.Encoder
 	defaultNormalResp = []byte(`"errors":false,`)
 )
 
