@@ -52,9 +52,14 @@ func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
 type StringConverter struct{}
 
 func (c *StringConverter) convert(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return v, nil
+	if r, ok := v.(json.Number); ok {
+		return r.String(), nil
 	}
+
+	if r, ok := v.(string); ok {
+		return r, nil
+	}
+
 	jsonString, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
