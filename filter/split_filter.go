@@ -101,7 +101,7 @@ func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]inte
 	}
 	values := strings.SplitN(src.(string), sep, plugin.maxSplit)
 
-	if len(values) != plugin.fieldsLength {
+	if len(values) < plugin.fieldsLength {
 		return event, false
 	}
 

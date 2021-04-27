@@ -977,13 +977,20 @@ Split:
 sep: "\x01"
 ```
 
+#### dynamicSep
+
+默认 false。如果设置为 true，则认为 sep 是一个模板，而不是写死的字符串。
+比如 `sep: '[tt]'`，会使用event 里面的 tt 字段的值做为真正的 sep 。
+
 #### maxSplit
 
 在 strings.SplitN(src, sep, maxSplit) 中用被调用, 默认 -1, 代表无限制
 
 #### fields
 
-如果分割后的字符串数组长度与 fields 长度不一样, 返回false
+分割后的字符串数组长度不能比配置的 fields 长度小。
+
+如果分割后的字符串数组长度比配置的 fields 多，则多余的会被忽略掉。可以配合 maxSplit 使用。
 
 #### ignore_blank
 
