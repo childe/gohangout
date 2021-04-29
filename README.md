@@ -723,6 +723,8 @@ Filters:
 
 ### Grok
 
+Grok 是使用正则表达式来提取内容的 Filter。
+
 ```
 Grok:
     src: message
