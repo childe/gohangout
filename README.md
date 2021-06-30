@@ -96,8 +96,23 @@ pprof 的http地址
 - Output 插件示例参考 [gohangout-output-dash](https://github.com/childe/gohangout-output-dash)
 - Decoder 插件示例参考 [gohangout-decode-empty](https://github.com/childe/gohangout-decode-empty)
 
+## 配置
 
-## 一个简单的配置
+配置文件是 [Yaml](https://yaml.org/) 格式
+
+### 一个简单的配置示例
+
+filters 是一个列表，会**依次**执行里面的每一个 Filter。
+
+如下例，会先执行第一个 Grok Filter，解析 message 字段，按正则表达式提取出一些其他字段。
+
+再执行第二个 Grok Filter，在这个 Grok 中，会首先判断 if 条件是不是符合，如果不符合就跑过不执行这个 Grok 了。
+
+然后执行第三个 Date Filter，将 logtime 字符串转成 Date 类型的字段，存到 timestamp 字段中。
+
+如果有多个 Output，数据会**串行**写到每一个 Output。
+
+如果有多个 Input，每个 Input 进来的数据会**并行**处理后面的 Filter 和 Output。
 
 ```
 inputs:
@@ -112,12 +127,19 @@ filters:
     - Grok:
         src: message
         match:
+            - '^(?P<logtime>\S+) (?P<name>\w+) (?P<cmd>.+)$'
             - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
-            - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
         remove_fields: ['message']
+    - Grok:
+        if:
+          - EQ($.name,"childe")
+        src: cmd
+        match:
+            - '^gohangout .*--config (?P<config_file>\S+)'
     - Date:
         location: 'Asia/Shanghai'
         src: logtime
+        target: timestamp
         formats:
             - 'RFC3339'
         remove_fields: ["logtime"]
