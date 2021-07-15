@@ -200,12 +200,15 @@ $.store.book[?(@.price < 10)].title
 
 如果含有 `{{XXX}}` 的内容, 就认为是 golang template 格式, 具体语法可以参考 [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/). 前后及中间可以含有别的内容, 像 `name: 'my name is {{.firstname}}.{{.lastname}}'`
 
+Gohangout 使用了 [https://github.com/Masterminds/sprig/](https://github.com/Masterminds/sprig/) 的函数库
+
 来举个例子吧, Date Filter 得到一个 Time 类型的字段, 然后按自己的格式格式化一个字符串出来
 
 ```
 Add:
   fields:
-    ts: '{{ .ts.Format "2006.01.02" }}'
+    ts: '{{ .ts.Format "2006.01.02" }}'  ## 这里是使用了 Time 类型的自己的函数, 相当于 ts = ts.Format("2006.01.02")
+    c: '{{ add .a .b }}' ## add 是 sprig 库里面的函数，相当于 c = a + b
 ```
 
 ### 格式4 %{XXX}
