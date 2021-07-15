@@ -82,10 +82,15 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 		decorateEvents = decorateEventsV.(bool)
 	}
 
+	messagesLength := 10
+	if v, ok := config["messages_queue_length"]; ok {
+		messagesLength = v.(int)
+	}
+
 	kafkaInput := &KafkaInput{
 		config:         config,
 		decorateEvents: decorateEvents,
-		messages:       make(chan *healer.FullMessage, 10),
+		messages:       make(chan *healer.FullMessage, messagesLength),
 
 		decoder: codec.NewDecoder(codertype),
 	}
