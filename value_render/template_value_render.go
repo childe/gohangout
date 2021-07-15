@@ -9,6 +9,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/golang/glog"
 )
 
@@ -38,6 +39,10 @@ func convertToInt(x interface{}) (int, error) {
 }
 
 func init() {
+	for k, v := range sprig.FuncMap() {
+		funcMap[k] = v
+	}
+
 	funcMap["compare"] = strings.Compare
 	funcMap["contains"] = strings.Contains
 	funcMap["containsAny"] = strings.ContainsAny
