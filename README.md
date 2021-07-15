@@ -277,6 +277,7 @@ Kafka:
         max.partition.fetch.bytes: '10485760'
         auto.commit.interval.ms: '5000'
         from.beginning: 'true'
+        messages_queue_length: 10
         # sasl.mechanism: PLAIN
         # sasl.user: admin
         # sasl.password: admin-secret
@@ -307,6 +308,8 @@ auto.commit.interval.ms 是指多久commit一次offset, 太长的话有可能造
 max.partition.fetch.bytes 是指kafka client一次从kafka server读取多少数据,默认是10MB
 
 from.beginning 如果第一次消费此topic, 或者是offset已经失效, 是从头消费还是从最新消费. 默认是 false. 但是如果已经有过commit offset, 会接着之前的消费.
+
+messages_queue_length: 内部使用的消息 channel 的长度，默认为10.
 
 sasl.mechanism 认证方式, 目前还只支持 PLAIN 一种
 
