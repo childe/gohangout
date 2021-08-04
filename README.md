@@ -281,9 +281,19 @@ Kafka:
         auto.commit.interval.ms: '5000'
         from.beginning: 'true'
         messages_queue_length: 10
+
         # sasl.mechanism: PLAIN
         # sasl.user: admin
         # sasl.password: admin-secret
+
+        # tls.enabled: true
+        # tls:
+        #     cert: 'path/to/cert'
+        #     key: 'path/to/key'
+        #     ca: 'path/to/ca'
+        #     insecure.skip.verify: false
+        #     servername: xx
+
 ```
 
 **特别注意** 参数需要是字符串, 像 `auto.commit.interval.ms: '5000'` , 以及 `from.beginning: 'true'` , 等等
@@ -319,6 +329,8 @@ sasl.mechanism 认证方式, 目前还只支持 PLAIN 一种
 sasl.user sasl认证的用户名
 
 sasl.password sasl认证的密码
+
+servername 如果 servername 不为空的话，证书中的 IP 或者 DNS 名字，需要包含servername
 
 更多配置参见 [https://github.com/childe/healer/blob/dev/config.go#L40](https://github.com/childe/healer/blob/dev/config.go#L40)
 
