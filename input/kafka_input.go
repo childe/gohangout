@@ -1,13 +1,13 @@
 package input
 
 import (
-	"reflect"
 	"time"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type KafkaInput struct {
@@ -38,16 +38,11 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 	if v, ok := config["consumer_settings"]; !ok {
 		glog.Fatal("kafka input must have consumer_settings")
 	} else {
-		for x, y := range v.(map[interface{}]interface{}) {
-			if reflect.TypeOf(y).Kind() == reflect.Map {
-				yy := make(map[string]interface{})
-				for kk, vv := range y.(map[interface{}]interface{}) {
-					yy[kk.(string)] = vv
-				}
-				consumer_settings[x.(string)] = yy
-			} else {
-				consumer_settings[x.(string)] = y
-			}
+		json := jsoniter.ConfigCompatibleWithStandardLibrary
+		if b, err := json.Marshal(v); err != nil {
+			glog.Fatalf("marshal consumer settings error: %v", err)
+		} else {
+			json.Unmarshal(b, &consumer_settings)
 		}
 	}
 	if v, ok := config["topic"]; ok {
