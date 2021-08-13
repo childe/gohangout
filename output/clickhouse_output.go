@@ -159,7 +159,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			} else {
 				c.defaultValue[columnName] = *defaultValue
 			}
-		case "Date", "DateTime":
+		case "Date", "DateTime", "DateTime64":
 			c.defaultValue[columnName] = time.Unix(0, 0)
 		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
 			if defaultValue == nil {
