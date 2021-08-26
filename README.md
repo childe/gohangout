@@ -634,7 +634,7 @@ Add:
   fields:
       name: childe
       hostname: '[host]'
-      logtime: '{{.date}} {{.time}}
+      logtime: '{{.date}} {{.time}}'
       message: '[stored][message]'
       '[a][b]': '[stored][message]'
 ```
