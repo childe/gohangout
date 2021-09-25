@@ -47,6 +47,16 @@
 
 gohangout --config config.yml
 
+一个简单的配置文件如下，从标准输入读取数据，输出到标准输出。具体的配置说明见 [配置一节](#配置)
+
+```yaml
+inputs:
+    - Stdin: {}
+
+outputs:
+    - Stdout: {}
+```
+
 ### 日志
 
 日志模块使用 github.com/golang/glog , 几个常用参数如下:
