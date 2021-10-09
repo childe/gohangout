@@ -79,6 +79,15 @@ func newIPIPFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
+func inStringSlice(haystack []string, needle string) bool {
+	for _, e := range haystack {
+		if e == needle {
+			return true
+		}
+	}
+	return false
+}
+
 func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	inputI := plugin.srcVR.Render(event)
 	if inputI == nil {
@@ -86,12 +95,24 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 	}
 	var a []string
 	var err error
+	var line string
 	if plugin.data_type == "datx" {
 		city := (*datx.City)(plugin.city)
 		a, err = city.Find(inputI.(string))
 	} else {
 		city := (*ipdb.City)(plugin.city)
 		a, err = city.Find(inputI.(string), plugin.language)
+		fields := city.Fields()
+		lineIn := inStringSlice(fields, "line")
+		if lineIn {
+			var c *ipdb.CityInfo
+			c, err = city.FindInfo(inputI.(string), plugin.language)
+			if err != nil {
+				glog.V(10).Infof("failed to findInfo %s: %s", inputI.(string), err)
+				return event, false
+			}
+			line = c.Line
+		}
 	}
 	if err != nil {
 		glog.V(10).Infof("failed to find %s: %s", inputI.(string), err)
@@ -102,7 +123,11 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 		event["province_name"] = a[1]
 		event["city_name"] = a[2]
 		if len(a) >= 5 {
-			event["isp"] = a[4]
+			if line != "" {
+				event["isp"] = line
+			} else {
+				event["isp"] = a[4]
+			}
 		}
 		if len(a) >= 10 {
 			latitude, _ := strconv.ParseFloat(a[5], 10)
@@ -118,7 +143,11 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 		target["province_name"] = a[1]
 		target["city_name"] = a[2]
 		if len(a) >= 5 {
-			target["isp"] = a[4]
+			if line != "" {
+				target["isp"] = line
+			} else {
+				target["isp"] = a[4]
+			}
 		}
 		if len(a) >= 10 {
 			latitude, _ := strconv.ParseFloat(a[5], 10)
