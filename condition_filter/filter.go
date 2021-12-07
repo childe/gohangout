@@ -212,6 +212,11 @@ func NewEQCondition(c string) (*EQCondition, error) {
 		value = value[1 : len(value)-1]
 		return &EQCondition{pat, paths, value, len(paths)}, nil
 	}
+
+	if value == "nil" {
+		return &EQCondition{pat, paths, nil, len(paths)}, nil
+	}
+
 	if strings.Contains(value, ".") {
 		if s, err := strconv.ParseFloat(value, 64); err == nil {
 			return &EQCondition{pat, paths, s, len(paths)}, nil
