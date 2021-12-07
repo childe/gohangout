@@ -46,6 +46,26 @@ func TestInJsonpath(t *testing.T) {
 	}
 }
 
+func TestNilInEQ(t *testing.T) {
+	condition := `EQ($.a,nil)`
+	root, err := parseBoolTree(condition)
+	if err != nil {
+		t.Fatalf("parse %s error", condition)
+	}
+	event := map[string]interface{}{"a": nil}
+	pass := root.Pass(event)
+	if !pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+	event["a"] = "nil"
+	pass = root.Pass(event)
+	if pass {
+		t.Errorf("pass failed. `%s` %#v", condition, event)
+	}
+
+}
+
 func TestJsonNumberInEQ(t *testing.T) {
 	condition := `EQ(a,1)`
 	root, err := parseBoolTree(condition)
