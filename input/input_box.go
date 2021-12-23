@@ -74,6 +74,7 @@ func (box *InputBox) beat(workerIdx int) {
 			if box.shutdownWhenNil {
 				glog.Info("received nil message. shutdown...")
 				box.mainThreadExitChan <- struct{}{}
+				break
 			} else {
 				continue
 			}

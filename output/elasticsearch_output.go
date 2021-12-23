@@ -1,6 +1,7 @@
 package output
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,7 +26,8 @@ const (
 )
 
 var (
-	f func() codec.Encoder
+	f                 func() codec.Encoder
+	defaultNormalResp = []byte(`"errors":false,`)
 )
 
 type Action struct {
@@ -125,7 +127,10 @@ type ElasticsearchOutput struct {
 func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkRequest) ([]int, []int, BulkRequest) {
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
-
+	//make a string index to avoid json decode for speed up over 90%+ scences
+	if bytes.Index(respBody, defaultNormalResp) != -1 {
+		return retry, noRetry, nil
+	}
 	var responseI interface{}
 	err := json.Unmarshal(respBody, &responseI)
 	if err != nil {

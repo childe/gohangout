@@ -36,6 +36,7 @@
 
 - 开发 Plugin 的例子 [gohangout-plugin-examples](https://github.com/childe/gohangout-plugin-examples)
 - [使用sarama 的Kafka Input](https://github.com/DukeAnn/gohangout-input-kafka_sarama)
+- [使用 confluent-kafka-go 的Kafka Input](https://github.com/arterhuo/gohangout-input-confluent-kafka-go)
 - [使用kafka-go 的Kafka Input](https://github.com/huangjacky/gohangout-input-kafkago)
 - [Redis Input](https://github.com/childe/gohangout-input-redis)
 - [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) 一条消息Split 成多条
@@ -45,6 +46,16 @@
 ## 运行
 
 gohangout --config config.yml
+
+一个简单的配置文件如下，从标准输入读取数据，输出到标准输出。具体的配置说明见 [配置一节](#配置)
+
+```yaml
+inputs:
+    - Stdin: {}
+
+outputs:
+    - Stdout: {}
+```
 
 ### 日志
 
@@ -95,8 +106,23 @@ pprof 的http地址
 - Output 插件示例参考 [gohangout-output-dash](https://github.com/childe/gohangout-output-dash)
 - Decoder 插件示例参考 [gohangout-decode-empty](https://github.com/childe/gohangout-decode-empty)
 
+## 配置
 
-## 一个简单的配置
+配置文件是 [Yaml](https://yaml.org/) 格式
+
+### 一个简单的配置示例
+
+filters 是一个列表，会**依次**执行里面的每一个 Filter。
+
+如下例，会先执行第一个 Grok Filter，解析 message 字段，按正则表达式提取出一些其他字段。
+
+再执行第二个 Grok Filter，在这个 Grok 中，会首先判断 if 条件是不是符合，如果不符合就跑过不执行这个 Grok 了。
+
+然后执行第三个 Date Filter，将 logtime 字符串转成 Date 类型的字段，存到 timestamp 字段中。
+
+如果有多个 Output，数据会**串行**写到每一个 Output。
+
+如果有多个 Input，每个 Input 进来的数据会**并行**处理后面的 Filter 和 Output。
 
 ```
 inputs:
@@ -111,12 +137,19 @@ filters:
     - Grok:
         src: message
         match:
+            - '^(?P<logtime>\S+) (?P<name>\w+) (?P<cmd>.+)$'
             - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
-            - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
         remove_fields: ['message']
+    - Grok:
+        if:
+          - EQ($.name,"childe")
+        src: cmd
+        match:
+            - '^gohangout .*--config (?P<config_file>\S+)'
     - Date:
         location: 'Asia/Shanghai'
         src: logtime
+        target: timestamp
         formats:
             - 'RFC3339'
         remove_fields: ["logtime"]
@@ -177,12 +210,15 @@ $.store.book[?(@.price < 10)].title
 
 如果含有 `{{XXX}}` 的内容, 就认为是 golang template 格式, 具体语法可以参考 [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/). 前后及中间可以含有别的内容, 像 `name: 'my name is {{.firstname}}.{{.lastname}}'`
 
+Gohangout 使用了 [https://github.com/Masterminds/sprig/](https://github.com/Masterminds/sprig/) 的函数库
+
 来举个例子吧, Date Filter 得到一个 Time 类型的字段, 然后按自己的格式格式化一个字符串出来
 
 ```
 Add:
   fields:
-    ts: '{{ .ts.Format "2006.01.02" }}'
+    ts: '{{ .ts.Format "2006.01.02" }}'  ## 这里是使用了 Time 类型的自己的函数, 相当于 ts = ts.Format("2006.01.02")
+    c: '{{ add .a .b }}' ## add 是 sprig 库里面的函数，相当于 c = a + b
 ```
 
 ### 格式4 %{XXX}
@@ -254,9 +290,20 @@ Kafka:
         max.partition.fetch.bytes: '10485760'
         auto.commit.interval.ms: '5000'
         from.beginning: 'true'
+        messages_queue_length: 10
+
         # sasl.mechanism: PLAIN
         # sasl.user: admin
         # sasl.password: admin-secret
+
+        # tls.enabled: true
+        # tls:
+        #     cert: 'path/to/cert'
+        #     key: 'path/to/key'
+        #     ca: 'path/to/ca'
+        #     insecure.skip.verify: false
+        #     servername: xx
+
 ```
 
 **特别注意** 参数需要是字符串, 像 `auto.commit.interval.ms: '5000'` , 以及 `from.beginning: 'true'` , 等等
@@ -285,11 +332,15 @@ max.partition.fetch.bytes 是指kafka client一次从kafka server读取多少数
 
 from.beginning 如果第一次消费此topic, 或者是offset已经失效, 是从头消费还是从最新消费. 默认是 false. 但是如果已经有过commit offset, 会接着之前的消费.
 
+messages_queue_length: 内部使用的消息 channel 的长度，默认为10.
+
 sasl.mechanism 认证方式, 目前还只支持 PLAIN 一种
 
 sasl.user sasl认证的用户名
 
 sasl.password sasl认证的密码
+
+servername 如果 servername 不为空的话，证书中的 IP 或者 DNS 名字，需要包含servername
 
 更多配置参见 [https://github.com/childe/healer/blob/dev/config.go#L40](https://github.com/childe/healer/blob/dev/config.go#L40)
 
@@ -593,7 +644,7 @@ Add:
   fields:
       name: childe
       hostname: '[host]'
-      logtime: '{{.date}} {{.time}}
+      logtime: '{{.date}} {{.time}}'
       message: '[stored][message]'
       '[a][b]': '[stored][message]'
 ```
@@ -722,6 +773,8 @@ Filters:
 ```
 
 ### Grok
+
+Grok 是使用正则表达式来提取内容的 Filter。
 
 ```
 Grok:
@@ -977,13 +1030,20 @@ Split:
 sep: "\x01"
 ```
 
+#### dynamicSep
+
+默认 false。如果设置为 true，则认为 sep 是一个模板，而不是写死的字符串。
+比如 `sep: '[tt]'`，会使用event 里面的 tt 字段的值做为真正的 sep 。
+
 #### maxSplit
 
 在 strings.SplitN(src, sep, maxSplit) 中用被调用, 默认 -1, 代表无限制
 
 #### fields
 
-如果分割后的字符串数组长度与 fields 长度不一样, 返回false
+分割后的字符串数组长度不能比配置的 fields 长度小。
+
+如果分割后的字符串数组长度比配置的 fields 多，则多余的会被忽略掉。可以配合 maxSplit 使用。
 
 #### ignore_blank
 
