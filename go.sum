@@ -21,10 +21,8 @@ github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwj
 github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e h1:4DdAsml94WFpNacNXypuQWJT/hpn7akwsaicm86Nemg=
 github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
-github.com/childe/healer v0.1.6 h1:q1VBrCHriUbA9FqFfgLv539kdBzqWVrW9NrZkwPD5hs=
-github.com/childe/healer v0.1.6/go.mod h1:D0zRJLSyzaUQgO8B6XyqoklJoXu4VFekgIHGT6qLIL8=
-github.com/childe/healer v0.1.8 h1:cinXrG2m8DgzAfQSFTONLH7ijKtnHUfIzUzjGVa1WTw=
-github.com/childe/healer v0.1.8/go.mod h1:D0zRJLSyzaUQgO8B6XyqoklJoXu4VFekgIHGT6qLIL8=
+github.com/childe/healer v0.1.9 h1:0sIX9FoWeyccrFH2/RGSTD7NBPQ7IX7xuYuMNex8xvE=
+github.com/childe/healer v0.1.9/go.mod h1:D0zRJLSyzaUQgO8B6XyqoklJoXu4VFekgIHGT6qLIL8=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 h1:F1EaeKL/ta07PY/k9Os/UFtwERei2/XzGemhpGnBKNg=
 github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58/go.mod h1:EOBUe0h4xcZ5GoxqC5SDxFQ8gwyZPKQoEzownBlhI80=
