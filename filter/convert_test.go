@@ -28,6 +28,10 @@ func TestSettoIfNil(t *testing.T) {
 func TestConvertFilter(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	fields := make(map[interface{}]interface{})
+	fields["id"] = map[interface{}]interface{}{
+		"to":            "uint",
+		"setto_if_fail": 0,
+	}
 	fields["responseSize"] = map[interface{}]interface{}{
 		"to":            "int",
 		"setto_if_fail": 0,
@@ -46,6 +50,7 @@ func TestConvertFilter(t *testing.T) {
 
 	case1 := map[string]int{"a": 5, "b": 7}
 	event := map[string]interface{}{
+		"id":           "12345678901234567890",
 		"responseSize": "10",
 		"timeTaken":    "0.010",
 		"toString":     case1,
@@ -59,6 +64,9 @@ func TestConvertFilter(t *testing.T) {
 		t.Error("ConvertFilter fail")
 	}
 
+	if event["id"].(uint64) != 12345678901234567890 {
+		t.Error("id should be 12345678901234567890")
+	}
 	if event["responseSize"].(int64) != 10 {
 		t.Error("responseSize should be 10")
 	}

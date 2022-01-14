@@ -31,6 +31,23 @@ func (c *IntConverter) convert(v interface{}) (interface{}, error) {
 	return nil, ErrConvertUnknownFormat
 }
 
+type UIntConverter struct{}
+
+func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
+	if reflect.TypeOf(v).String() == "json.Number" {
+		r, err := v.(json.Number).Int64()
+		if err != nil {
+			return r, err
+		}
+		return uint64(r), nil
+	}
+
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		return strconv.ParseUint(v.(string), 0, 64)
+	}
+	return nil, ErrConvertUnknownFormat
+}
+
 type FloatConverter struct{}
 
 func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
@@ -146,6 +163,8 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 				converter = &FloatConverter{}
 			} else if to == "int" {
 				converter = &IntConverter{}
+			} else if to == "uint" {
+				converter = &UIntConverter{}
 			} else if to == "bool" {
 				converter = &BoolConverter{}
 			} else if to == "string" {
