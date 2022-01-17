@@ -3,7 +3,6 @@ package filter
 import (
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/childe/gohangout/field_setter"
@@ -42,13 +41,10 @@ func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
 type FloatConverter struct{}
 
 func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		return v.(json.Number).Float64()
+	if vn, ok := v.(json.Number); ok {
+		return vn.Float64()
 	}
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return strconv.ParseFloat(v.(string), 64)
-	}
-	return nil, ErrConvertUnknownFormat
+	return cast.ToFloat64E(v)
 }
 
 type BoolConverter struct{}
