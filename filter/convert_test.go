@@ -89,6 +89,51 @@ func TestUIntConvert(t *testing.T) {
 	}
 }
 
+func TestFloatConvert(t *testing.T) {
+	type testCase struct {
+		v    interface{}
+		want interface{}
+		err  bool
+	}
+
+	convert := &FloatConverter{}
+
+	cases := []testCase{
+		{
+			json.Number("1.1"), float64(1.1), false,
+		},
+		{
+			"1.2", float64(1.2), false,
+		},
+		{
+			1.3, float64(1.3), false,
+		},
+		{
+			-1.4, float64(-1.4), false,
+		},
+		{
+			"-1.5", float64(-1.5), false,
+		},
+		{
+			"abcd", 0.0, true,
+		},
+		{
+			"", 0.0, true,
+		},
+	}
+
+	for _, c := range cases {
+		ans, err := convert.convert(c.v)
+		if ans != c.want {
+			t.Errorf("convert %v: want %v, got %v", c.v, c.want, ans)
+		}
+
+		if c.err != (err != nil) {
+			t.Errorf("convert %v: want %v, got %v", c.v, c.err, err)
+		}
+	}
+}
+
 func TestSettoIfNil(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	fields := make(map[interface{}]interface{})
