@@ -25,6 +25,12 @@ func TestIntConvert(t *testing.T) {
 			1, int64(1), false,
 		},
 		{
+			-1, int64(-1), false,
+		},
+		{
+			"-1", int64(-1), false,
+		},
+		{
 			"12345678901234567890", int64(0), true,
 		},
 	}
@@ -32,7 +38,49 @@ func TestIntConvert(t *testing.T) {
 	for _, c := range cases {
 		ans, err := convert.convert(c.v)
 		if ans != c.want {
-			t.Errorf("convvert %v: want %v, got %v", c.v, c.want, ans)
+			t.Errorf("convert %v: want %v, got %v", c.v, c.want, ans)
+		}
+
+		if c.err != (err != nil) {
+			t.Errorf("convert %v: want %v, got %v", c.v, c.err, err)
+		}
+	}
+}
+
+func TestUIntConvert(t *testing.T) {
+	type testCase struct {
+		v    interface{}
+		want interface{}
+		err  bool
+	}
+
+	convert := &UIntConverter{}
+
+	cases := []testCase{
+		{
+			json.Number("1"), uint64(1), false,
+		},
+		{
+			"1", uint64(1), false,
+		},
+		{
+			1, uint64(1), false,
+		},
+		{
+			-1, uint64(0), true,
+		},
+		{
+			"-1", uint64(0), true,
+		},
+		{
+			"12345678901234567890", uint64(12345678901234567890), false,
+		},
+	}
+
+	for _, c := range cases {
+		ans, err := convert.convert(c.v)
+		if ans != c.want {
+			t.Errorf("convert %v: want %v, got %v", c.v, c.want, ans)
 		}
 
 		if c.err != (err != nil) {
