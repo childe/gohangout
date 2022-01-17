@@ -35,11 +35,7 @@ type UIntConverter struct{}
 
 func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
 	if reflect.TypeOf(v).String() == "json.Number" {
-		r, err := v.(json.Number).Int64()
-		if err != nil {
-			return r, err
-		}
-		return uint64(r), nil
+		return strconv.ParseUint(v.(json.Number).String(), 0, 64)
 	}
 
 	if reflect.TypeOf(v).Kind() == reflect.String {
