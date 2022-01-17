@@ -1,6 +1,52 @@
 package filter
 
-import "testing"
+import (
+	"encoding/json"
+	"strconv"
+	"testing"
+)
+
+func TestIntConvert(t *testing.T) {
+	type testCase struct {
+		v    interface{}
+		want interface{}
+		err  error
+	}
+
+	convert := &IntConverter{}
+
+	cases := []testCase{
+		{
+			json.Number("1"), int64(1), nil,
+		},
+		{
+			"1", int64(1), nil,
+		},
+		{
+			1, nil, ErrConvertUnknownFormat,
+		},
+		{
+			"12345678901234567890", int64(9223372036854775807), &strconv.NumError{Func: "ParseInt", Num: "12345678901234567890", Err: strconv.ErrRange},
+		},
+	}
+
+	for _, c := range cases {
+		ans, err := convert.convert(c.v)
+		if ans != c.want {
+			t.Errorf("want %v, got %v", c.want, ans)
+		}
+
+		if err == nil {
+			if c.err != nil {
+				t.Errorf("want %v, got %v", c.err, err)
+			}
+		} else {
+			if c.err == nil || err.Error() != c.err.Error() {
+				t.Errorf("want %v, got %v", c.err, err)
+			}
+		}
+	}
+}
 
 func TestSettoIfNil(t *testing.T) {
 	config := make(map[interface{}]interface{})
