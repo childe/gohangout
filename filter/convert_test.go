@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestIntConvert(t *testing.T) {
+func TestIntConverter(t *testing.T) {
 	type testCase struct {
 		v    interface{}
 		want interface{}
@@ -47,7 +47,7 @@ func TestIntConvert(t *testing.T) {
 	}
 }
 
-func TestUIntConvert(t *testing.T) {
+func TestUIntConverter(t *testing.T) {
 	type testCase struct {
 		v    interface{}
 		want interface{}
@@ -89,7 +89,7 @@ func TestUIntConvert(t *testing.T) {
 	}
 }
 
-func TestFloatConvert(t *testing.T) {
+func TestFloatConverter(t *testing.T) {
 	type testCase struct {
 		v    interface{}
 		want interface{}
@@ -119,6 +119,45 @@ func TestFloatConvert(t *testing.T) {
 		},
 		{
 			"", 0.0, true,
+		},
+	}
+
+	for _, c := range cases {
+		ans, err := convert.convert(c.v)
+		if ans != c.want {
+			t.Errorf("convert %v: want %v, got %v", c.v, c.want, ans)
+		}
+
+		if c.err != (err != nil) {
+			t.Errorf("convert %v: want %v, got %v", c.v, c.err, err)
+		}
+	}
+}
+
+func TestBoolConverter(t *testing.T) {
+	type testCase struct {
+		v    interface{}
+		want interface{}
+		err  bool
+	}
+
+	convert := &BoolConverter{}
+
+	cases := []testCase{
+		{
+			"abcd", nil, true,
+		},
+		{
+			"True", true, false,
+		},
+		{
+			"false", false, false,
+		},
+		{
+			json.Number("1"), nil, true,
+		},
+		{
+			1234, nil, true,
 		},
 	}
 
