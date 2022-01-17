@@ -10,6 +10,7 @@ import (
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
+	"github.com/spf13/cast"
 )
 
 type Converter interface {
@@ -21,27 +22,21 @@ var ErrConvertUnknownFormat error = errors.New("unknown format")
 type IntConverter struct{}
 
 func (c *IntConverter) convert(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		return v.(json.Number).Int64()
+	if vn, ok := v.(json.Number); ok {
+		return vn.Int64()
 	}
 
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return strconv.ParseInt(v.(string), 0, 64)
-	}
-	return nil, ErrConvertUnknownFormat
+	return cast.ToInt64E(v)
 }
 
 type UIntConverter struct{}
 
 func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		return strconv.ParseUint(v.(json.Number).String(), 0, 64)
+	if vn, ok := v.(json.Number); ok {
+		return strconv.ParseUint(vn.String(), 0, 64)
 	}
 
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return strconv.ParseUint(v.(string), 0, 64)
-	}
-	return nil, ErrConvertUnknownFormat
+	return cast.ToUint64E(v)
 }
 
 type FloatConverter struct{}
