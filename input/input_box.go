@@ -10,6 +10,7 @@ import (
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type InputBox struct {
@@ -19,6 +20,8 @@ type InputBox struct {
 	stop               bool
 	once               sync.Once
 	shutdownChan       chan bool
+
+	promCounter prometheus.Counter
 
 	shutdownWhenNil    bool
 	mainThreadExitChan chan struct{}
@@ -38,6 +41,8 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 		config:       config,
 		stop:         false,
 		shutdownChan: make(chan bool, 1),
+
+		promCounter: topology.GetPromCounter(inputConfig),
 
 		mainThreadExitChan: mainThreadExitChan,
 	}
@@ -66,6 +71,9 @@ func (box *InputBox) beat(workerIdx int) {
 
 	for !box.stop {
 		event = box.input.ReadOneEvent()
+		if box.promCounter != nil {
+			box.promCounter.Inc()
+		}
 		if event == nil {
 			glog.V(5).Info("received nil message.")
 			if box.stop {

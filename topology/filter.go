@@ -8,6 +8,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Filter interface {
@@ -18,6 +19,8 @@ type FilterBox struct {
 	Filter Filter
 
 	conditionFilter *condition_filter.ConditionFilter
+
+	promCounter prometheus.Counter
 
 	config map[interface{}]interface{}
 
@@ -30,6 +33,7 @@ func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
 	f := FilterBox{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
+		promCounter:     GetPromCounter(config),
 	}
 
 	if v, ok := config["failTag"]; ok {
@@ -93,6 +97,9 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 	var rst bool
 
 	if b.conditionFilter.Pass(event) {
+		if b.promCounter != nil {
+			b.promCounter.Inc()
+		}
 		event, rst = b.Filter.Filter(event)
 		if event == nil {
 			return nil
