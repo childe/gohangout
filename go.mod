@@ -17,6 +17,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
+	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/viper v1.6.3
 	gopkg.in/yaml.v2 v2.3.0

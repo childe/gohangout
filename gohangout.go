@@ -13,6 +13,7 @@ import (
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var options = &struct {
@@ -22,6 +23,8 @@ var options = &struct {
 	pprofAddr  string
 	cpuprofile string
 	memprofile string
+
+	prometheus string
 
 	exitWhenNil bool
 }{}
@@ -67,6 +70,8 @@ func init() {
 	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
 	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
 
+	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
+
 	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
 
 	flag.Parse()
@@ -108,6 +113,13 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 func main() {
 	printVersion()
 	defer glog.Flush()
+
+	if options.prometheus != "" {
+		go func() {
+			http.Handle("/metrics", promhttp.Handler())
+			http.ListenAndServe(options.prometheus, nil)
+		}()
+	}
 
 	if options.pprof {
 		go func() {

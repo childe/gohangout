@@ -84,7 +84,8 @@ func NewIndexRender(t string) *IndexRender {
 	if lastPos < len(t) {
 		fields = append(fields, &field{
 			literal: true,
-			value:   t[lastPos:len(t)],
+			date:    false,
+			value:   t[lastPos:],
 		})
 	}
 	return &IndexRender{fields, time.UTC}
