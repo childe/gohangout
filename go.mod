@@ -14,6 +14,7 @@ require (
 	github.com/ipipdotnet/ipdb-go v1.3.0
 	github.com/json-iterator/go v1.1.9
 	github.com/magiconair/properties v1.8.1
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
