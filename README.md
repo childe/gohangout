@@ -69,17 +69,22 @@ pprof 的http地址
 
 运行时加参数 `--prometheus 0.0.0.0:2112`，可以开一个 prometheus 监听服务。
 
-在 Input/Output/Filter 里面配置 `prometheus_counter_name: xxxx` 可以添加相应的数据。
+在 Input/Output/Filter 里面配置 `prometheus_counter`
 
-例子，如果数据通过 if 条件，则此 Add Filter 的计数加 1。
+如下例子表示，如果数据通过 if 条件，则此 Add Filter 的计数加 1。
 
 ```
 Add:
-    prometheus_counter_name: gohangout_add_op_filter
+    prometheus_counter: 
+        name: gohangout_dot_output
+        namespace: rack_a
+        help: 'rack_a gohangout dot output counter'
+        constLabels:
+            env: prod
     if:
     - 'EQ(a,nil)'
     fields:
-    op: xyz
+        op: xyz
 ```
 
 ### 多线程处理
