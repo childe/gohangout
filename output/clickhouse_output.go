@@ -298,14 +298,6 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		debug = v.(bool)
 	}
 
-	// if v, ok := config["fields"]; ok {
-	// 	for _, f := range v.([]interface{}) {
-	// 		p.fields = append(p.fields, f.(string))
-	// 	}
-	// } else {
-	// 	glog.Fatalf("fields must be set in clickhouse output")
-	// }
-
 	connMaxLifetime := 0
 	if v, ok := config["conn_max_life_time"]; ok {
 		connMaxLifetime = v.(int)
@@ -434,60 +426,53 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 
 		for _, event := range events {
 
-			if event["message"] == "" {
-				continue
-			}
 			if transIntColumnSize > 0 {
 				for keyInt, _ := range transIntColumn {
-					keyIntValue := event[keyInt]
-					if keyIntValue == nil {
-						continue
-					}
-					intConverterValue, err := c.intConverter(keyIntValue)
-					if err == nil {
-						event[keyInt] = intConverterValue
-					} else {
-						glog.V(10).Infof("ch_output convert intType error: %s", err)
+					if keyIntValue, ok := event[keyInt]; ok {
+
+						intConverterValue, err := c.intConverter(keyIntValue)
+						if err == nil {
+							event[keyInt] = intConverterValue
+						} else {
+							glog.V(10).Infof("ch_output convert intType error: %s", err)
+						}
 					}
 				}
 			}
 
 			if transArrayColumnSize > 0 {
 				for keyArray, columnArrayType := range transArrayColumn {
-					keyArrayValue := event[keyArray]
-					if keyArrayValue == nil {
-						continue
-					}
-					switch columnArrayType {
-					case "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
-						arrayIntValue := keyArrayValue.([]interface{})
-						arrayIntLen := len(arrayIntValue)
-						ints := make([]int, arrayIntLen)
-						for i := 0; i < arrayIntLen; i++ {
-							arrayIntConverterValue, err := c.intConverter(arrayIntValue[i])
-							if err == nil {
-								ints[i] = arrayIntConverterValue.(int)
-							} else {
-								glog.V(10).Infof("ch_output convert arrayIntType error: %s", err)
-								ints[i] = 0
+
+					if keyArrayValue, ok := event[keyArray]; ok {
+						switch columnArrayType {
+						case "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
+							arrayIntValue := keyArrayValue.([]interface{})
+							arrayIntLen := len(arrayIntValue)
+							ints := make([]int, arrayIntLen)
+							for i := 0; i < arrayIntLen; i++ {
+								arrayIntConverterValue, err := c.intConverter(arrayIntValue[i])
+								if err == nil {
+									ints[i] = arrayIntConverterValue.(int)
+								} else {
+									glog.V(10).Infof("ch_output convert arrayIntType error: %s", err)
+									ints[i] = 0
+								}
 							}
+							event[keyArray] = ints
 						}
-						event[keyArray] = ints
 					}
 				}
 			}
 
 			if transFloatColumnSize > 0 {
 				for keyFloat, _ := range transFloatColumn {
-					keyFloatValue := event[keyFloat]
-					if keyFloatValue == nil {
-						continue
-					}
-					floatConverterValue, err := c.floatConverter(keyFloatValue)
-					if err == nil {
-						event[keyFloat] = floatConverterValue
-					} else {
-						glog.V(10).Infof("ch_output convert floatType error: %s", err)
+					if keyFloatValue, ok := event[keyFloat]; ok {
+						floatConverterValue, err := c.floatConverter(keyFloatValue)
+						if err == nil {
+							event[keyFloat] = floatConverterValue
+						} else {
+							glog.V(10).Infof("ch_output convert floatType error: %s", err)
+						}
 					}
 				}
 			}
