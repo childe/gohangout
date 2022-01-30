@@ -265,6 +265,10 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		config: config,
 	}
 
+	if _, ok := config["fields"]; ok {
+		glog.Fatal("'fields' setting in clickhouse is not needed any longer, clickhouse output will read all fileds from clickhouse. please remove it in case of subsequent problems")
+	}
+
 	if v, ok := config["table"]; ok {
 		p.table = v.(string)
 	} else {
