@@ -81,7 +81,7 @@ func (action *Action) Encode() []byte {
 
 	bulk_buf := make([]byte, 0, len(meta)+len(buf)+1)
 	bulk_buf = append(bulk_buf, meta...)
-	bulk_buf = append(bulk_buf, buf[:len(buf)]...)
+	bulk_buf = append(bulk_buf, buf[:]...)
 	bulk_buf = append(bulk_buf, '\n')
 	return bulk_buf
 }
