@@ -511,7 +511,7 @@ Clickhouse:
     hosts:
     - 'tcp://10.100.0.101:9000'
     - 'tcp://10.100.0.102:9000'
-    fields: ['datetime', 'appid', 'c_ip', 'domain', 'cs_method', 'cs_uri', 's_ip', 'sc_status', 'time_taken']
+    # fields: ['datetime', 'appid', 'c_ip', 'domain', 'cs_method', 'cs_uri', 's_ip', 'sc_status', 'time_taken']
     bulk_actions: 1000
     flush_interval: 30
     concurrent: 1
@@ -529,7 +529,7 @@ clickhouse 节点列表. 必须配置
 
 #### fields
 
-字段名. 必须配置
+初始化的时候会从 ClickHouse 里面读取所有字段。不再需要手工配置。如果配置会报错提醒。
 
 #### bulk_actions
 
