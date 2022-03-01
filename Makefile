@@ -22,11 +22,11 @@ all: check
 	@echo $(hash)
 	mkdir -p build/
 
-	GOOS=windows GOARCH=amd64 go build -o build/gohangout-windows-x64-$(hash).exe
-	GOOS=windows GOARCH=386 go build -o build/gohangout-windows-386-$(hash).exe
-	GOOS=linux GOARCH=amd64 go build -o build/gohangout-linux-x64-$(hash)
-	GOOS=linux GOARCH=386 go build -o build/gohangout-linux-386-$(hash)
-	GOOS=darwin GOARCH=amd64 go build -o build/gohangout-darwin-x64-$(hash)
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-x64-$(hash).exe
+	GOOS=windows GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-386-$(hash).exe
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-x64-$(hash)
+	GOOS=linux GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-386-$(hash)
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-darwin-x64-$(hash)
 
 clean:
 	rm -rf build/*
