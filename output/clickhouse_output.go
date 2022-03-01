@@ -145,7 +145,12 @@ func (c *ClickhouseOutput) setTableDesc() {
 			case "Float64", "Float32":
 				transFloatColumn[key1] = value1.Type
 			}
-			c.fields = append(c.fields, key1)
+		}
+
+		if len(c.fields) == 0 {
+			for key1 := range c.desc {
+				c.fields = append(c.fields, key1)
+			}
 		}
 		return
 	}
@@ -265,8 +270,10 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		config: config,
 	}
 
-	if _, ok := config["fields"]; ok {
-		glog.Fatal("'fields' setting in clickhouse is not needed any longer, clickhouse output will read all fileds from clickhouse. please remove it in case of subsequent problems")
+	if v, ok := config["fields"]; ok {
+		for _, f := range v.([]interface{}) {
+			p.fields = append(p.fields, f.(string))
+		}
 	}
 
 	if v, ok := config["table"]; ok {
@@ -424,7 +431,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 
 		for _, event := range events {
 
-			for keyInt, _ := range transIntColumn {
+			for keyInt := range transIntColumn {
 				if keyIntValue, ok := event[keyInt]; ok {
 
 					intConverterValue, err := c.intConverter(keyIntValue)
