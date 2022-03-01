@@ -16,7 +16,7 @@ linux-binary:
 	fi
 
 docker: linux-binary
-	docker build -t rmself/gohangout .
+	docker build -t gohangout .
 
 all: check
 	@echo $(hash)
