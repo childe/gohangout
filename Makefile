@@ -16,7 +16,7 @@ linux-binary:
 	fi
 
 docker: linux-binary
-	docker build --build-arg HTTP_PROXY=$(HTTP_PROXY) --build-arg HTTPS_PROXY=$(HTTPS_PROXY) -t rmself/gohangout .
+	docker build -t rmself/gohangout .
 
 all: check
 	@echo $(hash)
