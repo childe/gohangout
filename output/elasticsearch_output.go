@@ -151,8 +151,16 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	}
 
 	hasLog := false
-	for i, item := range bulkResponse["items"].([]interface{}) {
-		index := item.(map[string]interface{})["index"].(map[string]interface{})
+	// es action type, default index, if using data stream, may create
+	action := defaultAction
+	bulkList := bulkResponse["items"].([]interface{})
+	firstItem := bulkList[0].(map[string]interface{})
+	if _, ok := firstItem[action]; !ok {
+		action = "create"
+	}
+
+	for i, item := range bulkList {
+		index := item.(map[string]interface{})[action].(map[string]interface{})
 
 		if errorValue, ok := index["error"]; ok {
 			//errorType := errorValue.(map[string]interface{})["type"].(string)
