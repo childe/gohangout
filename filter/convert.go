@@ -3,13 +3,13 @@ package filter
 import (
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/golang/glog"
+	"github.com/spf13/cast"
 )
 
 type Converter interface {
@@ -21,32 +21,44 @@ var ErrConvertUnknownFormat error = errors.New("unknown format")
 type IntConverter struct{}
 
 func (c *IntConverter) convert(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		return v.(json.Number).Int64()
+	if vn, ok := v.(json.Number); ok {
+		return vn.Int64()
 	}
 
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return strconv.ParseInt(v.(string), 0, 64)
+	return cast.ToInt64E(v)
+}
+
+type UIntConverter struct{}
+
+func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
+	if vn, ok := v.(json.Number); ok {
+		return strconv.ParseUint(vn.String(), 0, 64)
 	}
-	return nil, ErrConvertUnknownFormat
+
+	return cast.ToUint64E(v)
 }
 
 type FloatConverter struct{}
 
 func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		return v.(json.Number).Float64()
+	if vn, ok := v.(json.Number); ok {
+		return vn.Float64()
 	}
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return strconv.ParseFloat(v.(string), 64)
-	}
-	return nil, ErrConvertUnknownFormat
+	return cast.ToFloat64E(v)
 }
 
 type BoolConverter struct{}
 
 func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
-	return strconv.ParseBool(v.(string))
+	if v, ok := v.(string); ok {
+		rst, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, err
+		} else {
+			return rst, err
+		}
+	}
+	return nil, ErrConvertUnknownFormat
 }
 
 type StringConverter struct{}
@@ -146,6 +158,8 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 				converter = &FloatConverter{}
 			} else if to == "int" {
 				converter = &IntConverter{}
+			} else if to == "uint" {
+				converter = &UIntConverter{}
 			} else if to == "bool" {
 				converter = &BoolConverter{}
 			} else if to == "string" {

@@ -3,8 +3,10 @@ package output
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +22,14 @@ const (
 	CLICKHOUSE_DEFAULT_BULK_ACTIONS   = 1000
 	CLICKHOUSE_DEFAULT_FLUSH_INTERVAL = 30
 )
+
+var transIntColumn = make(map[string]string)
+
+var transArrayColumn = make(map[string]string)
+
+var transFloatColumn = make(map[string]string)
+
+var ConvertUnknownFormat error = errors.New("ch_output convert unknown format")
 
 type ClickhouseOutput struct {
 	config map[interface{}]interface{}
@@ -126,6 +136,22 @@ func (c *ClickhouseOutput) setTableDesc() {
 			c.desc[rowDesc.Name] = &rowDesc
 		}
 
+		for key1, value1 := range c.desc {
+			switch value1.Type {
+			case "Int64", "UInt64", "Int32", "UInt32", "Int16", "UInt16", "Int8", "UInt8", "Nullable(Int64)", "Nullable(Int32)", "Nullable(Int16)", "Nullable(Int8)":
+				transIntColumn[key1] = value1.Type
+			case "Array(String)", "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
+				transArrayColumn[key1] = value1.Type
+			case "Float64", "Float32":
+				transFloatColumn[key1] = value1.Type
+			}
+		}
+
+		if len(c.fields) == 0 {
+			for key1 := range c.desc {
+				c.fields = append(c.fields, key1)
+			}
+		}
 		return
 	}
 }
@@ -161,6 +187,8 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			}
 		case "Date", "DateTime", "DateTime64":
 			c.defaultValue[columnName] = time.Unix(0, 0)
+		case "Nullable(Int64)", "Nullable(Int32)", "Nullable(Int16)", "Nullable(Int8)":
+			c.defaultValue[columnName] = nil
 		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
 			if defaultValue == nil {
 				c.defaultValue[columnName] = 0
@@ -219,6 +247,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			glog.Errorf("column: %s, type: %s. unsupported column type, ignore.", columnName, d.Type)
 			continue
 		}
+
 	}
 }
 
@@ -239,6 +268,12 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
 		config: config,
+	}
+
+	if v, ok := config["fields"]; ok {
+		for _, f := range v.([]interface{}) {
+			p.fields = append(p.fields, f.(string))
+		}
 	}
 
 	if v, ok := config["table"]; ok {
@@ -267,29 +302,6 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	if v, ok := config["debug"]; ok {
 		debug = v.(bool)
 	}
-
-	if v, ok := config["fields"]; ok {
-		for _, f := range v.([]interface{}) {
-			p.fields = append(p.fields, f.(string))
-		}
-	} else {
-		glog.Fatalf("fields must be set in clickhouse output")
-	}
-	if len(p.fields) <= 0 {
-		glog.Fatalf("fields length must be > 0")
-	}
-	p.fieldsLength = len(p.fields)
-
-	fields := make([]string, p.fieldsLength)
-	for i := range fields {
-		fields[i] = fmt.Sprintf(`"%s"`, p.fields[i])
-	}
-	questionMarks := make([]string, p.fieldsLength)
-	for i := 0; i < p.fieldsLength; i++ {
-		questionMarks[i] = "?"
-	}
-	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
-	glog.V(5).Infof("query: %s", p.query)
 
 	connMaxLifetime := 0
 	if v, ok := config["conn_max_life_time"]; ok {
@@ -328,6 +340,21 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	p.dbSelector = NewRRHostSelector(dbsI, 3)
 
 	p.setColumnDefault()
+	if len(p.fields) <= 0 {
+		glog.Fatalf("fields length must be > 0")
+	}
+	p.fieldsLength = len(p.fields)
+
+	fields := make([]string, p.fieldsLength)
+	for i := range fields {
+		fields[i] = fmt.Sprintf(`"%s"`, p.fields[i])
+	}
+	questionMarks := make([]string, p.fieldsLength)
+	for i := 0; i < p.fieldsLength; i++ {
+		questionMarks[i] = "?"
+	}
+	p.query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", p.table, strings.Join(fields, ","), strings.Join(questionMarks, ","))
+	glog.V(5).Infof("query: %s", p.query)
 
 	concurrent := 1
 	if v, ok := config["concurrent"]; ok {
@@ -403,6 +430,52 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		defer stmt.Close()
 
 		for _, event := range events {
+
+			for keyInt := range transIntColumn {
+				if keyIntValue, ok := event[keyInt]; ok {
+
+					intConverterValue, err := c.intConverter(keyIntValue)
+					if err == nil {
+						event[keyInt] = intConverterValue
+					} else {
+						glog.V(10).Infof("ch_output convert intType error: %s", err)
+					}
+				}
+			}
+
+			for keyArray, columnArrayType := range transArrayColumn {
+
+				if keyArrayValue, ok := event[keyArray]; ok {
+					switch columnArrayType {
+					case "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
+						arrayIntValue := keyArrayValue.([]interface{})
+						arrayIntLen := len(arrayIntValue)
+						ints := make([]int, arrayIntLen)
+						for i := 0; i < arrayIntLen; i++ {
+							arrayIntConverterValue, err := c.intConverter(arrayIntValue[i])
+							if err == nil {
+								ints[i] = arrayIntConverterValue.(int)
+							} else {
+								glog.V(10).Infof("ch_output convert arrayIntType error: %s", err)
+								ints[i] = 0
+							}
+						}
+						event[keyArray] = ints
+					}
+				}
+			}
+
+			for keyFloat, _ := range transFloatColumn {
+				if keyFloatValue, ok := event[keyFloat]; ok {
+					floatConverterValue, err := c.floatConverter(keyFloatValue)
+					if err == nil {
+						event[keyFloat] = floatConverterValue
+					} else {
+						glog.V(10).Infof("ch_output convert floatType error: %s", err)
+					}
+				}
+			}
+
 			args := make([]interface{}, c.fieldsLength)
 			for i, field := range c.fields {
 				if v, ok := event[field]; ok && v != nil {
@@ -415,6 +488,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 					}
 				}
 			}
+
 			if _, err := stmt.Exec(args...); err != nil {
 				glog.Errorf("exec clickhouse insert %v error: %s", event, err)
 				return
@@ -517,4 +591,34 @@ func (c *ClickhouseOutput) Shutdown() {
 		c.closeChan <- true
 	}
 	c.awaitclose(30 * time.Second)
+}
+
+func (p *ClickhouseOutput) intConverter(v interface{}) (interface{}, error) {
+	if reflect.TypeOf(v).String() == "json.Number" {
+		i, err := v.(json.Number).Int64()
+		if err == nil {
+			return (int)(i), err
+		} else {
+			return i, err
+		}
+	}
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		i, err := strconv.ParseInt(v.(string), 0, 64)
+		if err == nil {
+			return (int)(i), err
+		} else {
+			return i, err
+		}
+	}
+	return nil, ConvertUnknownFormat
+}
+
+func (p *ClickhouseOutput) floatConverter(v interface{}) (interface{}, error) {
+	if reflect.TypeOf(v).String() == "json.Number" {
+		return v.(json.Number).Float64()
+	}
+	if reflect.TypeOf(v).Kind() == reflect.String {
+		return strconv.ParseFloat(v.(string), 64)
+	}
+	return nil, ConvertUnknownFormat
 }

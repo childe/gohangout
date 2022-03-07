@@ -12,21 +12,11 @@
 
 ## 安装
 
-可以从源码编译, 或者是直接下载二进制可执行文件
-
 ### 从源码编译
 
   使用 go module 管理依赖. 直接 make 就可
 
    > make
-
-为避免编译后gohangout在docker容器中无法正常启动，推荐使用完整编译命令进行编译，如：
-
-  > GOOS=linux GOARCH=amd64 CGO_ENABLED=0 make
-
-### 下载编译后二进制文件
-
-[https://github.com/childe/gohangout/releases](https://github.com/childe/gohangout/releases) 直接下载
 
 ### go get
 
@@ -75,6 +65,27 @@ outputs:
 - -pprof-address 127.0.0.1:8899
 pprof 的http地址
 
+### prometheus metrics
+
+运行时加参数 `--prometheus 0.0.0.0:2112`，可以开一个 prometheus 监听服务。
+
+在 Input/Output/Filter 里面配置 `prometheus_counter`
+
+如下例子表示，如果数据通过 if 条件，则此 Add Filter 的计数加 1。
+
+```
+Add:
+    prometheus_counter: 
+        name: gohangout_dot_output
+        namespace: rack_a
+        help: 'rack_a gohangout dot output counter'
+        constLabels:
+            env: prod
+    if:
+    - 'EQ(a,nil)'
+    fields:
+        op: xyz
+```
 
 ### 多线程处理
 
@@ -500,7 +511,7 @@ Clickhouse:
     hosts:
     - 'tcp://10.100.0.101:9000'
     - 'tcp://10.100.0.102:9000'
-    fields: ['datetime', 'appid', 'c_ip', 'domain', 'cs_method', 'cs_uri', 's_ip', 'sc_status', 'time_taken']
+    # fields: ['datetime', 'appid', 'c_ip', 'domain', 'cs_method', 'cs_uri', 's_ip', 'sc_status', 'time_taken']
     bulk_actions: 1000
     flush_interval: 30
     concurrent: 1
@@ -518,7 +529,9 @@ clickhouse 节点列表. 必须配置
 
 #### fields
 
-字段名. 必须配置
+初始化的时候会从 ClickHouse 里面读取所有字段。
+
+也可以手工配置，会优先使用手工配置。 为了暂时缓解 #159
 
 #### bulk_actions
 

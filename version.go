@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-var version string = "1.7.7"
+var version string
 
 func printVersion() {
 	fmt.Printf("gohangout version %s\n", version)
