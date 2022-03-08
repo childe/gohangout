@@ -506,8 +506,8 @@ Kafka:
 Clickhouse:
     table: 'hotel.weblog'
     conn_max_life_time: 1800
-	username: admin
-	password: XXX
+    username: admin
+    password: XXX
     hosts:
     - 'tcp://10.100.0.101:9000'
     - 'tcp://10.100.0.102:9000'
