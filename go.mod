@@ -21,5 +21,6 @@ require (
 	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/viper v1.6.3
+	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.3.0
 )
