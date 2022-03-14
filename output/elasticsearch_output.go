@@ -28,6 +28,8 @@ const (
 var (
 	f                 func() codec.Encoder
 	defaultNormalResp = []byte(`"errors":false,`)
+
+	action string = defaultAction
 )
 
 type Action struct {
@@ -152,7 +154,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 
 	hasLog := false
 	for i, item := range bulkResponse["items"].([]interface{}) {
-		index := item.(map[string]interface{})["index"].(map[string]interface{})
+		index := item.(map[string]interface{})[action].(map[string]interface{})
 
 		if errorValue, ok := index["error"]; ok {
 			//errorType := errorValue.(map[string]interface{})["type"].(string)
@@ -216,6 +218,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	} else {
 		rst.action = defaultAction
 	}
+	action = rst.action
 
 	if v, ok := config["index"]; ok {
 		rst.index = value_render.GetValueRender(v.(string))
