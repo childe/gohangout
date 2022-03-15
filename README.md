@@ -24,6 +24,8 @@
 
 ### 第三方 Plugin
 
+使用 Plugin 的话，自己编译一下，将 CGO_ENABLED 打开：`CGO_ENABLED=1`
+
 - 开发 Plugin 的例子 [gohangout-plugin-examples](https://github.com/childe/gohangout-plugin-examples)
 - [使用sarama 的Kafka Input](https://github.com/DukeAnn/gohangout-input-kafka_sarama)
 - [使用 confluent-kafka-go 的Kafka Input](https://github.com/arterhuo/gohangout-input-confluent-kafka-go)
