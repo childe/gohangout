@@ -31,6 +31,7 @@
 - [Redis Input](https://github.com/childe/gohangout-input-redis)
 - [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) 一条消息Split 成多条
 - [File Output](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-file-output) 输出到文件
+- [zinc Output](https://github.com/9ji/gohangout-output-zinc) 输出到[zinc](https://github.com/prabhatsharma/zinc)
 
 
 ## 运行
