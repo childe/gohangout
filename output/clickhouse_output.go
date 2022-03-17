@@ -430,9 +430,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 
 			for keyInt := range transIntColumn {
 				if keyIntValue, ok := event[keyInt]; ok {
-
-					intConverterValue, err := cast.ToInt64E(keyIntValue)
-					if err == nil {
+					if intConverterValue, err := cast.ToInt64E(keyIntValue); err == nil {
 						event[keyInt] = intConverterValue
 					} else {
 						glog.V(10).Infof("ch_output convert intType error: %s", err)
@@ -441,17 +439,14 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 			}
 
 			for keyArray, columnArrayType := range transArrayColumn {
-
 				if keyArrayValue, ok := event[keyArray]; ok {
 					switch columnArrayType {
 					case "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
 						arrayIntValue := keyArrayValue.([]interface{})
-						arrayIntLen := len(arrayIntValue)
-						ints := make([]int, arrayIntLen)
-						for i := 0; i < arrayIntLen; i++ {
-							arrayIntConverterValue, err := c.intConverter(arrayIntValue[i])
-							if err == nil {
-								ints[i] = arrayIntConverterValue.(int)
+						ints := make([]int64, len(arrayIntValue))
+						for i, v := range arrayIntValue {
+							if v, err := cast.ToInt64E(v); err == nil {
+								ints[i] = v
 							} else {
 								glog.V(10).Infof("ch_output convert arrayIntType error: %s", err)
 								ints[i] = 0
