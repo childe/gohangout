@@ -3,10 +3,8 @@ package output
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,6 +14,7 @@ import (
 	clickhouse "github.com/ClickHouse/clickhouse-go"
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
+	"github.com/spf13/cast"
 )
 
 const (
@@ -28,8 +27,6 @@ var transIntColumn = make(map[string]string)
 var transArrayColumn = make(map[string]string)
 
 var transFloatColumn = make(map[string]string)
-
-var ConvertUnknownFormat error = errors.New("ch_output convert unknown format")
 
 type ClickhouseOutput struct {
 	config map[interface{}]interface{}
@@ -434,7 +431,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 			for keyInt := range transIntColumn {
 				if keyIntValue, ok := event[keyInt]; ok {
 
-					intConverterValue, err := c.intConverter(keyIntValue)
+					intConverterValue, err := cast.ToInt64E(keyIntValue)
 					if err == nil {
 						event[keyInt] = intConverterValue
 					} else {
@@ -467,7 +464,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 
 			for keyFloat, _ := range transFloatColumn {
 				if keyFloatValue, ok := event[keyFloat]; ok {
-					floatConverterValue, err := c.floatConverter(keyFloatValue)
+					floatConverterValue, err := cast.ToFloat64E(keyFloatValue)
 					if err == nil {
 						event[keyFloat] = floatConverterValue
 					} else {
@@ -591,34 +588,4 @@ func (c *ClickhouseOutput) Shutdown() {
 		c.closeChan <- true
 	}
 	c.awaitclose(30 * time.Second)
-}
-
-func (p *ClickhouseOutput) intConverter(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		i, err := v.(json.Number).Int64()
-		if err == nil {
-			return (int)(i), err
-		} else {
-			return i, err
-		}
-	}
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		i, err := strconv.ParseInt(v.(string), 0, 64)
-		if err == nil {
-			return (int)(i), err
-		} else {
-			return i, err
-		}
-	}
-	return nil, ConvertUnknownFormat
-}
-
-func (p *ClickhouseOutput) floatConverter(v interface{}) (interface{}, error) {
-	if reflect.TypeOf(v).String() == "json.Number" {
-		return v.(json.Number).Float64()
-	}
-	if reflect.TypeOf(v).Kind() == reflect.String {
-		return strconv.ParseFloat(v.(string), 64)
-	}
-	return nil, ConvertUnknownFormat
 }
