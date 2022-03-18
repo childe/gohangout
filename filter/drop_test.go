@@ -14,6 +14,11 @@ func TestDropFilter(t *testing.T) {
 
 	// test DropFilter without any condition
 	config = make(map[interface{}]interface{})
+
+	config["if"] = []interface{}{
+		`EQ($.level,"error")`,
+	}
+
 	f := BuildFilter("Drop", config)
 
 	event = make(map[string]interface{})
@@ -21,13 +26,19 @@ func TestDropFilter(t *testing.T) {
 	event["first"] = "dehua"
 	event["last"] = "liu"
 
+	// test level = 1
+	event["level"] = "1"
+
 	event, ok = f.Filter(event)
 
-	if ok == false {
-		t.Error("drop filter fail")
+	if event == nil || ok {
+		t.Error("event should not be nil after being dropped and ok should be false")
 	}
 
-	if event != nil {
-		t.Error("event should be nil after being dropped")
+	// test level = error
+	event["level"] = "error"
+	event, ok = f.Filter(event)
+	if event != nil || !ok {
+		t.Error("event should be nil after being dropped and ok should be true")
 	}
 }
