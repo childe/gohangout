@@ -1,12 +1,12 @@
 package value_render
 
-import "reflect"
-
+// MultiLevelValueRender is a ValueRender that can render [xxx][yyy][zzz]
 type MultiLevelValueRender struct {
 	preFields []string
 	lastField string
 }
 
+// NewMultiLevelValueRender create a MultiLevelValueRender
 func NewMultiLevelValueRender(fields []string) *MultiLevelValueRender {
 	fieldsLength := len(fields)
 	preFields := make([]string, fieldsLength-1)
@@ -20,18 +20,18 @@ func NewMultiLevelValueRender(fields []string) *MultiLevelValueRender {
 	}
 }
 
+// Render implements ValueRender
 func (vr *MultiLevelValueRender) Render(event map[string]interface{}) interface{} {
-	var current map[string]interface{}
-	current = event
+	var current map[string]interface{} = event
+	var value interface{}
+	var ok bool
 	for _, field := range vr.preFields {
-		if value, ok := current[field]; !ok || value == nil {
+		value, ok = current[field]
+		if !ok || value == nil {
 			return nil
-		} else {
-			if reflect.TypeOf(value).Kind() == reflect.Map {
-				current = value.(map[string]interface{})
-			} else {
-				return nil
-			}
+		}
+		if current, ok = value.(map[string]interface{}); !ok {
+			return nil
 		}
 	}
 	if value, ok := current[vr.lastField]; ok {
