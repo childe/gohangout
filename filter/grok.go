@@ -250,15 +250,29 @@ func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface
 		}
 
 		if gf.target == "" {
-			for field, value := range rst {
-				event[field] = value
+			if gf.overwrite {
+				for field, value := range rst {
+					event[field] = value
+				}
+			} else {
+				for field, value := range rst {
+					if _, exists := event[field]; !exists {
+						event[field] = value
+					}
+				}
 			}
 		} else {
 			target := make(map[string]interface{})
 			for field, value := range rst {
 				target[field] = value
 			}
-			event[gf.target] = target
+			if gf.overwrite {
+				event[gf.target] = target
+			} else {
+				if _, exists := event[gf.target]; !exists {
+					event[gf.target] = target
+				}
+			}
 		}
 		return event, true
 	}
