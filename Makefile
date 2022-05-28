@@ -10,9 +10,9 @@ linux-binary:
 	mkdir -p build
 	@echo "Building gohangout binary in docker container"
 	@if [ -n "$(GOPATH)" ]; then\
-		docker run -e CGO_ENABLED=0 -v $(GOPATH):/go -v $(PWD):/gohangout -w /gohangout golang:1.17 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
+		docker run -e CGO_ENABLED=0 -v $(GOPATH):/go -v $(PWD):/gohangout -w /gohangout golang:1.18 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
 	else\
-		docker run -e CGO_ENABLED=0 -v $(PWD):/gohangout -w /gohangout golang:1.17 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
+		docker run -e CGO_ENABLED=0 -v $(PWD):/gohangout -w /gohangout golang:1.18 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
 	fi
 
 docker: linux-binary
