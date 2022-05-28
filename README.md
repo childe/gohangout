@@ -191,6 +191,7 @@ fields:
     name2: '$.name'
     city: '[geo][cityname]'
     '[a][b]': '[stored][message]'
+    indename: 'app-%{@metadata}{kafka}{topic}-%{+2006-01-02}-log'
 ```
 
 ### 格式1 JSONPATH 格式
@@ -235,9 +236,9 @@ Add:
     c: '{{ add .a .b }}' ## add 是 sprig 库里面的函数，相当于 c = a + b
 ```
 
-### 格式4 %{XXX}
+### 格式4 %{XXX}{YYY}
 
-含有 `%{XXX}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} %{time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} 代表时间字段, 会按时间格式做格式化处理.
+含有 `%{XXX}{YYY}` 的内容, 使用自己定义的格式处理, 像上面的 `%{date} %{time}` 是把 date 字段和 time 字段组合成一个 logtime 字段. 前后以及中间可以有任何内容. 像 Elasticsearch 中的 index: `web-%{appid}-%{+2006-01-02}` 也是这种格式, %{+XXX} , 前面一个加号, 代表时间字段, 会按时间格式做格式化处理.
 
 2006 01 02 15 04 05 这几个数字是 golang 里面特定的数字, 代表年月日时分秒. 1月2号3点4分5秒06年. 其实就像hangout里面的YYYY MM dd HH mm SS.
 如果日期月份包含英文，也可把01换成Jan，比如：02-Jan-2006.
