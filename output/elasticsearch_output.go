@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yalp/jsonpath"
+
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/topology"
@@ -437,7 +439,7 @@ func sniffNodesFromOneHost(host string, match string) ([]string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("%s:%d", url, resp.StatusCode)
+		return nil, fmt.Errorf("es sniff error %s:%d", url, resp.StatusCode)
 	}
 
 	defer resp.Body.Close()
@@ -452,30 +454,41 @@ func sniffNodesFromOneHost(host string, match string) ([]string, error) {
 		return nil, err
 	}
 
+	glog.Infof("sniff resp: %v", v)
 	return filterNodesIPList(v, match)
 }
 
 // filterNodesIPList gets ip lists from what is returned from _nodes/_all/info
 // it uses `match` config to filter the nodes you what
 func filterNodesIPList(v map[string]interface{}, match string) ([]string, error) {
-	if len(match) > 0 {
-		f := condition_filter.NewCondition(match)
-		IPList := make([]string, 0)
-		for _, info := range v["nodes"].(map[string]interface{}) {
-			if f.Pass(info.(map[string]interface{})) {
-				info := info.(map[string]interface{})
-				publishAddress := (info["http"].(map[string]interface{}))["publish_address"].(string)
-				IPList = append(IPList, publishAddress)
-			}
+	var nodes map[string]interface{}
+	if nodesV, ok := v["nodes"]; ok {
+		if nodesV, ok := nodesV.(map[string]interface{}); ok {
+			nodes = nodesV
+		} else {
+			return nil, errors.New("es sniff error: `nodes` is not map")
 		}
-		return IPList, nil
+	} else {
+		return nil, errors.New("es sniff error: `nodes` not exist")
 	}
 
+	var f condition_filter.Condition
+	if match != "" {
+		f = condition_filter.NewCondition(match)
+	}
 	IPList := make([]string, 0)
-	for _, info := range v["nodes"].([]interface{}) {
-		info := info.(map[string]interface{})
-		publishAddress := (info["http"].(map[string]interface{}))["publish_address"].(string)
-		IPList = append(IPList, publishAddress)
+	for _, node := range nodes {
+		if node, ok := node.(map[string]interface{}); ok {
+			if f == nil || f.Pass(node) {
+				if ip, err := jsonpath.Read(node, "$.http.publish_address"); err == nil {
+					if ip, ok := ip.(string); ok {
+						IPList = append(IPList, ip)
+					}
+				} else {
+					return nil, err
+				}
+			}
+		}
 	}
 	return IPList, nil
 }
