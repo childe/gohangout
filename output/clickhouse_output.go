@@ -577,7 +577,7 @@ func (c *ClickhouseOutput) awaitclose(timeout time.Duration) {
 	}
 }
 
-// Shutdown would stop receiving message and emiting
+// Shutdown would stop receiving message and editing
 func (c *ClickhouseOutput) Shutdown() {
 	for i := 0; i < c.concurrent; i++ {
 		c.closeChan <- true
