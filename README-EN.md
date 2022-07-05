@@ -188,7 +188,7 @@ Drop:
       - 'Before(-24h) || After(24h)'
 ```
 
-Relationship between conditions is **ADN**, if passes only if all conditions pass.
+Relationship between conditions is **AND**, if passes only if all conditions pass.
 
 more complicated example using bool operator: `Exist(a) && (!Exist(b) || !Exist(c))`
 
