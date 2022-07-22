@@ -11,13 +11,29 @@ import (
 func TestGetUserPasswordAndHost(t *testing.T) {
 	var url string
 	url = "http://admin:pw@127.0.0.1:9200/"
-	user, password, host := getUserPasswordAndHost(url)
+	scheme, user, password, host := getUserPasswordAndHost(url)
+	assert.Equal(t, scheme, "http")
+	assert.Equal(t, user, "admin")
+	assert.Equal(t, password, "pw")
+	assert.Equal(t, host, "127.0.0.1:9200")
+
+	url = "https://admin:pw@127.0.0.1:9200/"
+	scheme, user, password, host = getUserPasswordAndHost(url)
+	assert.Equal(t, scheme, "https")
 	assert.Equal(t, user, "admin")
 	assert.Equal(t, password, "pw")
 	assert.Equal(t, host, "127.0.0.1:9200")
 
 	url = "http://127.0.0.1:9200/"
-	user, password, host = getUserPasswordAndHost(url)
+	scheme, user, password, host = getUserPasswordAndHost(url)
+	assert.Equal(t, scheme, "http")
+	assert.Equal(t, user, "")
+	assert.Equal(t, password, "")
+	assert.Equal(t, host, "127.0.0.1:9200")
+
+	url = "https://127.0.0.1:9200/"
+	scheme, user, password, host = getUserPasswordAndHost(url)
+	assert.Equal(t, scheme, "https")
 	assert.Equal(t, user, "")
 	assert.Equal(t, password, "")
 	assert.Equal(t, host, "127.0.0.1:9200")
