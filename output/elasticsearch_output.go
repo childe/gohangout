@@ -123,9 +123,10 @@ type ElasticsearchOutput struct {
 	es_version         int
 	bulkProcessor      BulkProcessor
 
-	hosts    []string
+	scheme   string
 	user     string
 	password string
+	hosts    []string
 }
 
 func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkRequest) ([]int, []int, BulkRequest) {
@@ -337,10 +338,11 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	var hosts []string = make([]string, 0)
 	if v, ok := config["hosts"]; ok {
 		for _, h := range v.([]interface{}) {
-			user, password, host := getUserPasswordAndHost(h.(string))
+			scheme, user, password, host := getUserPasswordAndHost(h.(string))
 			if host == "" {
 				glog.Fatalf("invalid host: %q", host)
 			}
+			rst.scheme = scheme
 			rst.user = user
 			rst.password = password
 			hosts = append(hosts, host)
@@ -386,16 +388,17 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	return rst
 }
 
-func getUserPasswordAndHost(url string) (user, password, host string) {
-	p := regexp.MustCompile(`^(?i)(?:http(?:s?)://)(?:([^:]+):([^@]+)@)?(\S+)$`)
+func getUserPasswordAndHost(url string) (scheme, user, password, host string) {
+	p := regexp.MustCompile(`^(?i)(?:(http(?:s?)))://(?:([^:]+):([^@]+)@)?(\S+)$`)
 	r := p.FindStringSubmatch(url)
-	if len(r) == 4 {
-		user = r[1]
-		password = r[2]
-		host = strings.TrimRight(r[3], "/")
+	if len(r) == 5 {
+		scheme = r[1]
+		user = r[2]
+		password = r[3]
+		host = strings.TrimRight(r[4], "/")
 		return
-	} else if len(r) == 2 {
-		host = strings.TrimRight(r[1], "/")
+	} else if len(r) == 3 {
+		host = strings.TrimRight(r[2], "/")
 		return
 	} else {
 		glog.Infof("%q is invalid host format", host)
@@ -493,14 +496,14 @@ func filterNodesIPList(v map[string]interface{}, match string) ([]string, error)
 	return IPList, nil
 }
 
-// create ES host list using user, password and hosts
+// create ES host list using scheme, [user, password] and hosts
 func (p *ElasticsearchOutput) assebleHosts() (hosts []string) {
 	hosts = make([]string, 0)
 	for _, host := range p.hosts {
 		if len(p.user) > 0 {
-			hosts = append(hosts, fmt.Sprintf("http://%s:%s@%s", p.user, p.password, host))
+			hosts = append(hosts, fmt.Sprintf("%s://%s:%s@%s", p.scheme, p.user, p.password, host))
 		} else {
-			hosts = append(hosts, fmt.Sprintf("http://%s", host))
+			hosts = append(hosts, fmt.Sprintf("%s://%s", p.scheme, host))
 		}
 	}
 	return
