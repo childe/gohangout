@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
-	github.com/spf13/cast v1.4.1
+	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.10.1
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
