@@ -199,7 +199,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			}
 		case "Float32", "Float64":
 			if defaultValue == nil {
-				c.defaultValue[columnName] = 0
+				c.defaultValue[columnName] = 0.0
 			} else {
 				i, e := strconv.ParseFloat(*defaultValue, 64)
 				if e == nil {
