@@ -434,6 +434,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 						event[keyInt] = intConverterValue
 					} else {
 						glog.V(10).Infof("ch_output convert intType error: %s", err)
+						event[keyInt] = nil
 					}
 				}
 			}
@@ -464,6 +465,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 						event[keyFloat] = floatConverterValue
 					} else {
 						glog.V(10).Infof("ch_output convert floatType error: %s", err)
+						event[keyFloat] = nil
 					}
 				}
 			}
