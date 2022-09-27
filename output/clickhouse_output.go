@@ -22,11 +22,10 @@ const (
 	CLICKHOUSE_DEFAULT_FLUSH_INTERVAL = 30
 )
 
-var transIntColumn = make(map[string]string)
-
-var transArrayColumn = make(map[string]string)
-
-var transFloatColumn = make(map[string]string)
+var tableIntColumn = make(map[string]map[string]string)
+var tableArrayColumn = make(map[string]map[string]string)
+var tableFloatColumn = make(map[string]map[string]string)
+var tableStringColumn = make(map[string]map[string]string)
 
 type ClickhouseOutput struct {
 	config map[interface{}]interface{}
@@ -132,9 +131,16 @@ func (c *ClickhouseOutput) setTableDesc() {
 
 			c.desc[rowDesc.Name] = &rowDesc
 		}
-
+		
+                var transStringColumn = make(map[string]string)
+		var transIntColumn = make(map[string]string)
+		var transFloatColumn = make(map[string]string)
+		var transArrayColumn = make(map[string]string)
+		
 		for key1, value1 := range c.desc {
 			switch value1.Type {
+			case "String":
+				transStringColumn[key1] = value1.Type
 			case "Int64", "UInt64", "Int32", "UInt32", "Int16", "UInt16", "Int8", "UInt8", "Nullable(Int64)", "Nullable(Int32)", "Nullable(Int16)", "Nullable(Int8)":
 				transIntColumn[key1] = value1.Type
 			case "Array(String)", "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
@@ -143,7 +149,11 @@ func (c *ClickhouseOutput) setTableDesc() {
 				transFloatColumn[key1] = value1.Type
 			}
 		}
-
+                tableStringColumn[c.table] = transStringColumn
+		tableIntColumn[c.table] = transIntColumn
+		tableFloatColumn[c.table] = transFloatColumn
+		tableArrayColumn[c.table] = transArrayColumn
+		
 		if len(c.fields) == 0 {
 			for key1 := range c.desc {
 				c.fields = append(c.fields, key1)
@@ -401,6 +411,11 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	execution_id := atomic.AddUint64(&c.execution_id, 1)
 	glog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
 
+	transStringColumn := tableStringColumn[c.table]
+	transIntColumn := tableIntColumn[c.table]
+	transFloatColumn := tableFloatColumn[c.table]
+	transArrayColumn := tableArrayColumn[c.table]
+	
 	for {
 		nextdb := c.dbSelector.Next()
 
@@ -428,6 +443,18 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 
 		for _, event := range events {
 
+			for keyString, _ := range transStringColumn {
+				if keyStringValue, ok := event[keyString]; ok {
+					stringConverterValue, err := cast.ToStringE(keyStringValue)
+					if err == nil {
+						event[keyString] = stringConverterValue
+					} else {
+						event[keyString] = nil
+						glog.V(10).Infof("ch_output convert floatType error: %s", err)
+					}
+				}
+			}
+			
 			for keyInt := range transIntColumn {
 				if keyIntValue, ok := event[keyInt]; ok {
 					if intConverterValue, err := cast.ToInt64E(keyIntValue); err == nil {
