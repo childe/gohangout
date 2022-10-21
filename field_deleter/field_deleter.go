@@ -18,5 +18,4 @@ func NewFieldDeleter(template string) FieldDeleter {
 	} else {
 		return NewOneLevelFieldDeleter(template)
 	}
-	return nil
 }

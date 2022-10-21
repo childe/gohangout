@@ -22,7 +22,9 @@ func (d *MultiLevelFieldDeleter) Delete(event map[string]interface{}) {
 	current := event
 	for _, field := range d.preFields {
 		if v, ok := current[field]; ok {
-			current = v.(map[string]interface{})
+			if current, ok = v.(map[string]interface{}); !ok {
+				return
+			}
 		} else {
 			return
 		}
