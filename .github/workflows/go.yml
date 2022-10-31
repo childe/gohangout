@@ -29,3 +29,17 @@ jobs:
       with:
         path: gohangout
         key: gohangout
+
+  docker:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache
+      uses: actions/cache@v3.0.11
+      with:
+        path: gohangout
+        key: gohangout
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag rmself/gohangout:$(date +%s)
