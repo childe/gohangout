@@ -23,3 +23,9 @@ jobs:
 
     - name: Build
       run: go build -v -o . ./...
+
+    - name: Cache
+      uses: actions/cache@v3.0.11
+      with:
+        path: gohangout
+        key: gohangout
