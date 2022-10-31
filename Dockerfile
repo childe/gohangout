@@ -2,7 +2,7 @@ FROM golang:1.19 as builder
 WORKDIR /go/gohangout
 RUN --mount=type=bind,source=.,target=/go/gohangout go build -o /tmp/ ./...
 
-FROM alpine:3.15
+FROM alpine:3.15 as gohangout
 
 ARG TZ="Asia/Shanghai"
 ENV TZ ${TZ}
