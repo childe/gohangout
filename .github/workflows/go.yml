@@ -11,35 +11,36 @@ on:
 
 jobs:
 
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
+  #build:
+    #runs-on: ubuntu-latest
+    #steps:
+    #- uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.18
+    #- name: Set up Go
+      #uses: actions/setup-go@v3
+      #with:
+        #go-version: 1.18
 
-    - name: Build
-      run: go build -v -o . ./...
+    #- name: Build
+      #run: go build -v -o . ./...
 
-    - name: Cache
-      uses: actions/cache@v3.0.11
-      with:
-        path: gohangout
-        key: gohangout
+    #- name: Cache
+      #uses: actions/cache@v3.0.11
+      #with:
+        #path: gohangout
+        #key: gohangout
 
   docker:
 
     runs-on: ubuntu-latest
+    #needs: build
 
     steps:
     - uses: actions/checkout@v3
-    - name: Cache
-      uses: actions/cache@v3.0.11
-      with:
-        path: gohangout
-        key: gohangout
+    #- name: Cache
+      #uses: actions/cache@v3.0.11
+      #with:
+        #path: gohangout
+        #key: gohangout
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag rmself/gohangout:$(date +%s)
+      run: docker build . --tag rmself/gohangout:$(date +%s)
