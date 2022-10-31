@@ -7,4 +7,4 @@ RUN apk upgrade --update
 RUN apk --update add tzdata
 RUN ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
 
-ADD build/gohangout /usr/local/bin/gohangout
+ADD gohangout /usr/local/bin/gohangout
