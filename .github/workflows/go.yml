@@ -23,6 +23,3 @@ jobs:
 
     - name: Build
       run: go build -v -o . ./...
-
-    - name: Test
-      run: go test -v ./...
