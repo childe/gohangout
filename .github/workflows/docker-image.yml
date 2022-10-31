@@ -18,17 +18,14 @@ jobs:
       with:
         go-version: 1.18
 
-    - name: TestEnv
-      run: env
-
     - name: Build
       run: go build -v -o . ./...
 
     - name: Build the Docker image
-      run: docker build . -t rmself/gohangout:${GITHUB_SHA}
+      run: docker build . -t rmself/gohangout:${GITHUB_REF_NAME}
 
     - name: Log in to Docker Hub
       run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Push Docker image
-      run: docker push rmself/gohangout:${GITHUB_SHA}
+      run: docker push rmself/gohangout:${GITHUB_REF_NAME}
