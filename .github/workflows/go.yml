@@ -38,4 +38,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: rmself/gohangout:${GITHUB_SHA}
+        tags: rmself/gohangout:test-github-workflow
