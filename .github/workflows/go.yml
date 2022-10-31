@@ -18,6 +18,9 @@ jobs:
       with:
         go-version: 1.18
 
+    - name: TestEnv
+      run: env
+
     - name: Build
       run: go build -v -o . ./...
 
