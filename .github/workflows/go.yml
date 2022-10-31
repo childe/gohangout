@@ -25,4 +25,4 @@ jobs:
       run: go build -v -o . ./...
 
     - name: Build the Docker image
-      run: docker build . --target gohangout -t hub.docker.com/rmself/gohangout:${GITHUB_SHA}
+      run: docker build . -t hub.docker.com/rmself/gohangout:${GITHUB_SHA}
