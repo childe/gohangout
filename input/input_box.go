@@ -128,6 +128,7 @@ func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
 	return firstNode
 }
 
+// Beat starts the processors and wait until shutdown
 func (box *InputBox) Beat(worker int) {
 	box.outputsInAllWorker = make([][]*topology.OutputBox, worker)
 	for i := 0; i < worker; i++ {
@@ -154,6 +155,7 @@ func (box *InputBox) shutdown() {
 	box.shutdownChan <- true
 }
 
+// Shutdown shutdowns the inputs and outputs
 func (box *InputBox) Shutdown() {
 	box.shutdown()
 	box.stop = true
