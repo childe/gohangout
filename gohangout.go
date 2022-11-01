@@ -11,6 +11,8 @@ import (
 	"sync"
 
 	"github.com/childe/gohangout/input"
+	"github.com/childe/gohangout/internal/config"
+	"github.com/childe/gohangout/internal/signal"
 	"github.com/childe/gohangout/topology"
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -37,8 +39,10 @@ type gohangoutInputs []*input.InputBox
 
 var inputs gohangoutInputs
 
+// TODO use context?
 var mainThreadExitChan chan struct{} = make(chan struct{}, 0)
 
+// start all workers in all inputboxes, and wait until stop is called (stop will shutdown all inputboxes)
 func (inputs gohangoutInputs) start() {
 	boxes := ([]*input.InputBox)(inputs)
 	var wg sync.WaitGroup
@@ -110,6 +114,25 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 	return
 }
 
+// reload config file. stop inputs and start new inputs
+func reload() {
+	gohangoutConfig, err := config.ParseConfig(options.config)
+	if err != nil {
+		glog.Errorf("could not parse config, ignore reload: %v", err)
+	}
+	boxes, err := buildPluginLink(gohangoutConfig)
+	if err != nil {
+		glog.Errorf("build plugin link error, ignore reload: %v", err)
+	}
+
+	glog.Info("stop old inputs")
+	inputs.stop()
+
+	inputs = gohangoutInputs(boxes)
+	glog.Info("start new inputs")
+	go inputs.start()
+}
+
 func main() {
 	printVersion()
 	defer glog.Flush()
@@ -151,44 +174,28 @@ func main() {
 		}()
 	}
 
-	config, err := parseConfig(options.config)
+	gohangoutConfig, err := config.ParseConfig(options.config)
 	if err != nil {
 		glog.Fatalf("could not parse config: %v", err)
 	}
-	boxes, err := buildPluginLink(config)
+	boxes, err := buildPluginLink(gohangoutConfig)
 	if err != nil {
 		glog.Fatalf("build plugin link error: %v", err)
 	}
 	inputs = gohangoutInputs(boxes)
 	go inputs.start()
 
-	go func() {
-		for cfg := range configChannel {
-			inputs.stop()
-			boxes, err := buildPluginLink(cfg)
-			if err == nil {
-				inputs = gohangoutInputs(boxes)
-				go inputs.start()
-			} else {
-				glog.Errorf("build plugin link error: %v", err)
-				exit()
-			}
-		}
-	}()
-
 	if options.autoReload {
-		if err := watchConfig(options.config, configChannel); err != nil {
+		if err := config.WatchConfig(options.config, reload); err != nil {
 			glog.Fatalf("watch config fail: %s", err)
 		}
 	}
 
-	go listenSignal()
+	go signal.ListenSignal(exit, reload)
 
 	<-mainThreadExitChan
 	inputs.stop()
 }
-
-var configChannel = make(chan map[string]interface{})
 
 func exit() {
 	mainThreadExitChan <- struct{}{}

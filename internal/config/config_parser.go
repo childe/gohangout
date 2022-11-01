@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ type Parser interface {
 	parse(filename string) (map[string]interface{}, error)
 }
 
-func parseConfig(filename string) (map[string]interface{}, error) {
+func ParseConfig(filename string) (map[string]interface{}, error) {
 	lowerFilename := strings.ToLower(filename)
 	if strings.HasSuffix(lowerFilename, ".yaml") || strings.HasSuffix(lowerFilename, ".yml") {
 		yp := &YamlParser{}
@@ -25,7 +25,7 @@ func parseConfig(filename string) (map[string]interface{}, error) {
 }
 
 // remove sensitive info before output
-func removeSensitiveInfo(config map[string]interface{}) string {
+func RemoveSensitiveInfo(config map[string]interface{}) string {
 	re := regexp.MustCompile(`(.*password:\s+)(.*)`)
 	re2 := regexp.MustCompile(`(http(s)?://\w+:)\w+`)
 
