@@ -15,6 +15,7 @@
 .glide/
 
 build/
+/gohangout
 
 .ropeproject/
 vendor/
@@ -25,3 +26,4 @@ vendor/
 
 .idea/
 .vscode/
+
