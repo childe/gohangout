@@ -17,6 +17,9 @@ jobs:
       with:
         go-version: 1.18
 
+    - name: Test
+      run: go test -v ./...
+
     - name: Build
       run: go build -ldflags "-X main.version=$(git rev-parse --short HEAD)" -v -o . ./...
 
