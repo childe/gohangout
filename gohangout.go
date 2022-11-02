@@ -25,6 +25,7 @@ var options = &struct {
 	pprofAddr  string
 	cpuprofile string
 	memprofile string
+	version    bool
 
 	prometheus string
 
@@ -73,6 +74,8 @@ func init() {
 	flag.StringVar(&options.pprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
 	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
 	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
+
+	flag.BoolVar(&options.version, "version", false, "print version and exit")
 
 	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
 
@@ -136,6 +139,11 @@ func reload() {
 }
 
 func main() {
+	if options.version {
+		printVersion()
+		return
+	}
+
 	printVersion()
 	defer glog.Flush()
 
