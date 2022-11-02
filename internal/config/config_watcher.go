@@ -18,22 +18,18 @@ func WatchConfig(filename string, reloadFunc func()) error {
 		for {
 			select {
 			case event, more := <-watcher.Events:
-				glog.Info(event)
-				glog.Info(more)
 				if !more {
-					glog.Info("no more event from config file watcher")
+					glog.Info("config file watcher closed")
 					return
 				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					reloadFunc()
-				}
-				if event.Op&fsnotify.Rename == fsnotify.Rename {
-					watcher.Add(filename)
-					reloadFunc()
-				}
+				glog.Infof("capture file watch event: %s", event)
+				reloadFunc()
+
+				// filename may be renamed, so add it again
+				watcher.Add(filename)
 			case err, more := <-watcher.Errors:
 				if !more {
-					glog.Info("no more event from error channel of config file watcher")
+					glog.Info("error channel of config file watcher closed")
 					return
 				}
 				glog.Errorf("error from config file watcher: %v", err)
