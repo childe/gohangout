@@ -119,10 +119,12 @@ func reload() {
 	gohangoutConfig, err := config.ParseConfig(options.config)
 	if err != nil {
 		glog.Errorf("could not parse config, ignore reload: %v", err)
+		return
 	}
 	boxes, err := buildPluginLink(gohangoutConfig)
 	if err != nil {
 		glog.Errorf("build plugin link error, ignore reload: %v", err)
+		return
 	}
 
 	glog.Info("stop old inputs")
