@@ -18,6 +18,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+var version string
+
 var options = &struct {
 	config     string
 	autoReload bool // 配置文件更新自动重启
@@ -140,11 +142,11 @@ func reload() {
 
 func main() {
 	if options.version {
-		printVersion()
+		fmt.Printf("gohangout version %s\n", version)
 		return
 	}
 
-	printVersion()
+	glog.Infof("gohangout version: %s", version)
 	defer glog.Flush()
 
 	if options.prometheus != "" {
