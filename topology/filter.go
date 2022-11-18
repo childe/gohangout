@@ -29,11 +29,11 @@ type FilterBox struct {
 	addFields    map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
+func NewFilterBox(config map[interface{}]interface{}, worker int) *FilterBox {
 	f := FilterBox{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
-		promCounter:     GetPromCounter(config),
+		promCounter:     GetPromCounter(config, worker),
 	}
 
 	if v, ok := config["failTag"]; ok {
@@ -111,7 +111,7 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 
 type buildFilterFunc func(filterType string, config map[interface{}]interface{}) Filter
 
-func BuildFilterBoxes(config map[string]interface{}, buildFilter buildFilterFunc) []*FilterBox {
+func BuildFilterBoxes(config map[string]interface{}, buildFilter buildFilterFunc, worker int) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
@@ -135,7 +135,7 @@ func BuildFilterBoxes(config map[string]interface{}, buildFilter buildFilterFunc
 	boxes := make([]*FilterBox, len(filters))
 	for i := 0; i < len(filters); i++ {
 		for _, cfg := range filtersI[i].(map[interface{}]interface{}) {
-			boxes[i] = NewFilterBox(cfg.(map[interface{}]interface{}))
+			boxes[i] = NewFilterBox(cfg.(map[interface{}]interface{}), worker)
 			boxes[i].Filter = filters[i]
 		}
 	}

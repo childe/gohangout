@@ -19,7 +19,7 @@ type OutputBox struct {
 
 type buildOutputFunc func(outputType string, config map[interface{}]interface{}) *OutputBox
 
-func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc) []*OutputBox {
+func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc, worker int) []*OutputBox {
 	rst := make([]*OutputBox, 0)
 
 	for _, outputs := range config["outputs"].([]interface{}) {
@@ -29,7 +29,7 @@ func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc) []
 			outputConfig := outputConfig.(map[interface{}]interface{})
 			output := buildOutput(outputType, outputConfig)
 
-			output.promCounter = GetPromCounter(outputConfig)
+			output.promCounter = GetPromCounter(outputConfig, worker)
 
 			rst = append(rst, output)
 		}

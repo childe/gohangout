@@ -42,7 +42,7 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 		stop:         false,
 		shutdownChan: make(chan bool, 1),
 
-		promCounter: topology.GetPromCounter(inputConfig),
+		promCounter: topology.GetPromCounter(inputConfig, 0),
 
 		mainThreadExitChan: mainThreadExitChan,
 	}
@@ -95,7 +95,7 @@ func (box *InputBox) beat(workerIdx int) {
 }
 
 func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
-	outputs := topology.BuildOutputs(box.config, output.BuildOutput)
+	outputs := topology.BuildOutputs(box.config, output.BuildOutput, workerIdx)
 	box.outputsInAllWorker[workerIdx] = outputs
 
 	var outputProcessor topology.Processor
@@ -105,7 +105,7 @@ func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
 		outputProcessor = (topology.OutputsProcessor)(outputs)
 	}
 
-	filterBoxes := topology.BuildFilterBoxes(box.config, filter.BuildFilter)
+	filterBoxes := topology.BuildFilterBoxes(box.config, filter.BuildFilter, workerIdx)
 
 	var firstNode *topology.ProcessorNode
 	for _, b := range filterBoxes {

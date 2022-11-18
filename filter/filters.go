@@ -27,7 +27,7 @@ func newFiltersFilter(config map[interface{}]interface{}) topology.Filter {
 		_config[k.(string)] = v
 	}
 
-	f.filterBoxes = topology.BuildFilterBoxes(_config, BuildFilter)
+	f.filterBoxes = topology.BuildFilterBoxes(_config, BuildFilter, 0)
 	if len(f.filterBoxes) == 0 {
 		glog.Fatal("no filters configured in Filters")
 	}
