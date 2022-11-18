@@ -1,13 +1,13 @@
 package input
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/healer"
 	"github.com/golang/glog"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type KafkaInput struct {
@@ -38,6 +38,7 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 	if v, ok := config["consumer_settings"]; !ok {
 		glog.Fatal("kafka input must have consumer_settings")
 	} else {
+		json := jsoniter.ConfigCompatibleWithStandardLibrary
 		if b, err := json.Marshal(v); err != nil {
 			glog.Fatalf("marshal consumer settings error: %v", err)
 		} else {
