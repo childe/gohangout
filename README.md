@@ -76,12 +76,14 @@ pprof 的http地址
 
 如下例子表示，如果数据通过 if 条件，则此 Add Filter 的计数加 1。
 
+注意，多个 counter 使用同样的配置可能会 Panic
+
 ```
 Add:
     prometheus_counter: 
-        name: gohangout_dot_output
+        name: gohangout_add_filter
         namespace: rack_a
-        help: 'rack_a gohangout dot output counter'
+        help: 'rack_a gohangout add filter counter'
         constLabels:
             env: prod
     if:
