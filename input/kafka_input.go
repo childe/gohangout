@@ -38,6 +38,7 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 	if v, ok := config["consumer_settings"]; !ok {
 		glog.Fatal("kafka input must have consumer_settings")
 	} else {
+		// official json marshal: unsupported type: map[interface {}]interface {}
 		json := jsoniter.ConfigCompatibleWithStandardLibrary
 		if b, err := json.Marshal(v); err != nil {
 			glog.Fatalf("marshal consumer settings error: %v", err)
