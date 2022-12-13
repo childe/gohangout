@@ -501,10 +501,13 @@ Kafka:
         bootstrap.servers: node1.kafka.corp.com:9092,node2.kafka.corp.com:9092,node3.kafka.corp.com:9092
         flush.interval.ms: "3000"
         metadata.max.age.ms: "10000"
+        # healer.magicbyte: "1"
         # sasl.mechanism: PLAIN
         # sasl.user: admin
         # sasl.password: admin-secret
 ```
+
+healer.magicbyte: "1" 是说写入的Kafka消息以版本1编码，默认是版本0. 版本1会在消息中加入时间戳信息。
 
 ### clickhouse
 
