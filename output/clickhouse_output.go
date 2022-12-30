@@ -139,7 +139,7 @@ func (c *ClickhouseOutput) setTableDesc() {
 				transIntColumn[key1] = value1.Type
 			case "Array(String)", "Array(Int64)", "Array(Int32)", "Array(Int16)", "Array(Int8)":
 				transArrayColumn[key1] = value1.Type
-			case "Float64", "Float32":
+			case "Float64", "Float32", "Nullable(Float32)", "Nullable(Float64)":
 				transFloatColumn[key1] = value1.Type
 			}
 		}
@@ -184,7 +184,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			}
 		case "Date", "DateTime", "DateTime64":
 			c.defaultValue[columnName] = time.Unix(0, 0)
-		case "Nullable(Int64)", "Nullable(Int32)", "Nullable(Int16)", "Nullable(Int8)":
+		case "Nullable(Int64)", "Nullable(Int32)", "Nullable(Int16)", "Nullable(Int8)", "Nullable(Float32)", "Nullable(Float64)":
 			c.defaultValue[columnName] = nil
 		case "UInt8", "UInt16", "UInt32", "UInt64", "Int8", "Int16", "Int32", "Int64":
 			if defaultValue == nil {
@@ -199,7 +199,7 @@ func (c *ClickhouseOutput) setColumnDefault() {
 			}
 		case "Float32", "Float64":
 			if defaultValue == nil {
-				c.defaultValue[columnName] = 0
+				c.defaultValue[columnName] = 0.0
 			} else {
 				i, e := strconv.ParseFloat(*defaultValue, 64)
 				if e == nil {
