@@ -19,9 +19,6 @@ jobs:
       - name: Test
         run: go test -v ./...
 
-      - name: Build
-        run: make all -e tag=${GITHUB_REF_NAME}
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
