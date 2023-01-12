@@ -34,7 +34,7 @@ jobs:
           prerelease: false
 
       - name: Package
-        run: make package
+        run: make package -e tag=${GITHUB_REF_NAME}
 
       - name: Upload Release Binary
         id: upload-release-asset
