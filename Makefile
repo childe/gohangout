@@ -38,9 +38,9 @@ check:
 test:
 	go test -v ./...
 
-package:
+package: all
 	zip build/gohangout-windows-x64-$(tag).exe.zip build/gohangout-windows-x64-$(tag).exe
 	zip build/gohangout-windows-386-$(tag).exe.zip build/gohangout-windows-386-$(tag).exe
-	zip build/gohangout-linux-x64-$(tag).exe.zip build/gohangout-linux-x64-$(tag).exe
-	zip build/gohangout-linux-386-$(tag).exe.zip build/gohangout-linux-386-$(tag).exe
-	zip build/gohangout-darwin-x64-$(tag).exe.zip build/gohangout-darwin-x64-$(tag).exe
+	zip build/gohangout-linux-x64-$(tag).zip build/gohangout-linux-x64-$(tag)
+	zip build/gohangout-linux-386-$(tag).zip build/gohangout-linux-386-$(tag)
+	zip build/gohangout-darwin-x64-$(tag).zip build/gohangout-darwin-x64-$(tag)
