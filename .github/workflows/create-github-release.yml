@@ -33,6 +33,14 @@ jobs:
       - name: Build
         run: make all -e tag=${GITHUB_REF_NAME}
 
+      - name: copy # for upload release binary step
+        run: |
+          cp build/gohangout-windows-x64-${GITHUB_REF_NAME} gohangout-windows-x64
+          cp build/gohangout-windows-386-${GITHUB_REF_NAME} gohangout-windows-386
+          cp build/gohangout-linux-x64-${GITHUB_REF_NAME} gohangout-linux-x64
+          cp build/gohangout-linux-386-${GITHUB_REF_NAME} gohangout-linux-386
+          cp build/gohangout-darwin-x64-${GITHUB_REF_NAME} gohangout-darwin-x64
+
       - name: LS
         run: ls -l ./build
 

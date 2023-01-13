@@ -37,10 +37,3 @@ check:
 
 test:
 	go test -v ./...
-
-package: all # for github workflow, upload the binary to release assets
-	zip build/gohangout-windows-x64.exe.zip build/gohangout-windows-x64-$(tag).exe
-	zip build/gohangout-windows-386.exe.zip build/gohangout-windows-386-$(tag).exe
-	zip build/gohangout-linux-x64.zip build/gohangout-linux-x64-$(tag)
-	zip build/gohangout-linux-386.zip build/gohangout-linux-386-$(tag)
-	zip build/gohangout-darwin-x64.zip build/gohangout-darwin-x64-$(tag)
