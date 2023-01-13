@@ -23,7 +23,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1.1.4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
@@ -43,6 +43,17 @@ jobs:
           GITHUB_REF_NAME: ${GITHUB_REF_NAME}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/gohangout-linux-x64-v-dev-0.0.17.zip
-          asset_name: gohangout-linux-x64-v-dev-0.0.17.zip
+          asset_path: ./build/gohangout-linux-x64.zip
+          asset_name: gohangout-linux-x64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Binary
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_REF_NAME: ${GITHUB_REF_NAME}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/gohangout-linux-x64
+          asset_name: gohangout-linux-x64
           asset_content_type: application/zip
