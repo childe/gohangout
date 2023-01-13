@@ -7,7 +7,6 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e // indirect
 	github.com/childe/healer v0.3.2
-	github.com/frankban/quicktest v1.14.3 // indirect
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/golang/glog v1.0.0
 	github.com/golang/snappy v0.0.4 // indirect
@@ -32,3 +31,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace github.com/spf13/cast v1.4.1 => github.com/oasisprotocol/cast v0.0.0-20220606122631-eba453e69641
