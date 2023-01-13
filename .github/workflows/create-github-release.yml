@@ -1,0 +1,100 @@
+name: Create Release And Upload Binary To Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.1.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Build
+        run: make all -e tag=${GITHUB_REF_NAME}
+
+      - name: copy # for upload release binary step
+        run: |
+          cp build/gohangout-windows-x64-${GITHUB_REF_NAME}.exe gohangout-windows-x64.exe
+          cp build/gohangout-windows-386-${GITHUB_REF_NAME}.exe gohangout-windows-386.exe
+          cp build/gohangout-linux-x64-${GITHUB_REF_NAME} gohangout-linux-x64
+          cp build/gohangout-linux-386-${GITHUB_REF_NAME} gohangout-linux-386
+          cp build/gohangout-darwin-x64-${GITHUB_REF_NAME} gohangout-darwin-x64
+
+      - name: LS
+        run: ls -l ./build
+
+      - name: Upload linux-x64
+        id: upload-linux-x64
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: gohangout-linux-x64
+          asset_name: gohangout-linux-x64
+          asset_content_type: application/zip
+
+      - name: Upload linux-386
+        id: upload-linux-386
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: gohangout-linux-386
+          asset_name: gohangout-linux-386
+          asset_content_type: application/zip
+
+      - name: Upload windows-x64
+        id: upload-windows-x64
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: gohangout-windows-x64.exe
+          asset_name: gohangout-windows-x64.exe
+          asset_content_type: application/zip
+
+      - name: Upload windows-386
+        id: upload-windows-386
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: gohangout-windows-386.exe
+          asset_name: gohangout-windows-386.exe
+          asset_content_type: application/zip
+
+      - name: Upload darwin-x64
+        id: upload-darwin-x64
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: gohangout-darwin-x64
+          asset_name: gohangout-darwin-x64
+          asset_content_type: application/zip
