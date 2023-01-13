@@ -21,29 +21,18 @@ var ErrConvertUnknownFormat error = errors.New("unknown format")
 type IntConverter struct{}
 
 func (c *IntConverter) convert(v interface{}) (interface{}, error) {
-	if vn, ok := v.(json.Number); ok {
-		return vn.Int64()
-	}
-
 	return cast.ToInt64E(v)
 }
 
 type UIntConverter struct{}
 
 func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
-	if vn, ok := v.(json.Number); ok {
-		return strconv.ParseUint(vn.String(), 0, 64)
-	}
-
 	return cast.ToUint64E(v)
 }
 
 type FloatConverter struct{}
 
 func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
-	if vn, ok := v.(json.Number); ok {
-		return vn.Float64()
-	}
 	return cast.ToFloat64E(v)
 }
 
