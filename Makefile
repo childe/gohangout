@@ -1,4 +1,5 @@
 hash:=$(shell git rev-parse --short HEAD)
+tag?=$(hash)
 
 .PHONY: gohangout all clean check test docker linux-binary
 
@@ -22,11 +23,11 @@ all: check
 	@echo $(hash)
 	mkdir -p build/
 
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-x64-$(hash).exe
-	GOOS=windows GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-386-$(hash).exe
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-x64-$(hash)
-	GOOS=linux GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-386-$(hash)
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-darwin-x64-$(hash)
+	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-x64-$(tag).exe
+	GOOS=windows GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-386-$(tag).exe
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-x64-$(tag)
+	GOOS=linux GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-386-$(tag)
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-darwin-x64-$(tag)
 
 clean:
 	rm -rf build/*
@@ -35,8 +36,4 @@ check:
 	git diff-index --quiet HEAD --
 
 test:
-	go test input/*.go
-	go test output/*.go
-	go test filter/*.go
-	go test condition_filter/*.go
-	go test value_render/*.go
+	go test -v ./...
