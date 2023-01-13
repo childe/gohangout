@@ -21,7 +21,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v1.1.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -31,14 +31,14 @@ jobs:
           prerelease: false
 
       - name: Build
-        run: make all -e tag=${GITHUB_REF_NAME}
+        run: make package -e tag=${GITHUB_REF_NAME}
 
       - name: LS
         run: ls -l ./build
 
       - name: Upload Release Binary
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_REF_NAME: ${GITHUB_REF_NAME}
         with:
