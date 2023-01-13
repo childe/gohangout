@@ -73,8 +73,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: gohangout-windows-x64
-          asset_name: gohangout-windows-x64
+          asset_path: gohangout-windows-x64.exe
+          asset_name: gohangout-windows-x64.exe
           asset_content_type: application/zip
 
       - name: Upload windows-386
@@ -84,8 +84,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: gohangout-windows-386
-          asset_name: gohangout-windows-386
+          asset_path: gohangout-windows-386.exe
+          asset_name: gohangout-windows-386.exe
           asset_content_type: application/zip
 
       - name: Upload darwin-x64
