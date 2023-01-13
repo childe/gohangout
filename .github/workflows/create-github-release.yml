@@ -44,13 +44,13 @@ jobs:
       - name: LS
         run: ls -l ./build
 
-      - name: Upload Release Binary
-        id: upload-release-asset
+      - name: Upload linux-x64
+        id: upload-linux-x64
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GOHANGOUT_UPLOAD_ASSET_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/gohangout-linux-x64
+          asset_path: gohangout-linux-x64
           asset_name: gohangout-linux-x64
           asset_content_type: application/zip
