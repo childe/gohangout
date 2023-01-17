@@ -22,6 +22,10 @@
 
   > go get github.com/childe/gohangout
 
+### docker
+
+镜像地址 https://hub.docker.com/repository/docker/rmself/gohangout/general
+
 ### 第三方 Plugin
 
 使用 Plugin 的话，自己编译一下，将 CGO_ENABLED 打开：`CGO_ENABLED=1`
