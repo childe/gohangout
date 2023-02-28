@@ -45,6 +45,8 @@ func (yp *YamlParser) parse(filepath string) (map[string]interface{}, error) {
 		}
 	}
 
+	buffer = []byte(os.ExpandEnv(string(buffer)))
+
 	config := make(map[string]interface{})
 	err = yaml.Unmarshal(buffer, &config)
 	if err != nil {
