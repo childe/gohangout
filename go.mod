@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e // indirect
-	github.com/childe/healer v0.3.2
+	github.com/childe/healer v0.3.4
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/golang/glog v1.0.0
 	github.com/golang/snappy v0.0.4 // indirect
