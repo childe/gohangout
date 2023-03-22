@@ -362,8 +362,8 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 
 	p.bulkChan = make(chan []map[string]interface{}, concurrent)
 	for i := 0; i < concurrent; i++ {
+		p.wg.Add(1)
 		go func() {
-			p.wg.Add(1)
 			for {
 				select {
 				case events := <-p.bulkChan:
