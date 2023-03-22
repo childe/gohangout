@@ -23,11 +23,11 @@ all: check
 	@echo $(hash)
 	mkdir -p build/
 
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-x64-$(tag).exe
-	GOOS=windows GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-386-$(tag).exe
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-x64-$(tag)
-	GOOS=linux GOARCH=386 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-386-$(tag)
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-darwin-x64-$(tag)
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-x64-$(tag).exe
+	GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-windows-386-$(tag).exe
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-x64-$(tag)
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-linux-386-$(tag)
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-darwin-x64-$(tag)
 
 clean:
 	rm -rf build/*
