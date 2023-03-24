@@ -49,6 +49,7 @@ type ClickhouseOutput struct {
 	wg        sync.WaitGroup
 	closeChan chan bool
 
+	autoConvert         bool
 	transIntColumn      []string
 	transFloatColumn    []string
 	transIntArrayColumn []string
@@ -271,6 +272,12 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		}
 	}
 
+	if v, ok := config["auto_convert"]; ok {
+		p.autoConvert = v.(bool)
+	} else {
+		p.autoConvert = true
+	}
+
 	if v, ok := config["table"]; ok {
 		p.table = v.(string)
 	} else {
@@ -336,7 +343,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 
 	p.setColumnDefault()
 	if len(p.fields) <= 0 {
-		glog.Fatalf("fields length must be > 0")
+		glog.Fatalf("fields not set in clickhouse output and could get fields from clickhouse table")
 	}
 	p.fieldsLength = len(p.fields)
 
@@ -395,6 +402,48 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	return p
 }
 
+// convert int and float fields to coresponding type
+func (c *ClickhouseOutput) convert(event map[string]interface{}) {
+	for _, key := range c.transIntColumn {
+		if keyIntValue, ok := event[key]; ok {
+			if intConverterValue, err := cast.ToInt64E(keyIntValue); err == nil {
+				event[key] = intConverterValue
+			} else {
+				glog.V(10).Infof("ch_output convert intType error: %s", err)
+				event[key] = nil
+			}
+		}
+	}
+
+	for _, key := range c.transIntArrayColumn {
+		if keyArrayValue, ok := event[key]; ok {
+			arrayIntValue := keyArrayValue.([]interface{})
+			ints := make([]int64, len(arrayIntValue))
+			for i, v := range arrayIntValue {
+				if v, err := cast.ToInt64E(v); err == nil {
+					ints[i] = v
+				} else {
+					glog.V(10).Infof("ch_output convert arrayIntType error: %s", err)
+					ints[i] = 0
+				}
+				event[key] = ints
+			}
+		}
+	}
+
+	for _, key := range c.transFloatColumn {
+		if keyFloatValue, ok := event[key]; ok {
+			floatConverterValue, err := cast.ToFloat64E(keyFloatValue)
+			if err == nil {
+				event[key] = floatConverterValue
+			} else {
+				glog.V(10).Infof("ch_output convert floatType error: %s", err)
+				event[key] = nil
+			}
+		}
+	}
+}
+
 func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 	execution_id := atomic.AddUint64(&c.execution_id, 1)
 	glog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
@@ -425,44 +474,8 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 		defer stmt.Close()
 
 		for _, event := range events {
-
-			for _, key := range c.transIntColumn {
-				if keyIntValue, ok := event[key]; ok {
-					if intConverterValue, err := cast.ToInt64E(keyIntValue); err == nil {
-						event[key] = intConverterValue
-					} else {
-						glog.V(10).Infof("ch_output convert intType error: %s", err)
-						event[key] = nil
-					}
-				}
-			}
-
-			for _, key := range c.transIntArrayColumn {
-				if keyArrayValue, ok := event[key]; ok {
-					arrayIntValue := keyArrayValue.([]interface{})
-					ints := make([]int64, len(arrayIntValue))
-					for i, v := range arrayIntValue {
-						if v, err := cast.ToInt64E(v); err == nil {
-							ints[i] = v
-						} else {
-							glog.V(10).Infof("ch_output convert arrayIntType error: %s", err)
-							ints[i] = 0
-						}
-						event[key] = ints
-					}
-				}
-			}
-
-			for _, key := range c.transFloatColumn {
-				if keyFloatValue, ok := event[key]; ok {
-					floatConverterValue, err := cast.ToFloat64E(keyFloatValue)
-					if err == nil {
-						event[key] = floatConverterValue
-					} else {
-						glog.V(10).Infof("ch_output convert floatType error: %s", err)
-						event[key] = nil
-					}
-				}
+			if c.autoConvert {
+				c.convert(event)
 			}
 
 			args := make([]interface{}, c.fieldsLength)
