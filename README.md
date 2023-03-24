@@ -525,6 +525,7 @@ Clickhouse:
     - 'tcp://10.100.0.101:9000'
     - 'tcp://10.100.0.102:9000'
     # fields: ['datetime', 'appid', 'c_ip', 'domain', 'cs_method', 'cs_uri', 's_ip', 'sc_status', 'time_taken']
+    auto_convert: false
     bulk_actions: 1000
     flush_interval: 30
     concurrent: 1
@@ -542,9 +543,15 @@ clickhouse 节点列表. 必须配置
 
 #### fields
 
-初始化的时候会从 ClickHouse 里面读取所有字段。
+初始化的时候会从 Clickhouse 里面读取所有字段。
 
 也可以手工配置，会优先使用手工配置。 为了暂时缓解 #159
+
+#### auto_convert
+
+默认是 true。
+
+解决 [https://github.com/childe/gohangout/issues/208](https://github.com/childe/gohangout/issues/208) 这个问题。如果用户配置了多个Clickhouse Output，对一个 event 做字段类型转换可能会导致 concurrent map writes。这种情况（多个 Clickhouse Output）下，用户需要自己使用 Convert Filter 对字段做类型转换，并禁用 Clickhouse Output 里面的自动类型转换。
 
 #### bulk_actions
 
@@ -560,7 +567,7 @@ bulk 的goroutine 最大值, 默认1
 
 #### conn_max_life_time
 
-到 ClickHouse 的连接的生存时间, 单位为秒. 默认不设置, 也就是生存时间无限长.
+到 Clickhouse 的连接的生存时间, 单位为秒. 默认不设置, 也就是生存时间无限长.
 
 ## FILTER
 
