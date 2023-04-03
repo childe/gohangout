@@ -82,7 +82,14 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 		bulk_size:          bulk_size,
 		bulk_actions:       bulk_actions,
 		flush_interval:     flush_interval,
-		client:             &http.Client{},
+		client:             &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					MinVersion:         tls.VersionTLS11,
+					InsecureSkipVerify: true,
+				},
+			},
+		},
 		hostSelector:       NewRRHostSelector(hostsI, 3),
 		concurrent:         concurrent,
 		compress:           compress,
