@@ -927,6 +927,8 @@ KV:
 Json:
     field: request
     target: request_fields
+    include: ["client", "host"]
+    exclude: ["request", "user_agent"]
 ```
 
 #### field
@@ -936,6 +938,14 @@ Json:
 #### target
 
 目标字段, 如果不设置, 则将Json Filter生成的所有字段写入到根一层.
+
+#### include
+
+只使用 include 中配置的字段，其他字段丢弃。优先级高于 exclude
+
+#### exclude
+
+exclude 中的字段不要。优先级低于 include
 
 ### LinkMetric
 
