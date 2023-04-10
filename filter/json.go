@@ -9,7 +9,8 @@ import (
 	"github.com/golang/glog"
 )
 
-type JsonFilter struct {
+// JSONFilter will parse json string in `field` and put the result into `target` field
+type JSONFilter struct {
 	field     string
 	target    string
 	overwrite bool
@@ -18,11 +19,11 @@ type JsonFilter struct {
 }
 
 func init() {
-	Register("Json", newJsonFilter)
+	Register("Json", newJSONFilter)
 }
 
-func newJsonFilter(config map[interface{}]interface{}) topology.Filter {
-	plugin := &JsonFilter{
+func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
+	plugin := &JSONFilter{
 		overwrite: true,
 		target:    "",
 	}
@@ -52,7 +53,7 @@ func newJsonFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 // Filter will parse json string in `field` and put the result into `target` field
-func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	s, ok := event[plugin.field]
 	if !ok {
 		return event, false

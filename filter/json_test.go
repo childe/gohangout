@@ -70,7 +70,7 @@ func TestJson(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		f := newJsonFilter(c.config)
+		f := newJSONFilter(c.config)
 		got, ok := f.Filter(c.event)
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("config: %#v event: %v: want %#v, got %#v", c.config, c.event, c.want, got)
@@ -142,7 +142,7 @@ func TestIncludeExclude(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		f := newJsonFilter(c.config)
+		f := newJSONFilter(c.config)
 		got, ok := f.Filter(c.event)
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("config: %#v event: %v: want %#v, got %#v", c.config, c.event, c.want, got)
