@@ -9,18 +9,21 @@ import (
 	"github.com/golang/glog"
 )
 
-type JsonFilter struct {
+// JSONFilter will parse json string in `field` and put the result into `target` field
+type JSONFilter struct {
 	field     string
 	target    string
 	overwrite bool
+	include   []string
+	exclude   []string
 }
 
 func init() {
-	Register("Json", newJsonFilter)
+	Register("Json", newJSONFilter)
 }
 
-func newJsonFilter(config map[interface{}]interface{}) topology.Filter {
-	plugin := &JsonFilter{
+func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
+	plugin := &JSONFilter{
 		overwrite: true,
 		target:    "",
 	}
@@ -39,43 +42,76 @@ func newJsonFilter(config map[interface{}]interface{}) topology.Filter {
 		plugin.target = target.(string)
 	}
 
+	if include, ok := config["include"]; ok {
+		plugin.include = include.([]string)
+	}
+	if exclude, ok := config["exclude"]; ok {
+		plugin.exclude = exclude.([]string)
+	}
+
 	return plugin
 }
 
-func (plugin *JsonFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	if s, ok := event[plugin.field]; ok {
-		if reflect.TypeOf(s).Kind() != reflect.String {
-			return event, false
-		}
-		var o interface{} = nil
-		d := json.NewDecoder(strings.NewReader(s.(string)))
-		d.UseNumber()
-		err := d.Decode(&o)
-		if err != nil || o == nil {
-			return event, false
-		}
-
-		if plugin.target == "" {
-			if reflect.TypeOf(o).Kind() != reflect.Map {
-				glog.V(5).Infof("%s field is not map type, `target` must be set in config file", plugin.field)
-				return event, false
-			}
-			if plugin.overwrite {
-				for k, v := range o.(map[string]interface{}) {
-					event[k] = v
-				}
-			} else {
-				for k, v := range o.(map[string]interface{}) {
-					if _, ok := event[k]; !ok {
-						event[k] = v
-					}
-				}
-			}
-		} else {
-			event[plugin.target] = o
-		}
-		return event, true
-	} else {
+// Filter will parse json string in `field` and put the result into `target` field
+func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+	s, ok := event[plugin.field]
+	if !ok {
 		return event, false
 	}
+
+	ss, ok := s.(string)
+	if !ok {
+		return event, false
+	}
+
+	var o interface{} = nil
+	d := json.NewDecoder(strings.NewReader(ss))
+	d.UseNumber()
+	err := d.Decode(&o)
+	if err != nil || o == nil {
+		return event, false
+	}
+
+	if len(plugin.include) > 0 {
+		oo := map[string]interface{}{}
+		if o, ok := o.(map[string]interface{}); ok {
+			for _, k := range plugin.include {
+				oo[k] = o[k]
+			}
+		} else {
+			glog.V(5).Infof("%s field is not map type, could not get `include` fields from it", plugin.field)
+			return event, false
+		}
+		o = oo
+	} else if len(plugin.exclude) > 0 {
+		if o, ok := o.(map[string]interface{}); ok {
+			for _, k := range plugin.exclude {
+				delete(o, k)
+			}
+		} else {
+			glog.V(5).Infof("%s field is not map type, could not get `include` fields from it", plugin.field)
+			return event, false
+		}
+	}
+
+	if plugin.target == "" {
+		if reflect.TypeOf(o).Kind() != reflect.Map {
+			glog.V(5).Infof("%s field is not map type, `target` must be set in config file", plugin.field)
+			return event, false
+		}
+		if plugin.overwrite {
+			for k, v := range o.(map[string]interface{}) {
+				event[k] = v
+			}
+		} else {
+			for k, v := range o.(map[string]interface{}) {
+				if _, ok := event[k]; !ok {
+					event[k] = v
+				}
+			}
+		}
+	} else {
+		event[plugin.target] = o
+	}
+	return event, true
 }
