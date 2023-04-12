@@ -98,7 +98,7 @@ func TestIncludeExclude(t *testing.T) {
 			map[interface{}]interface{}{
 				"field":     "message",
 				"overwrite": true,
-				"include":   []string{"a", "b"},
+				"include":   []interface{}{"a", "b"},
 			},
 			map[string]interface{}{
 				"message": `{"a":1,"b":2, "c": 3}`,
@@ -114,7 +114,7 @@ func TestIncludeExclude(t *testing.T) {
 			map[interface{}]interface{}{
 				"field":     "message",
 				"overwrite": true,
-				"exclude":   []string{"a", "b"},
+				"exclude":   []interface{}{"a", "b"},
 			},
 			map[string]interface{}{
 				"message": `{"a":1,"b":2, "c": 3}`,
@@ -129,8 +129,8 @@ func TestIncludeExclude(t *testing.T) {
 			map[interface{}]interface{}{
 				"field":     "message",
 				"overwrite": true,
-				"include":   []string{"a", "b"},
-				"exclude":   []string{"a", "b"},
+				"include":   []interface{}{"a", "b"},
+				"exclude":   []interface{}{"a", "b"},
 			},
 			map[string]interface{}{
 				"message": `{"a":1,"b":2, "c": 3}`,
