@@ -43,10 +43,14 @@ func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
 	}
 
 	if include, ok := config["include"]; ok {
-		plugin.include = include.([]string)
+		for _, i := range include.([]interface{}) {
+			plugin.include = append(plugin.include, i.(string))
+		}
 	}
 	if exclude, ok := config["exclude"]; ok {
-		plugin.exclude = exclude.([]string)
+		for _, i := range exclude.([]interface{}) {
+			plugin.exclude = append(plugin.exclude, i.(string))
+		}
 	}
 
 	return plugin
