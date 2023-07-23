@@ -5,7 +5,7 @@ tag?=$(hash)
 
 gohangout:
 	mkdir -p build/
-	go build -o build/gohangout
+	CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout
 
 linux-binary:
 	mkdir -p build
