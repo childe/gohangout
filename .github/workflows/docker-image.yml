@@ -2,8 +2,8 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches:
-      - '*'
+    tags:
+      - 'v*'
 
 jobs:
   docker-build-push:
