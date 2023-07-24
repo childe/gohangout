@@ -84,7 +84,7 @@ func init() {
 
 	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
 
-	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", true, "triger gohangout to exit when receive a nil event")
+	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
 
 	flag.Parse()
 }
