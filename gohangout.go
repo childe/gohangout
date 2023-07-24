@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
@@ -42,8 +43,10 @@ type gohangoutInputs []*input.InputBox
 
 var inputs gohangoutInputs
 
-// TODO use context?
-var mainThreadExitChan chan struct{} = make(chan struct{}, 0)
+var (
+	ctx context.Context
+	cancel context.CancelFunc
+)
 
 // start all workers in all inputboxes, and wait until stop is called (stop will shutdown all inputboxes)
 func (inputs gohangoutInputs) start() {
@@ -81,7 +84,7 @@ func init() {
 
 	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
 
-	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
+	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", true, "triger gohangout to exit when receive a nil event")
 
 	flag.Parse()
 }
@@ -106,7 +109,7 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 				return
 			}
 
-			box := input.NewInputBox(inputPlugin, inputConfig, config, mainThreadExitChan)
+			box := input.NewInputBox(inputPlugin, inputConfig, config, exit)
 			if box == nil {
 				err = fmt.Errorf("new input box fail")
 				return
@@ -141,6 +144,9 @@ func reload() {
 }
 
 func main() {
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+ 
 	if options.version {
 		fmt.Printf("gohangout version %s\n", version)
 		return
@@ -205,10 +211,10 @@ func main() {
 
 	go signal.ListenSignal(exit, reload)
 
-	<-mainThreadExitChan
+	<-ctx.Done()
 	inputs.stop()
 }
 
 func exit() {
-	mainThreadExitChan <- struct{}{}
+	cancel()
 }

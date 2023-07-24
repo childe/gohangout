@@ -24,7 +24,7 @@ type InputBox struct {
 	promCounter prometheus.Counter
 
 	shutdownWhenNil    bool
-	mainThreadExitChan chan struct{}
+	exit 						   func()
 
 	addFields map[field_setter.FieldSetter]value_render.ValueRender
 }
@@ -35,7 +35,7 @@ func (box *InputBox) SetShutdownWhenNil(shutdownWhenNil bool) {
 	box.shutdownWhenNil = shutdownWhenNil
 }
 
-func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, config map[string]interface{}, mainThreadExitChan chan struct{}) *InputBox {
+func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, config map[string]interface{}, exit func()) *InputBox {
 	b := &InputBox{
 		input:        input,
 		config:       config,
@@ -44,7 +44,7 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 
 		promCounter: topology.GetPromCounter(inputConfig),
 
-		mainThreadExitChan: mainThreadExitChan,
+		exit:        exit,
 	}
 	if add_fields, ok := inputConfig["add_fields"]; ok {
 		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
@@ -81,7 +81,7 @@ func (box *InputBox) beat(workerIdx int) {
 			}
 			if box.shutdownWhenNil {
 				glog.Info("received nil message. shutdown...")
-				box.mainThreadExitChan <- struct{}{}
+			  box.exit()
 				break
 			} else {
 				continue
