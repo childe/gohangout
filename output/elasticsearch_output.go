@@ -133,7 +133,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	retry := make([]int, 0)
 	noRetry := make([]int, 0)
 	//make a string index to avoid json decode for speed up over 90%+ scences
-	if bytes.Index(respBody, defaultNormalResp) != -1 {
+	if bytes.Contains(respBody, defaultNormalResp) {
 		return retry, noRetry, nil
 	}
 	var responseI interface{}
@@ -151,7 +151,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 		return retry, noRetry, nil
 	}
 
-	if bulkResponse["errors"].(bool) == false {
+	if !bulkResponse["errors"].(bool) {
 		return retry, noRetry, nil
 	}
 
@@ -412,7 +412,7 @@ func sniffNodes(config map[interface{}]interface{}) ([]string, error) {
 		match string
 		ok    bool
 	)
-	v, _ := sniff["match"]
+	v := sniff["match"]
 	if v != nil {
 		match, ok = v.(string)
 		if !ok {
