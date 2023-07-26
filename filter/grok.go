@@ -39,7 +39,7 @@ func (grok *Grok) loadPattern(filename string) {
 		if err != nil {
 			glog.Fatalf("read pattenrs error:%s", err)
 		}
-		if isPrefix == true {
+		if isPrefix {
 			glog.Fatal("readline prefix")
 		}
 		if len(line) == 0 || line[0] == '#' {

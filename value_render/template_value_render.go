@@ -153,5 +153,5 @@ func (r *TemplateValueRender) Render(event map[string]interface{}) interface{} {
 	if r.tmpl.Execute(b, event) != nil {
 		return nil
 	}
-	return string(b.Bytes())
+	return b.String()
 }
