@@ -152,22 +152,22 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 }
 
 func (d *SimpleJsonDecoder) encodeSlice(value interface{}) error {
-        switch value.(type) {
+	switch v := value.(type) {
 	case []byte:
-                d.string(string(value.([]byte)))
+		d.string(string(v))
 	default:
-	        t := reflect.ValueOf(value)           	
-                d.WriteByte('[')
-	        n := t.Len()
-	        for i := 0; i < n; i++ {
-                        if i > 0 {
-	                        d.WriteByte(',')
-                        }
-	                d.encodeV(t.Index(i).Interface())
-	       }
-	       d.WriteByte(']')
-	       return nil
-        }
+		t := reflect.ValueOf(value)           	
+		d.WriteByte('[')
+		n := t.Len()
+		for i := 0; i < n; i++ {
+			if i > 0 {
+				d.WriteByte(',')
+			}
+			d.encodeV(t.Index(i).Interface())
+		}
+		d.WriteByte(']')
+		return nil
+	}
 	return nil
 }
 

@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"sync"
@@ -148,7 +147,7 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 	for fieldValue, nextLevelMetrics := range metrics {
 		for _, e := range f.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
 			event := make(map[string]interface{})
-			event[fmt.Sprintf("%s", fieldName)] = fieldValue
+			event[fieldName] = fieldValue
 			for k, v := range e {
 				event[k] = v
 			}

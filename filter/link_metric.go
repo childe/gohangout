@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -131,7 +130,7 @@ func (f *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, l
 	if level == f.fieldsLength-1 {
 		for fieldValue, count := range metrics {
 			event := make(map[string]interface{})
-			event[fmt.Sprintf("%s", fieldName)] = fieldValue
+			event[fieldName] = fieldValue
 			event["count"] = count
 			events = append(events, event)
 		}
@@ -141,7 +140,7 @@ func (f *LinkMetricFilter) metricToEvents(metrics map[interface{}]interface{}, l
 	for fieldValue, nextLevelMetrics := range metrics {
 		for _, e := range f.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
 			event := make(map[string]interface{})
-			event[fmt.Sprintf("%s", fieldName)] = fieldValue
+			event[fieldName] = fieldValue
 			for k, v := range e {
 				event[k] = v
 			}
@@ -263,7 +262,6 @@ func (f *LinkMetricFilter) emitMetrics() {
 		}
 	}
 	f.metricToEmit = make(map[int64]interface{})
-	return
 }
 
 func (f *LinkMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
