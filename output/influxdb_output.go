@@ -188,7 +188,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 	}
 	var requestMethod string = "POST"
 
-	var retryResponseCode map[int]bool
+	retryResponseCode := make(map[int]bool)
 	if v, ok := config["retry_response_code"]; ok {
 		for _, cI := range v.([]interface{}) {
 			retryResponseCode[cI.(int)] = true

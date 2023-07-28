@@ -23,6 +23,8 @@ type IPIPFilter struct {
 	overwrite bool
 }
 
+const bitSize int = 64
+
 func init() {
 	Register("IPIP", newIPIPFilter)
 }
@@ -105,8 +107,8 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 			event["isp"] = a[4]
 		}
 		if len(a) >= 10 {
-			latitude, _ := strconv.ParseFloat(a[5], 10)
-			longitude, _ := strconv.ParseFloat(a[6], 10)
+			latitude, _ := strconv.ParseFloat(a[5], bitSize)
+			longitude, _ := strconv.ParseFloat(a[6], bitSize)
 			event["latitude"] = latitude
 			event["longitude"] = longitude
 			event["location"] = []interface{}{longitude, latitude}
@@ -121,8 +123,8 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 			target["isp"] = a[4]
 		}
 		if len(a) >= 10 {
-			latitude, _ := strconv.ParseFloat(a[5], 10)
-			longitude, _ := strconv.ParseFloat(a[6], 10)
+			latitude, _ := strconv.ParseFloat(a[5], bitSize)
+			longitude, _ := strconv.ParseFloat(a[6], bitSize)
 			target["latitude"] = latitude
 			target["longitude"] = longitude
 			target["location"] = []interface{}{longitude, latitude}
