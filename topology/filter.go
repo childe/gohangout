@@ -83,7 +83,6 @@ func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[
 					event["tags"] = []interface{}{tags.(string), f.failTag}
 				} else if reflect.TypeOf(tags).Kind() == reflect.Array {
 					event["tags"] = append(tags.([]interface{}), f.failTag)
-				} else {
 				}
 			} else {
 				event["tags"] = f.failTag
