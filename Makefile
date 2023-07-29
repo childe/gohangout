@@ -36,4 +36,4 @@ check:
 	git diff-index --quiet HEAD --
 
 test:
-	go test -v ./...
+	go test -v ./...  -covermode=atomic -coverprofile=coverage.out
