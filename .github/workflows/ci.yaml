@@ -1,0 +1,69 @@
+name: CI Actions  # don't edit while the badge was depend on this
+
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  lint-build-test:
+    name: Build/Lint/Test
+    strategy:
+      matrix:
+        go-version: [1.19.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{matrix.go-version}}
+
+      - name: Checkout Code Base
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Restore Go Module Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+      - name: Build
+        run: make
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.53
+        continue-on-error: true
+
+      - name: Test
+        run: make test
+        
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          verbose: true
+      
+  check-docker:
+    name: Check Docker image
+    needs: [lint-build-test]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
