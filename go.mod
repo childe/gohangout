@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e // indirect
-	github.com/childe/healer v0.3.4
+	github.com/childe/healer v0.5.2
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/golang/glog v1.0.0
 	github.com/golang/snappy v0.0.4 // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/prometheus/client_golang v1.12.1
 	github.com/shopspring/decimal v1.3.1 // indirect
@@ -29,7 +29,6 @@ require (
 	golang.org/x/sys v0.1.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
 replace github.com/spf13/cast v1.4.1 => github.com/oasisprotocol/cast v0.0.0-20220606122631-eba453e69641
