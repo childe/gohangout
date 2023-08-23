@@ -51,11 +51,6 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 
 	glog.Info(producer_settings)
 
-	producerConfig, err := healer.GetProducerConfig(producer_settings)
-	if err != nil {
-		glog.Fatalf("could not init kafka producer config: %v", err)
-	}
-
 	var topic string
 	if v, ok := config["topic"]; !ok {
 		glog.Fatal("kafka output must have topic setting")
@@ -63,10 +58,11 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 		topic = v.(string)
 	}
 
-	p.producer = healer.NewProducer(topic, producerConfig)
-	if p.producer == nil {
-		glog.Fatal("could not create kafka producer")
+	producer, err := healer.NewProducer(topic, producer_settings)
+	if err != nil {
+		glog.Fatalf("could not create kafka producer: %v", err)
 	}
+	p.producer = producer
 
 	if v, ok := config["key"]; ok {
 		p.key = value_render.GetValueRender(v.(string))
