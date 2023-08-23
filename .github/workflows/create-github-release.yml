@@ -40,6 +40,7 @@ jobs:
           cp build/gohangout-windows-arm64-${GITHUB_REF_NAME}.exe gohangout-windows-arm64.exe
           cp build/gohangout-linux-x64-${GITHUB_REF_NAME} gohangout-linux-x64
           cp build/gohangout-linux-386-${GITHUB_REF_NAME} gohangout-linux-386
+          cp build/gohangout-linux-arm64-${GITHUB_REF_NAME} gohangout-linux-arm64
           cp build/gohangout-darwin-x64-${GITHUB_REF_NAME} gohangout-darwin-x64
 
       - name: LS
