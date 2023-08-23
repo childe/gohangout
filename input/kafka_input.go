@@ -91,18 +91,13 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 		decoder: codec.NewDecoder(codertype),
 	}
 
-	consumerConfig, err := healer.GetConsumerConfig(consumer_settings)
-	if err != nil {
-		glog.Fatalf("error in consumer settings: %s", err)
-	}
-
 	// GroupConsumer
 	if topics != nil {
 		for topic, threadCount := range topics {
 			for i := 0; i < threadCount.(int); i++ {
-				c, err := healer.NewGroupConsumer(topic.(string), consumerConfig)
+				c, err := healer.NewGroupConsumer(topic.(string), consumer_settings)
 				if err != nil {
-					glog.Fatalf("could not init GroupConsumer: %s", err)
+					glog.Fatalf("could not create kafka GroupConsumer: %s", err)
 				}
 				kafkaInput.groupConsumers = append(kafkaInput.groupConsumers, c)
 
@@ -115,9 +110,9 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 			}
 		}
 	} else {
-		c, err := healer.NewConsumer(consumerConfig)
+		c, err := healer.NewConsumer(consumer_settings)
 		if err != nil {
-			glog.Fatalf("could not init SimpleConsumer: %s", err)
+			glog.Fatalf("could not create kafka Consumer: %s", err)
 		}
 		kafkaInput.consumers = append(kafkaInput.consumers, c)
 
