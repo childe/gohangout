@@ -1,6 +1,7 @@
 package input
 
 import (
+	"math/rand"
 	"reflect"
 	"sync"
 
@@ -21,10 +22,13 @@ type InputBox struct {
 	once               sync.Once
 	shutdownChan       chan bool
 
+	workerDispatchField    string
+	eventQueueForAllWorker []chan map[string]interface{}
+
 	promCounter prometheus.Counter
 
-	shutdownWhenNil    bool
-	exit 						   func()
+	shutdownWhenNil bool
+	exit            func()
 
 	addFields map[field_setter.FieldSetter]value_render.ValueRender
 }
@@ -44,7 +48,7 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 
 		promCounter: topology.GetPromCounter(inputConfig),
 
-		exit:        exit,
+		exit: exit,
 	}
 	if add_fields, ok := inputConfig["add_fields"]; ok {
 		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
@@ -59,6 +63,12 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 	} else {
 		b.addFields = nil
 	}
+	if dispatch_field, ok := inputConfig["worker_dispatch_field"].(string); ok {
+		b.workerDispatchField = dispatch_field
+	} else {
+		b.workerDispatchField = ""
+	}
+
 	return b
 }
 
@@ -80,7 +90,11 @@ func (box *InputBox) beat(workerIdx int) {
 				break
 			}
 			if box.shutdownWhenNil {
+<<<<<<< HEAD
 				klog.Info("received nil message. shutdown...")
+=======
+				glog.Info("received nil message. shutdown...")
+>>>>>>> dc10975 (支持根据指定字段取余分配worker线程)
 				box.exit()
 				break
 			} else {
@@ -90,6 +104,70 @@ func (box *InputBox) beat(workerIdx int) {
 		for fs, v := range box.addFields {
 			event = fs.SetField(event, v.Render(event), "", false)
 		}
+		firstNode.Process(event)
+	}
+}
+
+func (box *InputBox) dispatchBeat() {
+	var (
+		event map[string]interface{}
+	)
+
+	for !box.stop {
+		event = box.input.ReadOneEvent()
+		if box.promCounter != nil {
+			box.promCounter.Inc()
+		}
+		if event == nil {
+			glog.V(5).Info("received nil message.")
+			if box.stop {
+				break
+			}
+			if box.shutdownWhenNil {
+				glog.Info("received nil message. shutdown...")
+				box.exit()
+				break
+			} else {
+				continue
+			}
+		}
+
+		var workerIdx int
+		queueSize := len(box.eventQueueForAllWorker)
+		v := value_render.GetValueRender(box.workerDispatchField)
+		if dispatchKey, ok := v.Render(event).(int32); ok {
+			workerIdx = int(dispatchKey) % queueSize
+		} else {
+			workerIdx = rand.Intn(queueSize)
+			glog.Info("Invalid workerDispatchField, use random worker index ", workerIdx)
+		}
+		box.dispatchToWorker(event, workerIdx)
+	}
+}
+
+func (box *InputBox) dispatchToWorker(event map[string]interface{}, workerIdx int) {
+	for fs, v := range box.addFields {
+		event = fs.SetField(event, v.Render(event), "", false)
+	}
+
+	box.eventQueueForAllWorker[workerIdx] <- event //TODO： worker超时
+}
+
+func (box *InputBox) workerBeat(workerIdx int) {
+	var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
+
+	var (
+		event map[string]interface{}
+	)
+
+	for !box.stop {
+		event = <-box.eventQueueForAllWorker[workerIdx]
+		glog.V(10).Infof("worker %d start processing one message %v", workerIdx, event)
+
+		// prome.IncCounterWithLabel("worker_get_event_count", map[string]string{
+		// 	"workerIdx": strconv.Itoa(workerIdx),
+		// })
+
 		firstNode.Process(event)
 	}
 }
@@ -129,10 +207,25 @@ func (box *InputBox) buildTopology(workerIdx int) *topology.ProcessorNode {
 }
 
 // Beat starts the processors and wait until shutdown
+// if workerDispatch enabled, events will be dispatch to all workers by the dispatch key
 func (box *InputBox) Beat(worker int) {
 	box.outputsInAllWorker = make([][]*topology.OutputBox, worker)
-	for i := 0; i < worker; i++ {
-		go box.beat(i)
+
+	if worker > 1 && len(box.workerDispatchField) != 0 {
+		glog.Infof("Initializing %d workers", worker)
+		box.eventQueueForAllWorker = make([]chan map[string]interface{}, worker)
+		for i := 0; i < worker; i++ {
+			box.eventQueueForAllWorker[i] = make(chan map[string]interface{}, 10)
+		}
+		go box.dispatchBeat()
+
+		for i := 0; i < worker; i++ {
+			go box.workerBeat(i)
+		}
+	} else {
+		for i := 0; i < worker; i++ {
+			go box.beat(i)
+		}
 	}
 
 	<-box.shutdownChan
