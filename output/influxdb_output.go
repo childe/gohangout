@@ -9,7 +9,7 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 const ()
@@ -45,7 +45,7 @@ func (action *InAction) Encode() []byte {
 		}
 	}
 	if len(field_set) <= 0 {
-		glog.V(20).Infof("field set is nil. fields: %v. event: %v", action.fields, action.event)
+		klog.V(20).Infof("field set is nil. fields: %v. event: %v", action.fields, action.event)
 		return nil
 	} else {
 		bulk_buf = append(bulk_buf, ' ')
@@ -57,7 +57,7 @@ func (action *InAction) Encode() []byte {
 	if t != nil && reflect.TypeOf(t).String() == "time.Time" {
 		bulk_buf = append(bulk_buf, fmt.Sprintf(" %d", t.(time.Time).UnixNano())...)
 	} else {
-		glog.V(20).Infof("%s is not time.Time", action.timestamp)
+		klog.V(20).Infof("%s is not time.Time", action.timestamp)
 	}
 
 	return bulk_buf
@@ -112,13 +112,13 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 	if v, ok := config["db"]; ok {
 		rst.db = v.(string)
 	} else {
-		glog.Fatal("db must be set in elasticsearch output")
+		klog.Fatal("db must be set in elasticsearch output")
 	}
 
 	if v, ok := config["measurement"]; ok {
 		rst.measurement = value_render.GetValueRender(v.(string))
 	} else {
-		glog.Fatal("measurement must be set in elasticsearch output")
+		klog.Fatal("measurement must be set in elasticsearch output")
 	}
 
 	if v, ok := config["tags"]; ok {
@@ -163,7 +163,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 		concurrent = DEFAULT_CONCURRENT
 	}
 	if concurrent <= 0 {
-		glog.Fatal("concurrent must > 0")
+		klog.Fatal("concurrent must > 0")
 	}
 	if v, ok := config["compress"]; ok {
 		compress = v.(bool)
@@ -177,7 +177,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 			hosts = append(hosts, h.(string)+"/write?db="+rst.db)
 		}
 	} else {
-		glog.Fatal("hosts must be set in elasticsearch output")
+		klog.Fatal("hosts must be set in elasticsearch output")
 	}
 
 	headers := make(map[string]string)

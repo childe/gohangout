@@ -12,7 +12,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type DateParser interface {
@@ -160,7 +160,7 @@ func newDateFilter(config map[interface{}]interface{}) topology.Filter {
 	if srcValue, ok := config["src"]; ok {
 		plugin.src = srcValue.(string)
 	} else {
-		glog.Fatal("src must be set in date filter plugin")
+		klog.Fatal("src must be set in date filter plugin")
 	}
 	plugin.srcVR = value_render.GetValueRender2(plugin.src)
 
@@ -179,7 +179,7 @@ func newDateFilter(config map[interface{}]interface{}) topology.Filter {
 	if locationI, ok := config["location"]; ok {
 		location, err = time.LoadLocation(locationI.(string))
 		if err != nil {
-			glog.Fatalf("load location error:%s", err)
+			klog.Fatalf("load location error:%s", err)
 		}
 	} else {
 		location = nil
@@ -192,7 +192,7 @@ func newDateFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.dateParsers = append(plugin.dateParsers, getDateParser(formatI.(string), location, addYear))
 		}
 	} else {
-		glog.Fatal("formats must be set in date filter plugin")
+		klog.Fatal("formats must be set in date filter plugin")
 	}
 
 	return plugin

@@ -6,7 +6,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type replaceConfig struct {
@@ -36,7 +36,7 @@ func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
 		for fieldI, configI := range fieldsI.(map[interface{}]interface{}) {
 			fieldSetter := field_setter.NewFieldSetter(fieldI.(string))
 			if fieldSetter == nil {
-				glog.Fatalf("could build field setter from %s", fieldI.(string))
+				klog.Fatalf("could build field setter from %s", fieldI.(string))
 			}
 
 			v := value_render.GetValueRender2(fieldI.(string))
@@ -61,11 +61,11 @@ func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
 				}
 				p.fields = append(p.fields, t)
 			} else {
-				glog.Fatal("invalid fields config in replace filter")
+				klog.Fatal("invalid fields config in replace filter")
 			}
 		}
 	} else {
-		glog.Fatal("fileds must be set in replace filter plugin")
+		klog.Fatal("fileds must be set in replace filter plugin")
 	}
 	return p
 }

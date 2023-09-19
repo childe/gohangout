@@ -5,7 +5,7 @@ import (
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type msg struct {
@@ -44,10 +44,10 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 	if v, ok := config["max_length"]; ok {
 		if max, ok := v.(int); ok {
 			if max <= 0 {
-				glog.Fatal("max_length must be bigger than zero")
+				klog.Fatal("max_length must be bigger than zero")
 			}
 		} else {
-			glog.Fatal("max_length must be int")
+			klog.Fatal("max_length must be int")
 		}
 	}
 
@@ -59,17 +59,17 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 	if addr, ok := config["address"]; ok {
 		p.address = addr.(string)
 	} else {
-		glog.Fatal("address must be set in UDP input")
+		klog.Fatal("address must be set in UDP input")
 	}
 
 	udpAddr, err := net.ResolveUDPAddr(p.network, p.address)
 	if err != nil {
-		glog.Fatalf("resolve udp addr error: %v", err)
+		klog.Fatalf("resolve udp addr error: %v", err)
 	}
 
 	conn, err := net.ListenUDP(p.network, udpAddr)
 	if err != nil {
-		glog.Fatalf("listen udp error: %v", err)
+		klog.Fatalf("listen udp error: %v", err)
 	}
 	p.conn = conn
 
@@ -90,7 +90,7 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 				if p.stop {
 					return
 				}
-				glog.Errorf("read from UDP error: %v", err)
+				klog.Errorf("read from UDP error: %v", err)
 			}
 			p.messages <- msg{
 				message: buf[:n],

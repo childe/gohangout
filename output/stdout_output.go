@@ -5,7 +5,7 @@ import (
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -35,7 +35,7 @@ func newStdoutOutput(config map[interface{}]interface{}) topology.Output {
 func (p *StdoutOutput) Emit(event map[string]interface{}) {
 	buf, err := p.encoder.Encode(event)
 	if err != nil {
-		glog.Errorf("marshal %v error:%s", event, err)
+		klog.Errorf("marshal %v error:%s", event, err)
 	}
 	fmt.Println(string(buf))
 }

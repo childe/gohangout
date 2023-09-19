@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type FiltersFilter struct {
@@ -29,7 +29,7 @@ func newFiltersFilter(config map[interface{}]interface{}) topology.Filter {
 
 	f.filterBoxes = topology.BuildFilterBoxes(_config, BuildFilter)
 	if len(f.filterBoxes) == 0 {
-		glog.Fatal("no filters configured in Filters")
+		klog.Fatal("no filters configured in Filters")
 	}
 
 	for _, b := range f.filterBoxes {

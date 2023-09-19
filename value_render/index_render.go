@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type field struct {
@@ -99,7 +99,7 @@ func NewIndexRender(t string) *IndexRender {
 func (r *IndexRender) SetTimeLocation(loc string) {
 	location, err := time.LoadLocation(loc)
 	if err != nil {
-		glog.Fatalf("invalid localtion: %s", loc)
+		klog.Fatalf("invalid localtion: %s", loc)
 	}
 	r.location = location
 }

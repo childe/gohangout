@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/simplejson"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type Encoder interface {
@@ -24,7 +24,7 @@ func NewEncoder(t string) Encoder {
 	if strings.HasPrefix(t, "format:") {
 		splited := strings.SplitN(t, ":", 2)
 		if len(splited) != 2 {
-			glog.Fatalf("format of `%s` is incorrect", t)
+			klog.Fatalf("format of `%s` is incorrect", t)
 		}
 		format := splited[1]
 		return NewFormatEncoder(format)
@@ -33,11 +33,11 @@ func NewEncoder(t string) Encoder {
 	// try plugin
 	p, err := plugin.Open(t)
 	if err != nil {
-		glog.Fatalf("could not open %s: %s", t, err)
+		klog.Fatalf("could not open %s: %s", t, err)
 	}
 	newFunc, err := p.Lookup("New")
 	if err != nil {
-		glog.Fatalf("could not find New function in %s: %s", t, err)
+		klog.Fatalf("could not find New function in %s: %s", t, err)
 	}
 	return newFunc.(func() interface{})().(Encoder)
 }

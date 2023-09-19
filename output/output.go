@@ -6,7 +6,7 @@ import (
 
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type BuildOutputFunc func(map[interface{}]interface{}) topology.Output
@@ -16,7 +16,7 @@ var registeredOutput map[string]BuildOutputFunc = make(map[string]BuildOutputFun
 // Register is used by output plugins to register themselves
 func Register(outputType string, bf BuildOutputFunc) {
 	if _, ok := registeredOutput[outputType]; ok {
-		glog.Errorf("%s has been registered, ignore %T", outputType, bf)
+		klog.Errorf("%s has been registered, ignore %T", outputType, bf)
 		return
 	}
 	registeredOutput[outputType] = bf
@@ -29,10 +29,10 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *topolog
 	if v, ok := registeredOutput[outputType]; ok {
 		output = v(config)
 	} else {
-		glog.Info("use third party plugin")
+		klog.Info("use third party plugin")
 		output, err = getOutputFromPlugin(outputType, config)
 		if err != nil {
-			glog.Errorf("could not load %s: %v", outputType, err)
+			klog.Errorf("could not load %s: %v", outputType, err)
 			return nil
 		}
 	}

@@ -6,7 +6,7 @@ import (
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type TCPInput struct {
@@ -30,7 +30,7 @@ func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		glog.Errorf("read from %v->%v error: %v", c.RemoteAddr(), c.LocalAddr(), err)
+		klog.Errorf("read from %v->%v error: %v", c.RemoteAddr(), c.LocalAddr(), err)
 	}
 	c.Close()
 }
@@ -53,10 +53,10 @@ func newTCPInput(config map[interface{}]interface{}) topology.Input {
 	if v, ok := config["max_length"]; ok {
 		if max, ok := v.(int); ok {
 			if max <= 0 {
-				glog.Fatal("max_length must be bigger than zero")
+				klog.Fatal("max_length must be bigger than zero")
 			}
 		} else {
-			glog.Fatal("max_length must be int")
+			klog.Fatal("max_length must be int")
 		}
 	}
 
@@ -68,12 +68,12 @@ func newTCPInput(config map[interface{}]interface{}) topology.Input {
 	if addr, ok := config["address"]; ok {
 		p.address = addr.(string)
 	} else {
-		glog.Fatal("address must be set in TCP input")
+		klog.Fatal("address must be set in TCP input")
 	}
 
 	l, err := net.Listen(p.network, p.address)
 	if err != nil {
-		glog.Fatal(err)
+		klog.Fatal(err)
 	}
 	p.l = l
 
@@ -84,7 +84,7 @@ func newTCPInput(config map[interface{}]interface{}) topology.Input {
 				if p.stop {
 					return
 				}
-				glog.Error(err)
+				klog.Error(err)
 			} else {
 				scanner := bufio.NewScanner(conn)
 				if v, ok := config["max_length"]; ok {

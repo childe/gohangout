@@ -6,8 +6,8 @@ import (
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/healer"
-	"github.com/golang/glog"
 	jsoniter "github.com/json-iterator/go"
+	"k8s.io/klog/v2"
 )
 
 type KafkaInput struct {
@@ -36,12 +36,12 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 
 	consumer_settings := make(map[string]interface{})
 	if v, ok := config["consumer_settings"]; !ok {
-		glog.Fatal("kafka input must have consumer_settings")
+		klog.Fatal("kafka input must have consumer_settings")
 	} else {
 		// official json marshal: unsupported type: map[interface {}]interface {}
 		json := jsoniter.ConfigCompatibleWithStandardLibrary
 		if b, err := json.Marshal(v); err != nil {
-			glog.Fatalf("marshal consumer settings error: %v", err)
+			klog.Fatalf("marshal consumer settings error: %v", err)
 		} else {
 			json.Unmarshal(b, &consumer_settings)
 		}
@@ -64,10 +64,10 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 	}
 
 	if topics == nil && assign == nil {
-		glog.Fatal("either topic or assign should be set")
+		klog.Fatal("either topic or assign should be set")
 	}
 	if topics != nil && assign != nil {
-		glog.Fatal("topic and assign can not be both set")
+		klog.Fatal("topic and assign can not be both set")
 	}
 
 	if codecV, ok := config["codec"]; ok {
@@ -97,14 +97,14 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 			for i := 0; i < threadCount.(int); i++ {
 				c, err := healer.NewGroupConsumer(topic.(string), consumer_settings)
 				if err != nil {
-					glog.Fatalf("could not create kafka GroupConsumer: %s", err)
+					klog.Fatalf("could not create kafka GroupConsumer: %s", err)
 				}
 				kafkaInput.groupConsumers = append(kafkaInput.groupConsumers, c)
 
 				go func() {
 					_, err = c.Consume(kafkaInput.messages)
 					if err != nil {
-						glog.Fatalf("try to consumer error: %s", err)
+						klog.Fatalf("try to consumer error: %s", err)
 					}
 				}()
 			}
@@ -112,7 +112,7 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 	} else {
 		c, err := healer.NewConsumer(consumer_settings)
 		if err != nil {
-			glog.Fatalf("could not create kafka Consumer: %s", err)
+			klog.Fatalf("could not create kafka Consumer: %s", err)
 		}
 		kafkaInput.consumers = append(kafkaInput.consumers, c)
 
@@ -121,7 +121,7 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 		go func() {
 			_, err = c.Consume(kafkaInput.messages)
 			if err != nil {
-				glog.Fatalf("try to consume error: %s", err)
+				klog.Fatalf("try to consume error: %s", err)
 			}
 		}()
 	}
@@ -138,7 +138,7 @@ func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 	}
 
 	if message.Error != nil {
-		glog.Error("kafka message carries error: ", message.Error)
+		klog.Error("kafka message carries error: ", message.Error)
 		return nil
 	}
 	event := p.decoder.Decode(message.Message.Value)

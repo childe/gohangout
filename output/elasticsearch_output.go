@@ -13,12 +13,12 @@ import (
 	"time"
 
 	"github.com/yalp/jsonpath"
+	"k8s.io/klog/v2"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/condition_filter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
 )
 
 const (
@@ -76,7 +76,7 @@ func (action *Action) Encode() []byte {
 	if action.rawSource == nil {
 		buf, err = f().Encode(action.event)
 		if err != nil {
-			glog.Errorf("could marshal event(%v):%s", action.event, err)
+			klog.Errorf("could marshal event(%v):%s", action.event, err)
 			return nil
 		}
 	} else {
@@ -139,15 +139,15 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	var responseI interface{}
 	err := json.Unmarshal(respBody, &responseI)
 	if err != nil {
-		glog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
+		klog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
 		return retry, noRetry, nil
 	}
 
 	bulkResponse := responseI.(map[string]interface{})
-	glog.V(20).Infof("%v", bulkResponse)
+	klog.V(20).Infof("%v", bulkResponse)
 
 	if bulkResponse["errors"] == nil {
-		glog.Infof("could NOT get errors in response:%s", string(respBody))
+		klog.Infof("could NOT get errors in response:%s", string(respBody))
 		return retry, noRetry, nil
 	}
 
@@ -162,7 +162,7 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 		if errorValue, ok := index["error"]; ok {
 			//errorType := errorValue.(map[string]interface{})["type"].(string)
 			if !hasLog {
-				glog.Infof("error :%v", errorValue)
+				klog.Infof("error :%v", errorValue)
 				hasLog = true
 			}
 
@@ -183,9 +183,9 @@ func buildRetryBulkRequest(shouldRetry, noRetry []int, bulkRequest *BulkRequest)
 	if len(noRetry) > 0 {
 		b, err := json.Marshal(esBulkRequest.events[noRetry[0]].(*Action).event)
 		if err != nil {
-			glog.Infof("one failed doc that need no retry: %+v", esBulkRequest.events[noRetry[0]].(*Action).event)
+			klog.Infof("one failed doc that need no retry: %+v", esBulkRequest.events[noRetry[0]].(*Action).event)
 		} else {
-			glog.Infof("one failed doc that need no retry: %s", b)
+			klog.Infof("one failed doc that need no retry: %s", b)
 		}
 	}
 
@@ -226,14 +226,14 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	if v, ok := config["index"]; ok {
 		rst.index = value_render.GetValueRender(v.(string))
 	} else {
-		glog.Fatal("index must be set in elasticsearch output")
+		klog.Fatal("index must be set in elasticsearch output")
 	}
 
 	if v, ok := config["index_time_location"]; ok {
 		if e, ok := rst.index.(*value_render.IndexRender); ok {
 			e.SetTimeLocation(v.(string))
 		} else {
-			glog.Fatal("index_time_location is not supported in this index format")
+			klog.Fatal("index_time_location is not supported in this index format")
 		}
 	}
 
@@ -299,7 +299,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 		concurrent = DEFAULT_CONCURRENT
 	}
 	if concurrent <= 0 {
-		glog.Fatal("concurrent must > 0")
+		klog.Fatal("concurrent must > 0")
 	}
 	if v, ok := config["compress"]; ok {
 		compress = v.(bool)
@@ -340,7 +340,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 		for _, h := range v.([]interface{}) {
 			scheme, user, password, host := getUserPasswordAndHost(h.(string))
 			if host == "" {
-				glog.Fatalf("invalid host: %q", host)
+				klog.Fatalf("invalid host: %q", host)
 			}
 			rst.scheme = scheme
 			rst.user = user
@@ -348,21 +348,21 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 			hosts = append(hosts, host)
 		}
 	} else {
-		glog.Fatal("hosts must be set in elasticsearch output")
+		klog.Fatal("hosts must be set in elasticsearch output")
 	}
 	rst.hosts = hosts
 
 	var err error
 	if sniff, ok := config["sniff"]; ok {
-		glog.Infof("sniff hosts in es cluster")
+		klog.Infof("sniff hosts in es cluster")
 		sniff := sniff.(map[interface{}]interface{})
 		hosts, err = sniffNodes(config)
-		glog.Infof("new hosts after sniff: %v", hosts)
+		klog.Infof("new hosts after sniff: %v", hosts)
 		if err != nil {
-			glog.Fatalf("could not sniff hosts: %v", err)
+			klog.Fatalf("could not sniff hosts: %v", err)
 		}
 		if len(hosts) == 0 {
-			glog.Fatal("no available hosts after sniff")
+			klog.Fatal("no available hosts after sniff")
 		}
 		rst.hosts = hosts
 
@@ -372,10 +372,10 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 				for range time.NewTicker(time.Second * time.Duration(refreshInterval)).C {
 					hosts, err = sniffNodes(config)
 					if err != nil {
-						glog.Errorf("could not sniff hosts: %v", err)
+						klog.Errorf("could not sniff hosts: %v", err)
 					} else {
 						if !reflect.DeepEqual(rst.hosts, hosts) {
-							glog.Infof("new hosts after sniff: %v", hosts)
+							klog.Infof("new hosts after sniff: %v", hosts)
 							rst.hosts = hosts
 							rst.bulkProcessor.(*HTTPBulkProcessor).resetHosts(rst.assebleHosts())
 						}
@@ -401,7 +401,7 @@ func getUserPasswordAndHost(url string) (scheme, user, password, host string) {
 		host = strings.TrimRight(r[2], "/")
 		return
 	} else {
-		glog.Infof("%q is invalid host format", host)
+		klog.Infof("%q is invalid host format", host)
 		return
 	}
 }
@@ -416,7 +416,7 @@ func sniffNodes(config map[interface{}]interface{}) ([]string, error) {
 	if v != nil {
 		match, ok = v.(string)
 		if !ok {
-			glog.Fatal("match in sniff settings must be string")
+			klog.Fatal("match in sniff settings must be string")
 		}
 	}
 	for _, host := range config["hosts"].([]interface{}) {
@@ -424,7 +424,7 @@ func sniffNodes(config map[interface{}]interface{}) ([]string, error) {
 		if nodes, err := sniffNodesFromOneHost(host, match); err == nil {
 			return nodes, err
 		} else {
-			glog.Errorf("sniff nodes error from %s: %v", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"), err)
+			klog.Errorf("sniff nodes error from %s: %v", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"), err)
 		}
 	}
 	return nil, errors.New("sniff nodes error from all hosts")
@@ -457,7 +457,7 @@ func sniffNodesFromOneHost(host string, match string) ([]string, error) {
 		return nil, err
 	}
 
-	glog.Infof("sniff resp: %v", v)
+	klog.Infof("sniff resp: %v", v)
 	return filterNodesIPList(v, match)
 }
 
@@ -525,7 +525,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		t := p.id.Render(event)
 		if t == nil {
 			id = ""
-			glog.V(20).Infof("could not render id:%s", event)
+			klog.V(20).Infof("could not render id:%s", event)
 		} else {
 			id = t.(string)
 		}
@@ -537,7 +537,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 		t := p.routing.Render(event)
 		if t == nil {
 			routing = ""
-			glog.V(20).Infof("could not render routing:%s", event)
+			klog.V(20).Infof("could not render routing:%s", event)
 		} else {
 			routing = t.(string)
 		}

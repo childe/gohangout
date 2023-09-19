@@ -8,7 +8,7 @@ import (
 
 	"github.com/childe/gohangout/simplejson"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -44,7 +44,7 @@ func newTCPOutput(config map[interface{}]interface{}) topology.Output {
 	if addr, ok := config["address"]; ok {
 		p.address, ok = addr.(string)
 	} else {
-		glog.Fatal("address must be set in TCP output")
+		klog.Fatal("address must be set in TCP output")
 	}
 
 	if timeoutI, ok := config["dial.timeout"]; ok {
@@ -55,7 +55,7 @@ func newTCPOutput(config map[interface{}]interface{}) topology.Output {
 	if keepaliveI, ok := config["keepalive"]; ok {
 		keepalive, ok := keepaliveI.(int)
 		if !ok {
-			glog.Fatal("keepalive must be integer")
+			klog.Fatal("keepalive must be integer")
 		}
 		p.keepalive = time.Second * time.Duration(keepalive)
 	}
@@ -74,14 +74,14 @@ func newTCPOutput(config map[interface{}]interface{}) topology.Output {
 				d := &simplejson.SimpleJsonDecoder{}
 				buf, err := d.Encode(event)
 				if err != nil {
-					glog.Errorf("marshal %v error:%s", event, err)
+					klog.Errorf("marshal %v error:%s", event, err)
 					return
 				}
 
 				buf = append(buf, '\n')
 				for {
 					if err = write(p.conn[i], buf); err != nil {
-						glog.Error(err)
+						klog.Error(err)
 						p.conn[i].Close()
 						p.conn[i] = p.loopDial()
 					} else {
@@ -98,10 +98,10 @@ func newTCPOutput(config map[interface{}]interface{}) topology.Output {
 func (p *TCPOutput) loopDial() net.Conn {
 	for {
 		if conn, err := p.dial(); err != nil {
-			glog.Errorf("dial error: %s. sleep 1s", err)
+			klog.Errorf("dial error: %s. sleep 1s", err)
 			time.Sleep(1 * time.Second)
 		} else {
-			glog.Infof("conn built to %s", conn.RemoteAddr())
+			klog.Infof("conn built to %s", conn.RemoteAddr())
 			return conn
 		}
 	}
@@ -130,7 +130,7 @@ func probe(conn net.Conn) {
 	conn.SetReadDeadline(time.Time{})
 	_, err := conn.Read(b) // should block here
 	if err != nil && err == io.EOF {
-		glog.Infof("conn [%s] is closed by the server, close the conn.", conn.RemoteAddr())
+		klog.Infof("conn [%s] is closed by the server, close the conn.", conn.RemoteAddr())
 		conn.Close()
 	}
 }
@@ -140,7 +140,7 @@ func (p *TCPOutput) Emit(event map[string]interface{}) {
 	//buf = append(buf, '\n')
 	//n, err := p.writer.Write(buf)
 	//if n != len(buf) {
-	//glog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
+	//klog.Errorf("write to %s[%s] error: %s", p.address, p.conn.RemoteAddr(), err)
 	//}
 	//p.writer.Flush()
 }
@@ -150,7 +150,7 @@ func write(conn net.Conn, buf []byte) error {
 		n, err := conn.Write(buf)
 		if err != nil {
 			return err
-			//glog.Errorf("write to %s[%s] error: %s", p.address, conn.RemoteAddr(), err)
+			//klog.Errorf("write to %s[%s] error: %s", p.address, conn.RemoteAddr(), err)
 			//switch {
 			//case strings.Contains(str, "use of closed network connection"):
 			//conn = loopDial()

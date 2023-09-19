@@ -11,7 +11,7 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type TranslateFilter struct {
@@ -76,31 +76,31 @@ func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
 	if source, ok := config["source"]; ok {
 		plugin.source = source.(string)
 	} else {
-		glog.Fatal("source must be set in translate filter plugin")
+		klog.Fatal("source must be set in translate filter plugin")
 	}
 	plugin.sourceVR = value_render.GetValueRender2(plugin.source)
 
 	if target, ok := config["target"]; ok {
 		plugin.target = target.(string)
 	} else {
-		glog.Fatal("target must be set in translate filter plugin")
+		klog.Fatal("target must be set in translate filter plugin")
 	}
 
 	if dictionaryPath, ok := config["dictionary_path"]; ok {
 		plugin.dictionaryPath = dictionaryPath.(string)
 	} else {
-		glog.Fatal("dictionary_path must be set in translate filter plugin")
+		klog.Fatal("dictionary_path must be set in translate filter plugin")
 	}
 
 	if refreshInterval, ok := config["refresh_interval"]; ok {
 		plugin.refreshInterval = refreshInterval.(int)
 	} else {
-		glog.Fatal("refresh_interval must be set in translate filter plugin")
+		klog.Fatal("refresh_interval must be set in translate filter plugin")
 	}
 
 	err := plugin.parseDict()
 	if err != nil {
-		glog.Fatalf("could not parse %s:%s", plugin.dictionaryPath, err)
+		klog.Fatalf("could not parse %s:%s", plugin.dictionaryPath, err)
 	}
 
 	ticker := time.NewTicker(time.Second * time.Duration(plugin.refreshInterval))
@@ -108,7 +108,7 @@ func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
 		for range ticker.C {
 			err := plugin.parseDict()
 			if err != nil {
-				glog.Errorf("could not parse %s:%s", plugin.dictionaryPath, err)
+				klog.Errorf("could not parse %s:%s", plugin.dictionaryPath, err)
 			}
 		}
 	}()
