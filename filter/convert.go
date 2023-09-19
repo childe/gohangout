@@ -8,8 +8,8 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
 	"github.com/spf13/cast"
+	"k8s.io/klog/v2"
 )
 
 type Converter interface {
@@ -131,7 +131,7 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 			v := vI.(map[interface{}]interface{})
 			fieldSetter := field_setter.NewFieldSetter(f.(string))
 			if fieldSetter == nil {
-				glog.Fatalf("could build field setter from %s", f.(string))
+				klog.Fatalf("could build field setter from %s", f.(string))
 			}
 
 			to := v["to"].(string)
@@ -158,7 +158,7 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 			} else if to == "array(float)" {
 				converter = &ArrayFloatConverter{}
 			} else {
-				glog.Fatal("can only convert to int/float/bool/array(int)/array(float)")
+				klog.Fatal("can only convert to int/float/bool/array(int)/array(float)")
 			}
 
 			plugin.fields[fieldSetter] = ConveterAndRender{
@@ -170,7 +170,7 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 			}
 		}
 	} else {
-		glog.Fatal("fileds must be set in convert filter plugin")
+		klog.Fatal("fileds must be set in convert filter plugin")
 	}
 	return plugin
 }
@@ -188,7 +188,7 @@ func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]in
 		if err == nil {
 			event = fs.SetField(event, v, "", true)
 		} else {
-			glog.V(10).Infof("convert error: %s", err)
+			klog.V(10).Infof("convert error: %s", err)
 			if conveterAndRender.removeIfFail {
 				event = fs.SetField(event, nil, "", true)
 			} else if conveterAndRender.settoIfFail != nil {

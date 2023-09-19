@@ -6,8 +6,8 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
 	"github.com/mitchellh/mapstructure"
+	"k8s.io/klog/v2"
 )
 
 type rs struct {
@@ -38,12 +38,12 @@ func newGsubFilter(config map[interface{}]interface{}) topology.Filter {
 	gsubFilter := &GsubFilter{}
 	fields, ok := config["fields"]
 	if !ok {
-		glog.Fatal("fields must be set in gsub filter")
+		klog.Fatal("fields must be set in gsub filter")
 	}
 
 	err := mapstructure.Decode(fields, &gsubFilter.fields)
 	if err != nil {
-		glog.Fatal("decode fields config in gusb error:", err)
+		klog.Fatal("decode fields config in gusb error:", err)
 	}
 
 	for _, config := range gsubFilter.fields {

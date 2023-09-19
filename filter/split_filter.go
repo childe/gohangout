@@ -6,7 +6,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type SplitFilter struct {
@@ -61,7 +61,7 @@ func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 		plugin.sep = sep.(string)
 	}
 	if plugin.sep == "" {
-		glog.Fatal("sep must be set in split filter plugin")
+		klog.Fatal("sep must be set in split filter plugin")
 	}
 
 	if dynamicSep, ok := config["dynamicSep"]; ok {
@@ -76,7 +76,7 @@ func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.fields = append(plugin.fields, field_setter.NewFieldSetter(f.(string)))
 		}
 	} else {
-		glog.Fatal("fileds must be set in split filter plugin")
+		klog.Fatal("fileds must be set in split filter plugin")
 	}
 	plugin.fieldsLength = len(plugin.fields)
 

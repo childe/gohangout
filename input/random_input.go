@@ -6,7 +6,7 @@ import (
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type RandomInput struct {
@@ -37,13 +37,13 @@ func newRandomInput(config map[interface{}]interface{}) topology.Input {
 	if v, ok := config["from"]; ok {
 		p.from = v.(int)
 	} else {
-		glog.Fatal("from must be configured in Random Input")
+		klog.Fatal("from must be configured in Random Input")
 	}
 
 	if v, ok := config["to"]; ok {
 		p.to = v.(int)
 	} else {
-		glog.Fatal("to must be configured in Random Input")
+		klog.Fatal("to must be configured in Random Input")
 	}
 
 	if v, ok := config["max_messages"]; ok {

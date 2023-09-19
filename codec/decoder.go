@@ -3,7 +3,7 @@ package codec
 import (
 	"plugin"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type Decoder interface {
@@ -21,11 +21,11 @@ func NewDecoder(t string) Decoder {
 	default:
 		p, err := plugin.Open(t)
 		if err != nil {
-			glog.Fatalf("could not open %s: %s", t, err)
+			klog.Fatalf("could not open %s: %s", t, err)
 		}
 		newFunc, err := p.Lookup("New")
 		if err != nil {
-			glog.Fatalf("could not find New function in %s: %s", t, err)
+			klog.Fatalf("could not find New function in %s: %s", t, err)
 		}
 		return newFunc.(func() interface{})().(Decoder)
 	}
