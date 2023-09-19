@@ -5,7 +5,7 @@ import (
 	"plugin"
 
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type BuildFilterFunc func(map[interface{}]interface{}) topology.Filter
@@ -15,7 +15,7 @@ var registeredFilter map[string]BuildFilterFunc = make(map[string]BuildFilterFun
 // Register is used by input plugins to register themselves
 func Register(filterType string, bf BuildFilterFunc) {
 	if _, ok := registeredFilter[filterType]; ok {
-		glog.Errorf("%s has been registered, ignore %T", filterType, bf)
+		klog.Errorf("%s has been registered, ignore %T", filterType, bf)
 		return
 	}
 	registeredFilter[filterType] = bf
@@ -26,12 +26,12 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) topology
 	if v, ok := registeredFilter[filterType]; ok {
 		return v(config)
 	}
-	glog.Infof("could not load %s filter plugin, try third party plugin", filterType)
+	klog.Infof("could not load %s filter plugin, try third party plugin", filterType)
 
 	pluginPath := filterType
 	filter, err := getFilterFromPlugin(pluginPath, config)
 	if err != nil {
-		glog.Errorf("could not open %s: %s", pluginPath, err)
+		klog.Errorf("could not open %s: %s", pluginPath, err)
 		return nil
 	}
 	return filter

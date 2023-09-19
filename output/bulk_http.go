@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -150,33 +150,33 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 
 	_startTime := float64(time.Now().UnixNano()/1000000) / 1000
 	eventCount := (*bulkRequest).eventCount()
-	glog.Infof("bulk %d docs with execution_id %d", eventCount, p.execution_id)
+	klog.Infof("bulk %d docs with execution_id %d", eventCount, p.execution_id)
 	for {
 		nexthost := p.hostSelector.Next()
 		if nexthost == nil {
-			glog.Info("no available host, wait for 30s")
+			klog.Info("no available host, wait for 30s")
 			time.Sleep(30 * time.Second)
 			continue
 		}
 		host := nexthost.(string)
 
-		glog.Infof("try to bulk with host (%s)", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"))
+		klog.Infof("try to bulk with host (%s)", REMOVE_HTTP_AUTH_REGEXP.ReplaceAllString(host, "${1}"))
 
 		url := strings.TrimRight(host, "/") + "/_bulk"
 		success, shouldRetry, noRetry, newBulkRequest := p.tryOneBulk(url, bulkRequest)
 		if success {
 			_finishTime := float64(time.Now().UnixNano()/1000000) / 1000
 			timeTaken := _finishTime - _startTime
-			glog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, float64(eventCount)/timeTaken)
+			klog.Infof("bulk done with execution_id %d %.3f %d %.3f", execution_id, timeTaken, eventCount, float64(eventCount)/timeTaken)
 			p.hostSelector.AddWeight()
 		} else {
-			glog.Errorf("bulk failed with %s", url)
+			klog.Errorf("bulk failed with %s", url)
 			p.hostSelector.ReduceWeight()
 			continue
 		}
 
 		if len(shouldRetry) > 0 || len(noRetry) > 0 {
-			glog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
+			klog.Infof("%d should retry; %d need not retry", len(shouldRetry), len(noRetry))
 		}
 
 		if len(shouldRetry) > 0 {
@@ -188,8 +188,8 @@ func (p *HTTPBulkProcessor) innerBulk(bulkRequest *BulkRequest) {
 }
 
 func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int, []int, BulkRequest) {
-	glog.V(5).Infof("request size:%d", (*br).bufSizeByte())
-	glog.V(20).Infof("%s", (*br).readBuf())
+	klog.V(5).Infof("request size:%d", (*br).bufSizeByte())
+	klog.V(20).Infof("%s", (*br).readBuf())
 
 	var (
 		shouldRetry    = make([]int, 0)
@@ -203,16 +203,16 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 		var buf bytes.Buffer
 		g := gzip.NewWriter(&buf)
 		if _, err = g.Write((*br).readBuf()); err != nil {
-			glog.Errorf("gzip bulk buf error: %s", err)
+			klog.Errorf("gzip bulk buf error: %s", err)
 			return false, shouldRetry, noRetry, nil
 		}
 		if err = g.Close(); err != nil {
-			glog.Errorf("gzip bulk buf error: %s", err)
+			klog.Errorf("gzip bulk buf error: %s", err)
 			return false, shouldRetry, noRetry, nil
 		}
 		req, err = http.NewRequest(p.requestMethod, url, &buf)
 		if err != nil {
-			glog.Errorf("create request error: %s", err)
+			klog.Errorf("create request error: %s", err)
 			return false, shouldRetry, noRetry, nil
 		} else {
 			req.Header.Set("Content-Encoding", "gzip")
@@ -222,7 +222,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 	}
 
 	if err != nil {
-		glog.Errorf("create request error: %s", err)
+		klog.Errorf("create request error: %s", err)
 		return false, shouldRetry, noRetry, nil
 	}
 
@@ -233,7 +233,7 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 	resp, err := p.client.Do(req)
 
 	if err != nil {
-		glog.Infof("request with %s error: %s", url, err)
+		klog.Infof("request with %s error: %s", url, err)
 		return false, shouldRetry, noRetry, nil
 	}
 
@@ -245,11 +245,11 @@ func (p *HTTPBulkProcessor) tryOneBulk(url string, br *BulkRequest) (bool, []int
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		glog.Errorf(`read bulk response error: %s. will NOT retry`, err)
+		klog.Errorf(`read bulk response error: %s. will NOT retry`, err)
 		return true, shouldRetry, noRetry, nil
 	}
-	glog.V(5).Infof("get response[%d]", len(respBody))
-	glog.V(20).Infof("%s", respBody)
+	klog.V(5).Infof("get response[%d]", len(respBody))
+	klog.V(20).Infof("%s", respBody)
 
 	shouldRetry, noRetry, newBulkRequest = p.getRetryEventsFunc(resp, respBody, br)
 
@@ -262,10 +262,10 @@ func (p *HTTPBulkProcessor) awaitclose(timeout time.Duration) {
 	defer func() {
 		select {
 		case <-c:
-			glog.Info("all bulk job done. return")
+			klog.Info("all bulk job done. return")
 			return
 		case <-time.After(timeout):
-			glog.Info("await timeout. return")
+			klog.Info("await timeout. return")
 			return
 		}
 	}()
@@ -286,7 +286,7 @@ AllBulkReqInChan:
 			}
 			p.wg.Add(1)
 			go func() {
-				glog.Infof("bulk %d docs from bulkChan in awaitclose", (*bulkRequest).eventCount())
+				klog.Infof("bulk %d docs from bulkChan in awaitclose", (*bulkRequest).eventCount())
 				p.innerBulk(bulkRequest)
 				p.wg.Done()
 			}()
@@ -305,7 +305,7 @@ AllBulkReqInChan:
 
 	p.wg.Add(1)
 	go func() {
-		glog.Infof("bulk last %d docs in awaitclose", bulkRequest.eventCount())
+		klog.Infof("bulk last %d docs in awaitclose", bulkRequest.eventCount())
 		p.innerBulk(&bulkRequest)
 		p.wg.Done()
 	}()

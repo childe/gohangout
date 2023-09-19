@@ -45,7 +45,7 @@ gohangout --config config.yml
 
 ### log
 
-Gohangout use glog.
+Gohangout use klog.
 
 use `-v n` to set log level. 
 

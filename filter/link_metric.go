@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type LinkMetricFilter struct {
@@ -59,7 +59,7 @@ func newLinkMetricFilter(config map[interface{}]interface{}) topology.Filter {
 		p.fieldsWithoutLast = p.fields[:p.fieldsLength-1]
 		p.lastField = p.fields[p.fieldsLength-1]
 	} else {
-		glog.Fatal("fieldsLink must be set in linkmetric filter plugin")
+		klog.Fatal("fieldsLink must be set in linkmetric filter plugin")
 	}
 
 	if timestamp, ok := config["timestamp"]; ok {
@@ -77,13 +77,13 @@ func newLinkMetricFilter(config map[interface{}]interface{}) topology.Filter {
 	if batchWindow, ok := config["batchWindow"]; ok {
 		p.batchWindow = int64(batchWindow.(int))
 	} else {
-		glog.Fatal("batchWindow must be set in linkmetric filter plugin")
+		klog.Fatal("batchWindow must be set in linkmetric filter plugin")
 	}
 
 	if reserveWindow, ok := config["reserveWindow"]; ok {
 		p.reserveWindow = int64(reserveWindow.(int))
 	} else {
-		glog.Fatal("reserveWindow must be set in linkmetric filter plugin")
+		klog.Fatal("reserveWindow must be set in linkmetric filter plugin")
 	}
 
 	if reduce, ok := config["reduce"]; ok {
@@ -98,7 +98,7 @@ func newLinkMetricFilter(config map[interface{}]interface{}) topology.Filter {
 		case "separate":
 			p.accumulateMode = 1
 		default:
-			glog.Errorf("invalid accumulateMode: %s. set to cumulative", accumulateMode)
+			klog.Errorf("invalid accumulateMode: %s. set to cumulative", accumulateMode)
 			p.accumulateMode = 0
 		}
 	} else {
@@ -201,13 +201,13 @@ func (f *LinkMetricFilter) updateMetric(event map[string]interface{}) {
 	var timestamp int64
 	if v, ok := event[f.timestamp]; ok {
 		if t, ok := v.(time.Time); !ok {
-			glog.V(20).Infof("timestamp is not time.Time type")
+			klog.V(20).Infof("timestamp is not time.Time type")
 			return
 		} else {
 			timestamp = t.Unix()
 		}
 	} else {
-		glog.V(20).Infof("no timestamp in event. %s", event)
+		klog.V(20).Infof("no timestamp in event. %s", event)
 		return
 	}
 

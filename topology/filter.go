@@ -7,8 +7,8 @@ import (
 	"github.com/childe/gohangout/field_deleter"
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/klog/v2"
 )
 
 type Filter interface {
@@ -56,7 +56,7 @@ func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
 		for k, v := range add_fields.(map[interface{}]interface{}) {
 			fieldSetter := field_setter.NewFieldSetter(k.(string))
 			if fieldSetter == nil {
-				glog.Fatalf("could build field setter from %s", k.(string))
+				klog.Fatalf("could build field setter from %s", k.(string))
 			}
 			f.addFields[fieldSetter] = value_render.GetValueRender(v.(string))
 		}
@@ -121,9 +121,9 @@ func BuildFilterBoxes(config map[string]interface{}, buildFilter buildFilterFunc
 	for i := 0; i < len(filters); i++ {
 		for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
 			filterType := filterTypeI.(string)
-			glog.Infof("filter type: %s", filterType)
+			klog.Infof("filter type: %s", filterType)
 			filterConfig := filterConfigI.(map[interface{}]interface{})
-			glog.Infof("filter config: %v", filterConfig)
+			klog.Infof("filter config: %v", filterConfig)
 
 			filterPlugin := buildFilter(filterType, filterConfig)
 

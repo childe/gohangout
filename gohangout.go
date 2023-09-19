@@ -15,8 +15,8 @@ import (
 	"github.com/childe/gohangout/internal/config"
 	"github.com/childe/gohangout/internal/signal"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/klog/v2"
 )
 
 var version string
@@ -85,7 +85,8 @@ func init() {
 	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
 
 	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
-
+    
+	klog.InitFlags(nil)
 	flag.Parse()
 }
 
@@ -96,7 +97,7 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 		var inputPlugin topology.Input
 
 		i := inputI.(map[interface{}]interface{})
-		glog.Infof("input[%d] %v", inputIdx+1, i)
+		klog.Infof("input[%d] %v", inputIdx+1, i)
 
 		// len(i) is 1
 		for inputTypeI, inputConfigI := range i {
@@ -126,34 +127,34 @@ func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, er
 func reload() {
 	gohangoutConfig, err := config.ParseConfig(options.config)
 	if err != nil {
-		glog.Errorf("could not parse config, ignore reload: %v", err)
+		klog.Errorf("could not parse config, ignore reload: %v", err)
 		return
 	}
 	boxes, err := buildPluginLink(gohangoutConfig)
 	if err != nil {
-		glog.Errorf("build plugin link error, ignore reload: %v", err)
+		klog.Errorf("build plugin link error, ignore reload: %v", err)
 		return
 	}
 
-	glog.Info("stop old inputs")
+	klog.Info("stop old inputs")
 	inputs.stop()
 
 	inputs = gohangoutInputs(boxes)
-	glog.Info("start new inputs")
+	klog.Info("start new inputs")
 	go inputs.start()
 }
 
 func main() {
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
- 
+
 	if options.version {
 		fmt.Printf("gohangout version %s\n", version)
 		return
 	}
 
-	glog.Infof("gohangout version: %s", version)
-	defer glog.Flush()
+	klog.Infof("gohangout version: %s", version)
+	defer klog.Flush()
 
 	if options.prometheus != "" {
 		go func() {
@@ -170,10 +171,10 @@ func main() {
 	if options.cpuprofile != "" {
 		f, err := os.Create(options.cpuprofile)
 		if err != nil {
-			glog.Fatalf("could not create CPU profile: %s", err)
+			klog.Fatalf("could not create CPU profile: %s", err)
 		}
 		if err := pprof.StartCPUProfile(f); err != nil {
-			glog.Fatalf("could not start CPU profile: %s", err)
+			klog.Fatalf("could not start CPU profile: %s", err)
 		}
 		defer pprof.StopCPUProfile()
 	}
@@ -182,30 +183,30 @@ func main() {
 		defer func() {
 			f, err := os.Create(options.memprofile)
 			if err != nil {
-				glog.Fatalf("could not create memory profile: %s", err)
+				klog.Fatalf("could not create memory profile: %s", err)
 			}
 			defer f.Close()
 			runtime.GC() // get up-to-date statistics
 			if err := pprof.WriteHeapProfile(f); err != nil {
-				glog.Fatalf("could not write memory profile: %s", err)
+				klog.Fatalf("could not write memory profile: %s", err)
 			}
 		}()
 	}
 
 	gohangoutConfig, err := config.ParseConfig(options.config)
 	if err != nil {
-		glog.Fatalf("could not parse config: %v", err)
+		klog.Fatalf("could not parse config: %v", err)
 	}
 	boxes, err := buildPluginLink(gohangoutConfig)
 	if err != nil {
-		glog.Fatalf("build plugin link error: %v", err)
+		klog.Fatalf("build plugin link error: %v", err)
 	}
 	inputs = gohangoutInputs(boxes)
 	go inputs.start()
 
 	if options.autoReload {
 		if err := config.WatchConfig(options.config, reload); err != nil {
-			glog.Fatalf("watch config fail: %s", err)
+			klog.Fatalf("watch config fail: %s", err)
 		}
 	}
 

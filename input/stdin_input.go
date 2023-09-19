@@ -7,7 +7,7 @@ import (
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type StdinInput struct {
@@ -48,7 +48,7 @@ func (p *StdinInput) ReadOneEvent() map[string]interface{} {
 		return p.decoder.Decode(msg)
 	}
 	if err := p.scanner.Err(); err != nil {
-		glog.Errorf("stdin scan error: %v", err)
+		klog.Errorf("stdin scan error: %v", err)
 	} else {
 		// EOF here. when stdin is closed by C-D, cpu will raise up to 100% if not sleep
 		time.Sleep(time.Millisecond * 1000)

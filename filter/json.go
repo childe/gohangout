@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 // JSONFilter will parse json string in `field` and put the result into `target` field
@@ -31,7 +31,7 @@ func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
 	if field, ok := config["field"]; ok {
 		plugin.field = field.(string)
 	} else {
-		glog.Fatal("field must be set in Json filter")
+		klog.Fatal("field must be set in Json filter")
 	}
 
 	if overwrite, ok := config["overwrite"]; ok {
@@ -83,7 +83,7 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 				oo[k] = o[k]
 			}
 		} else {
-			glog.V(5).Infof("%s field is not map type, could not get `include` fields from it", plugin.field)
+			klog.V(5).Infof("%s field is not map type, could not get `include` fields from it", plugin.field)
 			return event, false
 		}
 		o = oo
@@ -93,14 +93,14 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 				delete(o, k)
 			}
 		} else {
-			glog.V(5).Infof("%s field is not map type, could not get `include` fields from it", plugin.field)
+			klog.V(5).Infof("%s field is not map type, could not get `include` fields from it", plugin.field)
 			return event, false
 		}
 	}
 
 	if plugin.target == "" {
 		if reflect.TypeOf(o).Kind() != reflect.Map {
-			glog.V(5).Infof("%s field is not map type, `target` must be set in config file", plugin.field)
+			klog.V(5).Infof("%s field is not map type, `target` must be set in config file", plugin.field)
 			return event, false
 		}
 		if plugin.overwrite {

@@ -4,7 +4,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type AddFilter struct {
@@ -32,12 +32,12 @@ func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 		for f, v := range fieldsValue.(map[interface{}]interface{}) {
 			fieldSetter := field_setter.NewFieldSetter(f.(string))
 			if fieldSetter == nil {
-				glog.Fatalf("could build field setter from %s", f.(string))
+				klog.Fatalf("could build field setter from %s", f.(string))
 			}
 			plugin.fields[fieldSetter] = value_render.GetValueRender(v.(string))
 		}
 	} else {
-		glog.Fatal("fields must be set in add filter plugin")
+		klog.Fatal("fields must be set in add filter plugin")
 	}
 	return plugin
 }

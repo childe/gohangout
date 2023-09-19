@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -27,13 +27,13 @@ var errorParse = errors.New("parse condition error")
 func parseBoolTree(c string) (node *OPNode, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			glog.Errorf("parse `%s` error at `%s`", c, r)
+			klog.Errorf("parse `%s` error at `%s`", c, r)
 			node = nil
 			err = errorParse
 		}
 	}()
 
-	//glog.Info(c)
+	//klog.Info(c)
 	c = strings.Trim(c, " ")
 	if c == "" {
 		return nil, nil
@@ -43,7 +43,7 @@ func parseBoolTree(c string) (node *OPNode, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//glog.Info(s2)
+	//klog.Info(s2)
 	s := make([]interface{}, 0)
 
 	for _, e := range s2 {
@@ -74,7 +74,7 @@ func parseBoolTree(c string) (node *OPNode, err error) {
 		}
 	}
 
-	//glog.Info(s)
+	//klog.Info(s)
 	if len(s) != 1 {
 		return nil, errorParse
 	}
@@ -116,7 +116,7 @@ func buildRPNStack(c string) ([]interface{}, error) {
 				if parenthesis == 0 {
 					condition, err := NewSingleCondition(c[condition_start_pos : i+1])
 					if err != nil {
-						glog.Error(err)
+						klog.Error(err)
 						panic(c[:i+1])
 					}
 					n := &OPNode{

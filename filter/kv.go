@@ -6,7 +6,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type KVFilter struct {
@@ -35,7 +35,7 @@ func newKVFilter(config map[interface{}]interface{}) topology.Filter {
 	if src, ok := config["src"]; ok {
 		plugin.src = value_render.GetValueRender2(src.(string))
 	} else {
-		glog.Fatal("src must be set in kv filter")
+		klog.Fatal("src must be set in kv filter")
 	}
 
 	if target, ok := config["target"]; ok {
@@ -47,13 +47,13 @@ func newKVFilter(config map[interface{}]interface{}) topology.Filter {
 	if field_split, ok := config["field_split"]; ok {
 		plugin.field_split = field_split.(string)
 	} else {
-		glog.Fatal("field_split must be set in kv filter")
+		klog.Fatal("field_split must be set in kv filter")
 	}
 
 	if value_split, ok := config["value_split"]; ok {
 		plugin.value_split = value_split.(string)
 	} else {
-		glog.Fatal("value_split must be set in kv filter")
+		klog.Fatal("value_split must be set in kv filter")
 	}
 
 	if trim, ok := config["trim"]; ok {

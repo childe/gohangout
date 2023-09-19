@@ -13,7 +13,7 @@ import (
 	"github.com/oliveagle/jsonpath"
 
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type Condition interface {
@@ -592,7 +592,7 @@ type BeforeCondition struct {
 func NewBeforeCondition(value string) *BeforeCondition {
 	d, err := time.ParseDuration(value)
 	if err != nil {
-		glog.Fatalf("could not parse %s to duration: %s", value, err)
+		klog.Fatalf("could not parse %s to duration: %s", value, err)
 	}
 	return &BeforeCondition{d}
 }
@@ -612,7 +612,7 @@ type AfterCondition struct {
 func NewAfterCondition(value string) *AfterCondition {
 	d, err := time.ParseDuration(value)
 	if err != nil {
-		glog.Fatalf("could not parse %s to duration: %s", value, err)
+		klog.Fatalf("could not parse %s to duration: %s", value, err)
 	}
 	return &AfterCondition{d}
 }
@@ -635,7 +635,7 @@ func NewCondition(c string) Condition {
 	}
 
 	if root, err := parseBoolTree(c); err != nil {
-		glog.Errorf("could not build Condition from `%s` : %s", original_c, err)
+		klog.Errorf("could not build Condition from `%s` : %s", original_c, err)
 		return nil
 	} else {
 		return root

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type TemplateValueRender struct {
@@ -73,7 +73,7 @@ func init() {
 		}
 		d, err := time.ParseDuration(s)
 		if err != nil {
-			glog.Error(err)
+			klog.Error(err)
 			return false
 		}
 		dst := time.Now().Add(d)
@@ -87,7 +87,7 @@ func init() {
 		}
 		d, err := time.ParseDuration(s)
 		if err != nil {
-			glog.Error(err)
+			klog.Error(err)
 			return false
 		}
 		dst := time.Now().Add(d)
@@ -140,7 +140,7 @@ func init() {
 func NewTemplateValueRender(t string) *TemplateValueRender {
 	tmpl, err := template.New(t).Funcs(funcMap).Parse(t)
 	if err != nil {
-		glog.Fatalf("could not parse template %s:%s", t, err)
+		klog.Fatalf("could not parse template %s:%s", t, err)
 	}
 	return &TemplateValueRender{
 		tmpl: tmpl,

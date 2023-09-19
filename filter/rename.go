@@ -2,7 +2,7 @@ package filter
 
 import (
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type RenameFilter struct {
@@ -24,7 +24,7 @@ func newRenameFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.fields[k.(string)] = v.(string)
 		}
 	} else {
-		glog.Fatal("fileds must be set in rename filter plugin")
+		klog.Fatal("fileds must be set in rename filter plugin")
 	}
 	return plugin
 }
