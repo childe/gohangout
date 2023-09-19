@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 func ListenSignal(termFunc func(), reloadFunc func()) {
@@ -16,7 +16,7 @@ func ListenSignal(termFunc func(), reloadFunc func()) {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
 	for sig := range c {
-		glog.Infof("capture signal: %v", sig)
+		klog.Infof("capture signal: %v", sig)
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
 			termFunc()

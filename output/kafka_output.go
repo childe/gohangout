@@ -7,7 +7,7 @@ import (
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/childe/healer"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -36,7 +36,7 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 
 	pc, ok := config["producer_settings"]
 	if !ok {
-		glog.Fatal("kafka output must have producer_settings")
+		klog.Fatal("kafka output must have producer_settings")
 	}
 	newPc := make(map[string]interface{})
 	for k, v := range pc.(map[interface{}]interface{}) {
@@ -44,23 +44,23 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 	}
 	producer_settings := make(map[string]interface{})
 	if b, err := json.Marshal(newPc); err != nil {
-		glog.Fatalf("could not init kafka producer config: %v", err)
+		klog.Fatalf("could not init kafka producer config: %v", err)
 	} else {
 		json.Unmarshal(b, &producer_settings)
 	}
 
-	glog.Info(producer_settings)
+	klog.Info(producer_settings)
 
 	var topic string
 	if v, ok := config["topic"]; !ok {
-		glog.Fatal("kafka output must have topic setting")
+		klog.Fatal("kafka output must have topic setting")
 	} else {
 		topic = v.(string)
 	}
 
 	producer, err := healer.NewProducer(topic, producer_settings)
 	if err != nil {
-		glog.Fatalf("could not create kafka producer: %v", err)
+		klog.Fatalf("could not create kafka producer: %v", err)
 	}
 	p.producer = producer
 
@@ -76,7 +76,7 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 func (p *KafkaOutput) Emit(event map[string]interface{}) {
 	buf, err := p.encoder.Encode(event)
 	if err != nil {
-		glog.Errorf("marshal %v error: %s", event, err)
+		klog.Errorf("marshal %v error: %s", event, err)
 		return
 	}
 	if p.key == nil {

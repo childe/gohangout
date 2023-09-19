@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
 	yaml "gopkg.in/yaml.v2"
+	"k8s.io/klog/v2"
 )
 
 type Config map[string]interface{}
@@ -31,7 +31,7 @@ func RemoveSensitiveInfo(config map[string]interface{}) string {
 
 	b, err := yaml.Marshal(config)
 	if err != nil {
-		glog.Errorf("marshal config error: %s", err)
+		klog.Errorf("marshal config error: %s", err)
 		return ""
 	}
 

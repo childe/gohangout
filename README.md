@@ -56,7 +56,7 @@ outputs:
 
 ### 日志
 
-日志模块使用 github.com/golang/glog , 几个常用参数如下:
+日志模块使用 k8s.io/klog/v2 , 几个常用参数如下:
 
 - -logtostderr
 日志打印出标准错误

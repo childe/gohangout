@@ -5,7 +5,7 @@ import (
 	"plugin"
 
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type BuildInputFunc func(map[interface{}]interface{}) topology.Input
@@ -15,7 +15,7 @@ var registeredInput map[string]BuildInputFunc = make(map[string]BuildInputFunc)
 // Register is used by input plugins to register themselves
 func Register(inputType string, bf BuildInputFunc) {
 	if _, ok := registeredInput[inputType]; ok {
-		glog.Errorf("%s has been registered, ignore %T", inputType, bf)
+		klog.Errorf("%s has been registered, ignore %T", inputType, bf)
 		return
 	}
 	registeredInput[inputType] = bf
@@ -26,12 +26,12 @@ func GetInput(inputType string, config map[interface{}]interface{}) topology.Inp
 	if v, ok := registeredInput[inputType]; ok {
 		return v(config)
 	}
-	glog.Infof("could not load %s input plugin, try third party plugin", inputType)
+	klog.Infof("could not load %s input plugin, try third party plugin", inputType)
 
 	pluginPath := inputType
 	output, err := getInputFromPlugin(pluginPath, config)
 	if err != nil {
-		glog.Errorf("could not load %s: %v", pluginPath, err)
+		klog.Errorf("could not load %s: %v", pluginPath, err)
 		return nil
 	}
 	return output

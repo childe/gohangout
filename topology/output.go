@@ -2,8 +2,8 @@ package topology
 
 import (
 	"github.com/childe/gohangout/condition_filter"
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/klog/v2"
 )
 
 type Output interface {
@@ -25,7 +25,7 @@ func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc) []
 	for _, outputs := range config["outputs"].([]interface{}) {
 		for outputType, outputConfig := range outputs.(map[interface{}]interface{}) {
 			outputType := outputType.(string)
-			glog.Infof("output type: %s", outputType)
+			klog.Infof("output type: %s", outputType)
 			outputConfig := outputConfig.(map[interface{}]interface{})
 			output := buildOutput(outputType, outputConfig)
 

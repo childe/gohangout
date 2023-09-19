@@ -12,7 +12,7 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 func (grok *Grok) loadPattern(filename string) {
@@ -20,14 +20,14 @@ func (grok *Grok) loadPattern(filename string) {
 	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
 		resp, err := http.Get(filename)
 		if err != nil {
-			glog.Fatalf("load pattern error:%s", err)
+			klog.Fatalf("load pattern error:%s", err)
 		}
 		defer resp.Body.Close()
 		r = bufio.NewReader(resp.Body)
 	} else {
 		f, err := os.Open(filename)
 		if err != nil {
-			glog.Fatalf("load pattern error:%s", err)
+			klog.Fatalf("load pattern error:%s", err)
 		}
 		r = bufio.NewReader(f)
 	}
@@ -37,17 +37,17 @@ func (grok *Grok) loadPattern(filename string) {
 			break
 		}
 		if err != nil {
-			glog.Fatalf("read pattenrs error:%s", err)
+			klog.Fatalf("read pattenrs error:%s", err)
 		}
 		if isPrefix {
-			glog.Fatal("readline prefix")
+			klog.Fatal("readline prefix")
 		}
 		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
 		ss := strings.SplitN(string(line), " ", 2)
 		if len(ss) != 2 {
-			glog.Fatalf("splited `%s` length !=2", string(line))
+			klog.Fatalf("splited `%s` length !=2", string(line))
 		}
 		grok.patterns[ss[0]] = ss[1]
 	}
@@ -57,13 +57,13 @@ func (grok *Grok) loadPatterns() {
 	for _, path := range grok.patternPaths {
 		files, err := getFiles(path)
 		if err != nil {
-			glog.Fatalf("build grok filter error: %s", err)
+			klog.Fatalf("build grok filter error: %s", err)
 		}
 		for _, file := range files {
 			grok.loadPattern(file)
 		}
 	}
-	glog.V(5).Infof("patterns:%s", grok.patterns)
+	klog.V(5).Infof("patterns:%s", grok.patterns)
 }
 
 func getFiles(filepath string) ([]string, error) {
@@ -99,11 +99,11 @@ func getFiles(filepath string) ([]string, error) {
 func (grok *Grok) replaceFunc(s string) string {
 	p, err := regexp.Compile(`%{(\w+?)(?::(\w+?))?}`)
 	if err != nil {
-		glog.Fatal(err)
+		klog.Fatal(err)
 	}
 	rst := p.FindAllStringSubmatch(s, -1)
 	if len(rst) != 1 {
-		glog.Fatalf("sub match in `%s` != 1", s)
+		klog.Fatalf("sub match in `%s` != 1", s)
 	}
 	if pattern, ok := grok.patterns[rst[0][1]]; ok {
 		if rst[0][2] == "" {
@@ -112,7 +112,7 @@ func (grok *Grok) replaceFunc(s string) string {
 			return fmt.Sprintf("(?P<%s>%s)", rst[0][2], pattern)
 		}
 	} else {
-		glog.Fatalf("`%s` could not be found", rst[0][1])
+		klog.Fatalf("`%s` could not be found", rst[0][1])
 		return ""
 	}
 }
@@ -120,7 +120,7 @@ func (grok *Grok) replaceFunc(s string) string {
 func (grok *Grok) translateMatchPattern(s string) string {
 	p, err := regexp.Compile(`%{\w+?(:\w+?)?}`)
 	if err != nil {
-		glog.Fatal(err)
+		klog.Fatal(err)
 	}
 	var r string = ""
 	for {
@@ -164,10 +164,10 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 	grok.loadPatterns()
 
 	finalPattern := grok.translateMatchPattern(match)
-	glog.Infof("final pattern:%s", finalPattern)
+	klog.Infof("final pattern:%s", finalPattern)
 	p, err := regexp.Compile(finalPattern)
 	if err != nil {
-		glog.Fatalf("could not build Grok:%s", err)
+		klog.Fatalf("could not build Grok:%s", err)
 	}
 	grok.p = p
 	grok.subexpNames = p.SubexpNames()
@@ -206,7 +206,7 @@ func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
 			groks = append(groks, NewGrok(mValue.(string), patternPaths, ignoreBlank))
 		}
 	} else {
-		glog.Fatal("match must be set in grok filter")
+		klog.Fatal("match must be set in grok filter")
 	}
 
 	gf := &GrokFilter{

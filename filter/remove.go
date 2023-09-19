@@ -3,7 +3,7 @@ package filter
 import (
 	"github.com/childe/gohangout/field_deleter"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type RemoveFilter struct {
@@ -26,7 +26,7 @@ func newRemoveFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.fieldsDeleters = append(plugin.fieldsDeleters, field_deleter.NewFieldDeleter(field.(string)))
 		}
 	} else {
-		glog.Fatal("fileds must be set in remove filter plugin")
+		klog.Fatal("fileds must be set in remove filter plugin")
 	}
 	return plugin
 }

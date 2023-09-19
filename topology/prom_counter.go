@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/golang/glog"
 	"github.com/mitchellh/mapstructure"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"k8s.io/klog/v2"
 )
 
 var lock = sync.Mutex{}
@@ -33,7 +33,7 @@ func GetPromCounter(config map[interface{}]interface{}) prometheus.Counter {
 		var opts prometheus.CounterOpts = prometheus.CounterOpts{}
 		err := mapstructure.Decode(promConf, &opts)
 		if err != nil {
-			glog.Errorf("marshal prometheus counter config error: %v", err)
+			klog.Errorf("marshal prometheus counter config error: %v", err)
 			return nil
 		}
 

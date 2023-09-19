@@ -7,7 +7,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 type LowercaseFilter struct {
@@ -29,12 +29,12 @@ func newLowercaseFilter(config map[interface{}]interface{}) topology.Filter {
 		for _, field := range fieldsValue.([]interface{}) {
 			fieldSetter := field_setter.NewFieldSetter(field.(string))
 			if fieldSetter == nil {
-				glog.Fatalf("could build field setter from %s", field.(string))
+				klog.Fatalf("could build field setter from %s", field.(string))
 			}
 			plugin.fields[fieldSetter] = value_render.GetValueRender2(field.(string))
 		}
 	} else {
-		glog.Fatal("fileds must be set in remove filter plugin")
+		klog.Fatal("fileds must be set in remove filter plugin")
 	}
 	return plugin
 }
