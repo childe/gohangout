@@ -115,6 +115,8 @@ func (p *UDPInput) ReadOneEvent() map[string]interface{} {
 	return event
 }
 
+func (p *UDPInput) Pause() {}
+
 func (p *UDPInput) Shutdown() {
 	p.stop = true
 	p.conn.Close()

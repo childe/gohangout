@@ -106,6 +106,8 @@ func (p *TCPInput) ReadOneEvent() map[string]interface{} {
 	return p.decoder.Decode(text)
 }
 
+func (p *TCPInput) Pause() {}
+
 func (p *TCPInput) Shutdown() {
 	p.stop = true
 	p.l.Close()

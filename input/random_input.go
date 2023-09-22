@@ -62,4 +62,6 @@ func (p *RandomInput) ReadOneEvent() map[string]interface{} {
 	return p.decoder.Decode([]byte(strconv.Itoa(n)))
 }
 
+func (p *RandomInput) Pause() {}
+
 func (p *RandomInput) Shutdown() {}

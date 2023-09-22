@@ -56,6 +56,8 @@ func (p *StdinInput) ReadOneEvent() map[string]interface{} {
 	return nil
 }
 
+func (p *StdinInput) Pause() {}
+
 func (p *StdinInput) Shutdown() {
 	// what we need is to stop emit new event; close messages or not is not important
 	p.stop = true

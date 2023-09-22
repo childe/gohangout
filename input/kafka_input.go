@@ -152,6 +152,8 @@ func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 	return event
 }
 
+func (p *KafkaInput) Pause() {}
+
 // Shutdown implement method in topology.Input. It closes all consumers
 func (p *KafkaInput) Shutdown() {
 	if len(p.groupConsumers) > 0 {

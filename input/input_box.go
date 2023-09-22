@@ -233,9 +233,15 @@ func (box *InputBox) Beat(worker int) {
 
 func (box *InputBox) shutdown() {
 	box.once.Do(func() {
+<<<<<<< HEAD
 
 		klog.Infof("try to shutdown input %T", box.input)
 		box.input.Shutdown()
+=======
+		// input must not shutdown before output
+		// for the commit work in output may need input
+		box.input.Pause()
+>>>>>>> f58d3b9 (调整shutdown顺序以实现output后commit)
 
 		for i, outputs := range box.outputsInAllWorker {
 			for _, o := range outputs {
@@ -243,6 +249,9 @@ func (box *InputBox) shutdown() {
 				o.Output.Shutdown()
 			}
 		}
+
+		glog.Infof("try to shutdown input %T", box.input)
+		box.input.Shutdown()
 	})
 
 	box.shutdownChan <- true
