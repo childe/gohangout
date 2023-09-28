@@ -324,6 +324,7 @@ Kafka:
         #     ca: 'path/to/ca'
         #     insecure.skip.verify: false
         #     servername: xx
+    worker_dispatch_field: '[__metadata][kafka][partition]'
 
 ```
 
@@ -365,6 +366,9 @@ servername 如果 servername 不为空的话，证书中的 IP 或者 DNS 名字
 
 更多配置参见 [https://github.com/childe/healer/blob/dev/config.go#L40](https://github.com/childe/healer/blob/dev/config.go#L40)
 
+#### worker_dispatch_field
+
+当worker数不为1时，配置worker_dispatch_field为kafka分区字段，可启用worker队列分配机制，分配键为kafka的分区ID
 ## OUTPUT
 
 ### Stdout
@@ -529,8 +533,7 @@ Clickhouse:
     bulk_actions: 1000
     flush_interval: 30
     concurrent: 1
-    reliable_commit: true
-    kafka_meta_field: '[__metadata][kafka]'
+    reliable_commit: false
 ```
 
 *Notice:* 如果表中字段有 default 值, 目前只支持字符串和数字 的 DEFAULT 表达式解析和处理, 如果像 IPv4设置了default 值, 是处理不了的. 代码中写死了 IPv4 和 IPv6 的默认值都是0
@@ -571,6 +574,9 @@ bulk 的goroutine 最大值, 默认1
 
 到 Clickhouse 的连接的生存时间, 单位为秒. 默认不设置, 也就是生存时间无限长.
 
+#### reliable_commit
+
+需搭配kafka_sarama输入插件并配置worker_dispatch_field使用，启用后: 将在flush之后再commit kafka offset，达到可靠消费的目的
 ## FILTER
 
 ### 通用字段

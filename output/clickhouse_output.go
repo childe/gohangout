@@ -282,8 +282,8 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	} else {
 		p.reliableCommit = true
 	}
-	if v, ok := config["kafka_meta_field"].(string); ok {
-		p.kafkaFieldRender = value_render.GetValueRender(v)
+	if p.reliableCommit {
+		p.kafkaFieldRender = value_render.GetValueRender("[__metadata][kafka]")
 	}
 
 	if v, ok := config["auto_convert"]; ok {
