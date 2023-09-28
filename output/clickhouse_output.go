@@ -12,7 +12,9 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
+	"github.com/IBM/sarama"
 	"github.com/childe/gohangout/topology"
+	"github.com/childe/gohangout/value_render"
 	"github.com/spf13/cast"
 	"k8s.io/klog/v2"
 )
@@ -53,6 +55,9 @@ type ClickhouseOutput struct {
 	transIntColumn      []string
 	transFloatColumn    []string
 	transIntArrayColumn []string
+
+	reliableCommit   bool
+	kafkaFieldRender value_render.ValueRender // get kafka offset info from render
 }
 
 type rowDesc struct {
@@ -261,7 +266,7 @@ func init() {
 }
 
 func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 	p := &ClickhouseOutput{
 		config: config,
 	}
@@ -270,6 +275,15 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		for _, f := range v.([]interface{}) {
 			p.fields = append(p.fields, f.(string))
 		}
+	}
+
+	if v, ok := config["reliable_commit"]; ok {
+		p.reliableCommit = v.(bool)
+	} else {
+		p.reliableCommit = true
+	}
+	if v, ok := config["kafka_meta_field"].(string); ok {
+		p.kafkaFieldRender = value_render.GetValueRender(v)
 	}
 
 	if v, ok := config["auto_convert"]; ok {
@@ -502,6 +516,18 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 			return
 		}
 		klog.Infof("%d docs has been committed to clickhouse", len(events))
+
+		for _, event := range events {
+			kafkaMeta, ok := c.kafkaFieldRender.Render(event).(map[string]interface{})
+			if !ok {
+				klog.Error("kafka meta field not found, can not commit event: ", event)
+				continue
+			}
+			err := CommitKafkaEvent(kafkaMeta)
+			if err != nil {
+				klog.Errorf("commit kafka event error: %s, evnet: %v", err, kafkaMeta)
+			}
+		}
 		return
 	}
 }
@@ -593,4 +619,29 @@ func (c *ClickhouseOutput) Shutdown() {
 		c.closeChan <- true
 	}
 	c.awaitclose(30 * time.Second)
+}
+
+func CommitKafkaEvent(kafkaMeta map[string]interface{}) error {
+	session, ok := kafkaMeta["session"].(sarama.ConsumerGroupSession)
+	if !ok {
+		return fmt.Errorf("kafka session field not found, can not commit")
+	}
+	if err := session.Context().Err(); err != nil {
+		return fmt.Errorf("kafka session context error: %v", err)
+	}
+	topic, ok := kafkaMeta["topic"].(string)
+	if !ok {
+		return fmt.Errorf("kafka topic field not found, can not commit")
+	}
+	partition, ok := kafkaMeta["partition"].(int32)
+	if !ok {
+		return fmt.Errorf("kafka partition field not found, can not commit")
+	}
+	offset, ok := kafkaMeta["offset"].(int64)
+	if !ok {
+		return fmt.Errorf("kafka offset field not found, can not commit")
+	}
+	session.MarkOffset(topic, partition, offset+1, "")
+	glog.V(10).Infof("commit offset: topic: %s, partition: %d, offset: %d", topic, partition, offset)
+	return nil
 }

@@ -150,7 +150,7 @@ func (box *InputBox) dispatchToWorker(event map[string]interface{}, workerIdx in
 		event = fs.SetField(event, v.Render(event), "", false)
 	}
 
-	box.eventQueueForAllWorker[workerIdx] <- event //TODO： worker超时
+	box.eventQueueForAllWorker[workerIdx] <- event
 }
 
 func (box *InputBox) workerBeat(workerIdx int) {

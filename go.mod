@@ -4,11 +4,16 @@ go 1.13
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
+	github.com/IBM/sarama v1.41.2
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e // indirect
 	github.com/childe/healer v0.5.5
 	github.com/fsnotify/fsnotify v1.5.1
+<<<<<<< HEAD
 	github.com/golang/snappy v0.0.4 // indirect
+=======
+	github.com/golang/glog v1.0.0
+>>>>>>> e465238 (1. 增加sarama版本的kafka input)
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
