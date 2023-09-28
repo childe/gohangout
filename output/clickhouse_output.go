@@ -642,6 +642,6 @@ func CommitKafkaEvent(kafkaMeta map[string]interface{}) error {
 		return fmt.Errorf("kafka offset field not found, can not commit")
 	}
 	session.MarkOffset(topic, partition, offset+1, "")
-	glog.V(10).Infof("commit offset: topic: %s, partition: %d, offset: %d", topic, partition, offset)
+	klog.V(10).Infof("commit offset: topic: %s, partition: %d, offset: %d", topic, partition, offset)
 	return nil
 }

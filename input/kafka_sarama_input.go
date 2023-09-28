@@ -14,7 +14,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 var (
@@ -159,14 +159,14 @@ func newKafkaSaramaInput(config map[interface{}]interface{}) (topology.Input, er
 
 	go func() {
 		for !kafkaSaramaInput.shutdown {
-			glog.Infof("start connect/reconnect kafka and consume from cluster: %v, topic: %v, groupName: %v",
+			klog.Infof("start connect/reconnect kafka and consume from cluster: %v, topic: %v, groupName: %v",
 				brokers, topics, groupID)
 
 			// GroupConsumer
 			ctx := context.Background()
 			client, err := sarama.NewConsumerGroup(brokers, groupID, consumerConfig)
 			if err != nil {
-				glog.Errorf("could not init GroupConsumer: %s", err)
+				klog.Errorf("could not init GroupConsumer: %s", err)
 				if client != nil {
 					client.Close()
 				}
@@ -178,7 +178,7 @@ func newKafkaSaramaInput(config map[interface{}]interface{}) (topology.Input, er
 
 			go func() {
 				for err := range client.Errors() {
-					glog.Errorf("consumer error: %v", err)
+					klog.Errorf("consumer error: %v", err)
 				}
 			}()
 
@@ -187,7 +187,7 @@ func newKafkaSaramaInput(config map[interface{}]interface{}) (topology.Input, er
 				// server-side rebalance happens, the consumer session will need to be
 				// recreated to get the new claims
 				if err := client.Consume(ctx, topics, &consumer); err != nil {
-					glog.Errorf("Error from consumer: %v, will close and reconnect", err)
+					klog.Errorf("Error from consumer: %v, will close and reconnect", err)
 					client.Close()
 					break
 				}
@@ -196,7 +196,7 @@ func newKafkaSaramaInput(config map[interface{}]interface{}) (topology.Input, er
 					return
 				}
 				consumer.ready = make(chan bool)
-				glog.Info("Sarama consumer up and running!...")
+				klog.Info("Sarama consumer up and running!...")
 			}
 			time.Sleep(10 * time.Second) // 运行过程中断开链接时，10秒后重新连接
 		}
@@ -235,10 +235,10 @@ func (p *KafkaSaramaInput) Shutdown() {
 	p.shutdown = true
 	if running && p.client != nil {
 		// 避免重复close
-		glog.Info("Shutting down consumer...")
+		klog.Info("Shutting down consumer...")
 		running = false
 		if err := p.client.Close(); err != nil {
-			glog.Errorf("Error closing client: %v", err)
+			klog.Errorf("Error closing client: %v", err)
 		}
 	}
 }
@@ -278,10 +278,10 @@ func getConsumerConfig(config map[string]interface{}) (brokers []string, groupId
 	cfg.Consumer.Fetch.Min = dc.FetchMinBytes
 
 	if dc.FromBeginning {
-		glog.Infoln("OffsetOldest")
+		klog.Infoln("OffsetOldest")
 		cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
 	} else {
-		glog.Infoln("OffsetNewest")
+		klog.Infoln("OffsetNewest")
 		cfg.Consumer.Offsets.Initial = sarama.OffsetNewest
 	}
 	cfg.Consumer.Offsets.AutoCommit.Enable = dc.AutoCommit
@@ -333,10 +333,10 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				glog.Info("message channel was closed")
+				klog.Info("message channel was closed")
 				return nil
 			}
-			glog.V(10).Infof("Message claimed: topic = %s partition = %d offset = %d", message.Topic, message.Partition, message.Offset)
+			klog.V(10).Infof("Message claimed: topic = %s partition = %d offset = %d", message.Topic, message.Partition, message.Offset)
 			messageAndSession := ConsumerMessageAndSession{
 				session: session,
 				message: message,

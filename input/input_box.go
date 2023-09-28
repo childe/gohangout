@@ -90,11 +90,7 @@ func (box *InputBox) beat(workerIdx int) {
 				break
 			}
 			if box.shutdownWhenNil {
-<<<<<<< HEAD
 				klog.Info("received nil message. shutdown...")
-=======
-				glog.Info("received nil message. shutdown...")
->>>>>>> dc10975 (支持根据指定字段取余分配worker线程)
 				box.exit()
 				break
 			} else {
@@ -119,12 +115,12 @@ func (box *InputBox) dispatchBeat() {
 			box.promCounter.Inc()
 		}
 		if event == nil {
-			glog.V(5).Info("received nil message.")
+			klog.V(5).Info("received nil message.")
 			if box.stop {
 				break
 			}
 			if box.shutdownWhenNil {
-				glog.Info("received nil message. shutdown...")
+				klog.Info("received nil message. shutdown...")
 				box.exit()
 				break
 			} else {
@@ -139,7 +135,7 @@ func (box *InputBox) dispatchBeat() {
 			workerIdx = int(dispatchKey) % queueSize
 		} else {
 			workerIdx = rand.Intn(queueSize)
-			glog.Info("Invalid workerDispatchField, use random worker index ", workerIdx)
+			klog.Info("Invalid workerDispatchField, use random worker index ", workerIdx)
 		}
 		box.dispatchToWorker(event, workerIdx)
 	}
@@ -150,7 +146,7 @@ func (box *InputBox) dispatchToWorker(event map[string]interface{}, workerIdx in
 		event = fs.SetField(event, v.Render(event), "", false)
 	}
 
-	box.eventQueueForAllWorker[workerIdx] <- event
+	box.eventQueueForAllWorker[workerIdx] <- event //TODO： worker超时
 }
 
 func (box *InputBox) workerBeat(workerIdx int) {
@@ -162,7 +158,7 @@ func (box *InputBox) workerBeat(workerIdx int) {
 
 	for !box.stop {
 		event = <-box.eventQueueForAllWorker[workerIdx]
-		glog.V(10).Infof("worker %d start processing one message %v", workerIdx, event)
+		klog.V(10).Infof("worker %d start processing one message %v", workerIdx, event)
 
 		// prome.IncCounterWithLabel("worker_get_event_count", map[string]string{
 		// 	"workerIdx": strconv.Itoa(workerIdx),
@@ -212,7 +208,7 @@ func (box *InputBox) Beat(worker int) {
 	box.outputsInAllWorker = make([][]*topology.OutputBox, worker)
 
 	if worker > 1 && len(box.workerDispatchField) != 0 {
-		glog.Infof("Initializing %d workers", worker)
+		klog.Infof("Initializing %d workers", worker)
 		box.eventQueueForAllWorker = make([]chan map[string]interface{}, worker)
 		for i := 0; i < worker; i++ {
 			box.eventQueueForAllWorker[i] = make(chan map[string]interface{}, 10)
@@ -233,15 +229,9 @@ func (box *InputBox) Beat(worker int) {
 
 func (box *InputBox) shutdown() {
 	box.once.Do(func() {
-<<<<<<< HEAD
-
-		klog.Infof("try to shutdown input %T", box.input)
-		box.input.Shutdown()
-=======
 		// input must not shutdown before output
 		// for the commit work in output may need input
 		box.input.Pause()
->>>>>>> f58d3b9 (调整shutdown顺序以实现output后commit)
 
 		for i, outputs := range box.outputsInAllWorker {
 			for _, o := range outputs {
@@ -250,7 +240,7 @@ func (box *InputBox) shutdown() {
 			}
 		}
 
-		glog.Infof("try to shutdown input %T", box.input)
+		klog.Infof("try to shutdown input %T", box.input)
 		box.input.Shutdown()
 	})
 
