@@ -8,8 +8,6 @@ require (
 	github.com/bkaradzic/go-lz4 v1.0.1-0.20160924222819-7224d8d8f27e // indirect
 	github.com/childe/healer v0.5.5
 	github.com/fsnotify/fsnotify v1.5.1
-	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/ipipdotnet/datx-go v0.0.0-20181123035258-af996d4701a0
@@ -23,6 +21,9 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.4.1
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
+	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
+	go.opentelemetry.io/collector/pdata v0.66.0
+	google.golang.org/grpc v1.59.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/klog/v2 v2.100.1
 )
