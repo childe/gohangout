@@ -50,7 +50,6 @@ type OLTPOutputConfig struct {
 	Timeout     int               `json:"timeout"`
 	Compression string            `json:"compression"`
 	Headers     map[string]string `json:"headers"`
-	Attributes  map[string]string `json:"attributes"`
 }
 
 type ClientAuthConfig struct {
