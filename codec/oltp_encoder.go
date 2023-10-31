@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"encoding/hex"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -28,7 +29,7 @@ type OltpEncoder struct{}
 
 func (o *OltpEncoder) Encode(event map[string]interface{}) (plogotlp.ExportRequest, error) {
 	logs := plog.NewLogs()
-	rsLogs := plog.NewResourceLogs()
+	rsLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLog := rsLogs.ScopeLogs().AppendEmpty()
 	logRecord := scopeLog.LogRecords().AppendEmpty()
 	logRecord.SetObservedTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
@@ -50,7 +51,7 @@ func (o *OltpEncoder) Encode(event map[string]interface{}) (plogotlp.ExportReque
 			}
 		case recordTime:
 			if _, ok := v.(uint64); ok {
-				logRecord.SetObservedTimestamp(pcommon.Timestamp(v.(uint64)))
+				logRecord.SetTimestamp(pcommon.Timestamp(v.(uint64)))
 			}
 		case recordSeverity:
 			if _, ok := v.(string); ok {
@@ -66,17 +67,25 @@ func (o *OltpEncoder) Encode(event map[string]interface{}) (plogotlp.ExportReque
 			}
 		case recordTraceId:
 			if _, ok := v.(string); ok {
-				if len(v.(string)) == 16 {
+				bytes, err := hex.DecodeString(v.(string))
+				if err != nil {
+					continue
+				}
+				if len(bytes) == 16 {
 					var traceId [16]byte
-					copy(traceId[:], v.(string))
+					copy(traceId[:], bytes)
 					logRecord.SetTraceID(traceId)
 				}
 			}
 		case recordSpanId:
 			if _, ok := v.(string); ok {
-				if len(v.(string)) == 8 {
+				bytes, err := hex.DecodeString(v.(string))
+				if err != nil {
+					continue
+				}
+				if len(bytes) == 8 {
 					var spanId [8]byte
-					copy(spanId[:], v.(string))
+					copy(spanId[:], bytes)
 					logRecord.SetSpanID(spanId)
 				}
 			}
@@ -91,7 +100,7 @@ func (o *OltpEncoder) Encode(event map[string]interface{}) (plogotlp.ExportReque
 				}
 			} else if strings.HasPrefix(k, scopePrefix) {
 				if _, ok := v.(string); ok {
-					scopeLog.Scope().Attributes().PutStr(k[len(resourcePrefix):], v.(string))
+					scopeLog.Scope().Attributes().PutStr(k[len(scopePrefix):], v.(string))
 				}
 			} else if strings.HasPrefix(k, recordPrefix) {
 				if _, ok := v.(string); ok {

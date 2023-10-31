@@ -123,12 +123,13 @@ func (c *OLTPOutputConfig) TLSConfig() (*tls.Config, error) {
 func newOTLPOutput(config map[interface{}]interface{}) topology.Output {
 	var oltpConfig OLTPOutputConfig
 	configBytes, _ := json.Marshal(config)
-	err := json.Unmarshal(configBytes, &oltpConfig)
-	if err != nil {
-		klog.Fatal("wrong format oltp config!")
+	if configBytes != nil {
+		err := json.Unmarshal(configBytes, &oltpConfig)
+		if err != nil {
+			klog.Fatalf("wrong format oltp config! %v", err)
+		}
+		klog.Info(string(configBytes))
 	}
-	klog.Info(string(configBytes))
-
 	if oltpConfig.ServiceAddress == "" {
 		oltpConfig.ServiceAddress = defaultServiceAddress
 	}
