@@ -65,8 +65,34 @@ func TestOltpOutputEncode(t *testing.T) {
 }
 
 func TestOltpOutputEmit(t *testing.T) {
-	// docker run -p 127.0.0.1:4317:4317 -p 127.0.0.1:55679:55679 otel/opentelemetry-collector:0.88.0
 	o := newOTLPOutput(make(map[interface{}]interface{}))
 	event := generateEvent()
 	o.Emit(event)
 }
+
+// docker run -p 127.0.0.1:4317:4317 -v config.yaml:/etc/otelcol/config.yaml otel/opentelemetry-collector:0.88.0
+/*** config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  file:
+    path: ./filename.json
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [file]
+    metrics:
+      receivers: [otlp]
+      exporters: [file]
+    logs:
+      receivers: [otlp]
+      exporters: [debug]
+***/
