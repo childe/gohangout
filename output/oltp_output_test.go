@@ -8,8 +8,7 @@ import (
 	"testing"
 )
 
-func TestOltpOutputEncode(t *testing.T) {
-	o := newOTLPOutput(make(map[interface{}]interface{}))
+func generateEvent() map[string]interface{} {
 	event := make(map[string]interface{})
 	event["oltp_resource_service.name"] = "gohangout"
 	event["oltp_scope_my.scope.attribute"] = "gohangout scope attribute"
@@ -25,6 +24,12 @@ func TestOltpOutputEncode(t *testing.T) {
 	event["oltp_logrecords_traceid"] = "5B8EFFF798038103D269B633813FC60C"
 	event["oltp_logrecords_spanid"] = "EEE19B7EC3C1B174"
 	event["oltp_logrecords_body"] = "example log body"
+	return event
+}
+
+func TestOltpOutputEncode(t *testing.T) {
+	o := newOTLPOutput(make(map[interface{}]interface{}))
+	event := generateEvent()
 	request, err := o.(*OLTPOutput).oltpEncoder.Encode(event)
 	if err != nil {
 		t.Fatal(err)
@@ -57,5 +62,11 @@ func TestOltpOutputEncode(t *testing.T) {
 	assert.Equal(t, recordAttr1.Str(), "gohangout.log.attribute1")
 	recordAttr2, _ := logRecord.Attributes().Get("attribute2")
 	assert.Equal(t, recordAttr2.Str(), "gohangout.log.attribute2")
-	//o.Emit(event)
+}
+
+func TestOltpOutputEmit(t *testing.T) {
+	// docker run -p 127.0.0.1:4317:4317 -p 127.0.0.1:55679:55679 otel/opentelemetry-collector:0.88.0
+	o := newOTLPOutput(make(map[interface{}]interface{}))
+	event := generateEvent()
+	o.Emit(event)
 }

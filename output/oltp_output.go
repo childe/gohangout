@@ -25,7 +25,7 @@ import (
 const (
 	defaultServiceAddress = "localhost:4317"
 	defaultTimeout        = 5
-	defaultCompression    = "gzip"
+	defaultCompression    = "none"
 	userAgent             = "gohangout"
 )
 
