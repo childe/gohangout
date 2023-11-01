@@ -1,6 +1,6 @@
 module github.com/childe/gohangout
 
-go 1.19
+go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
@@ -18,7 +18,7 @@ require (
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
 	go.opentelemetry.io/collector/pdata v0.66.0
-	google.golang.org/grpc v1.59.0
+	google.golang.org/grpc v1.57.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/klog/v2 v2.100.1
 )
@@ -34,7 +34,7 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.1.2 // indirect
+	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/uuid v1.3.1 // indirect
