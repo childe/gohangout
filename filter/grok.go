@@ -67,6 +67,10 @@ func (grok *Grok) loadPatterns() {
 }
 
 func getFiles(filepath string) ([]string, error) {
+	if strings.HasPrefix(filepath, "http://") || strings.HasPrefix(filepath, "https://") {
+		return []string{filepath}, nil
+	}
+
 	fi, err := os.Stat(filepath)
 	if err != nil {
 		return nil, err

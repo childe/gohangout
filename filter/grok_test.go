@@ -2,6 +2,14 @@ package filter
 
 import "testing"
 
+func TestGetPath(t *testing.T) {
+	filepath := "https://raw.githubusercontent.com/vjeantet/grok/master/patterns/grok-patterns"
+	_, err := getFiles(filepath)
+	if err != nil {
+		t.Errorf("getFiles error:%s", err)
+	}
+}
+
 func TestGrokFilter(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	match := make([]interface{}, 2)
@@ -30,6 +38,7 @@ func TestGrokFilter(t *testing.T) {
 		}
 	}
 }
+
 func TestTarget(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	match := make([]interface{}, 2)
