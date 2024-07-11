@@ -314,9 +314,10 @@ Kafka:
         from.beginning: 'true'
         messages_queue_length: 10
 
-        # sasl.mechanism: PLAIN
-        # sasl.user: admin
-        # sasl.password: admin-secret
+        # sasl:
+        #     mechanism: PLAIN
+        #     user: admin
+        #     password: admin-secret
 
         # tls.enabled: true
         # tls:
