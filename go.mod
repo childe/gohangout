@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/childe/cast v1.5.4
-	github.com/childe/healer v0.6.5
+	github.com/childe/healer v0.6.6
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ipipdotnet/datx-go v0.0.0-20181123035258-af996d4701a0
 	github.com/ipipdotnet/ipdb-go v1.3.1
