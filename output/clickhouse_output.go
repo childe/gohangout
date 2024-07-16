@@ -12,8 +12,8 @@ import (
 	"time"
 
 	clickhouse "github.com/ClickHouse/clickhouse-go"
+	"github.com/childe/cast"
 	"github.com/childe/gohangout/topology"
-	"github.com/spf13/cast"
 	"k8s.io/klog/v2"
 )
 

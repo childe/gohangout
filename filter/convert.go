@@ -5,10 +5,10 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/childe/cast"
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/spf13/cast"
 	"k8s.io/klog/v2"
 )
 
