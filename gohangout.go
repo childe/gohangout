@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"sync"
+	_ "time/tzdata"
 
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/internal/config"
@@ -44,7 +45,7 @@ type gohangoutInputs []*input.InputBox
 var inputs gohangoutInputs
 
 var (
-	ctx context.Context
+	ctx    context.Context
 	cancel context.CancelFunc
 )
 
@@ -85,7 +86,7 @@ func init() {
 	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
 
 	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
-    
+
 	klog.InitFlags(nil)
 	flag.Parse()
 }
