@@ -2,8 +2,8 @@ name: Create Release And Upload Binary To Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - "*"
 
 jobs:
   release:
@@ -99,4 +99,3 @@ jobs:
           asset_path: gohangout-windows-386.exe
           asset_name: gohangout-windows-386.exe
           asset_content_type: application/zip
-
