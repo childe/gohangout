@@ -3,7 +3,7 @@ name: Build and Push Docker Image
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   docker-build-push:
@@ -20,7 +20,7 @@ jobs:
           go-version: 1.22
 
       - name: Test
-        run: go test -v ./...
+        run: make test
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
