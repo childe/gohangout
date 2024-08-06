@@ -4,16 +4,15 @@ tag?=$(hash)
 .PHONY: gohangout all clean check test docker linux-binary
 
 gohangout:
-	mkdir -p build/
-	CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout
+	CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o gohangout
 
 linux-binary:
 	mkdir -p build
 	@echo "Building gohangout binary in docker container"
 	@if [ -n "$(GOPATH)" ]; then\
-		docker run -e CGO_ENABLED=0 -v $(GOPATH):/go -v $(PWD):/gohangout -w /gohangout golang:1.18 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
+		docker run -e CGO_ENABLED=0 -v $(GOPATH):/go -v $(PWD):/gohangout -w /gohangout golang:1.22 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
 	else\
-		docker run -e CGO_ENABLED=0 -v $(PWD):/gohangout -w /gohangout golang:1.18 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
+		docker run -e CGO_ENABLED=0 -v $(PWD):/gohangout -w /gohangout golang:1.22 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
 	fi
 
 docker: linux-binary
@@ -31,10 +30,10 @@ all: check
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o build/gohangout-darwin-x64-$(tag)
 
 clean:
-	rm -rf build/*
+	rm -rf gohangout
 
 check:
 	git diff-index --quiet HEAD --
 
 test:
-	go test -v ./...  -covermode=atomic -coverprofile=coverage.out
+	go test -v -gcflags="all=-N -l" ./...
