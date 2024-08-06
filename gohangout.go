@@ -72,25 +72,6 @@ func (inputs gohangoutInputs) stop() {
 	}
 }
 
-func init() {
-	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
-	flag.BoolVar(&options.autoReload, "reload", options.autoReload, "if auto reload while config file changed")
-
-	flag.BoolVar(&options.pprof, "pprof", false, "pprof or not")
-	flag.StringVar(&options.pprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
-	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
-	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
-
-	flag.BoolVar(&options.version, "version", false, "print version and exit")
-
-	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
-
-	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
-
-	klog.InitFlags(nil)
-	flag.Parse()
-}
-
 func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, err error) {
 	boxes = make([]*input.InputBox, 0)
 
@@ -146,6 +127,23 @@ func reload() {
 }
 
 func main() {
+	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
+	flag.BoolVar(&options.autoReload, "reload", options.autoReload, "if auto reload while config file changed")
+
+	flag.BoolVar(&options.pprof, "pprof", false, "pprof or not")
+	flag.StringVar(&options.pprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
+	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
+	flag.StringVar(&options.memprofile, "memprofile", "", "write mem profile to `file`")
+
+	flag.BoolVar(&options.version, "version", false, "print version and exit")
+
+	flag.StringVar(&options.prometheus, "prometheus", "", "address to expose prometheus metrics")
+
+	flag.BoolVar(&options.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
+
+	klog.InitFlags(nil)
+	flag.Parse()
+
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 

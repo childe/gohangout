@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -23,7 +23,7 @@ func (yp *YamlParser) parse(filepath string) (map[string]interface{}, error) {
 			return nil, err
 		}
 		defer resp.Body.Close()
-		buffer, err = ioutil.ReadAll(resp.Body)
+		buffer, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
