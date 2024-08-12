@@ -54,3 +54,30 @@ outputs:
 		convey.So(len(boxes), convey.ShouldEqual, 2)
 	})
 }
+
+func TestEndToEndProcess(t *testing.T) {
+	mockey.PatchConvey("end-to-end process testing", t, func() {
+		c := `
+inputs:
+    - Mock:
+        codec: json
+filters:
+  - Date:
+      src: '@timestamp'
+      target: pt
+      formats:
+        - '2006-01-02T15:04:05.000-07:00'
+
+outputs:
+  - Stdout: {}`
+
+		config := make(map[string]interface{})
+		yaml.Unmarshal([]byte(c), &config)
+
+		mockey.Mock(input.GetInput).Return(&MockInput{}).Build()
+
+		boxes, err := buildPluginLink(config)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(len(boxes), convey.ShouldEqual, 2)
+	})
+}
