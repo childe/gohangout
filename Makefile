@@ -1,21 +1,12 @@
 hash:=$(shell git rev-parse --short HEAD)
 tag?=$(hash)
 
-.PHONY: gohangout all clean check test docker linux-binary
+.PHONY: gohangout all clean check test docker
 
 gohangout:
 	CGO_ENABLED=0 go build -ldflags "-X main.version=$(hash)" -o gohangout
 
-linux-binary:
-	mkdir -p build
-	@echo "Building gohangout binary in docker container"
-	@if [ -n "$(GOPATH)" ]; then\
-		docker run -e CGO_ENABLED=0 -v $(GOPATH):/go -v $(PWD):/gohangout -w /gohangout golang:1.22 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
-	else\
-		docker run -e CGO_ENABLED=0 -v $(PWD):/gohangout -w /gohangout golang:1.22 go build -ldflags "-X main.version=$(hash)" -o build/gohangout;\
-	fi
-
-docker: linux-binary
+docker:
 	docker build -t gohangout .
 
 all: check
