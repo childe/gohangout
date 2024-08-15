@@ -126,6 +126,34 @@ func reload() {
 	go inputs.start()
 }
 
+func _main() {
+	gohangoutConfig, err := config.ParseConfig(options.config)
+	if err != nil {
+		klog.Fatalf("could not parse config: %v", err)
+	}
+
+	boxes, err := buildPluginLink(gohangoutConfig)
+	if err != nil {
+		klog.Fatalf("build plugin link error: %v", err)
+	}
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+
+	inputs = gohangoutInputs(boxes)
+	go inputs.start()
+
+	if options.autoReload {
+		if err := config.WatchConfig(options.config, reload); err != nil {
+			klog.Fatalf("watch config fail: %s", err)
+		}
+	}
+
+	go signal.ListenSignal(exit, reload)
+
+	<-ctx.Done()
+	inputs.stop()
+}
+
 func main() {
 	flag.StringVar(&options.config, "config", options.config, "path to configuration file or directory")
 	flag.BoolVar(&options.autoReload, "reload", options.autoReload, "if auto reload while config file changed")
@@ -143,9 +171,6 @@ func main() {
 
 	klog.InitFlags(nil)
 	flag.Parse()
-
-	ctx, cancel = context.WithCancel(context.Background())
-	defer cancel()
 
 	if options.version {
 		fmt.Printf("gohangout version %s\n", version)
@@ -192,27 +217,8 @@ func main() {
 		}()
 	}
 
-	gohangoutConfig, err := config.ParseConfig(options.config)
-	if err != nil {
-		klog.Fatalf("could not parse config: %v", err)
-	}
-	boxes, err := buildPluginLink(gohangoutConfig)
-	if err != nil {
-		klog.Fatalf("build plugin link error: %v", err)
-	}
-	inputs = gohangoutInputs(boxes)
-	go inputs.start()
+	_main()
 
-	if options.autoReload {
-		if err := config.WatchConfig(options.config, reload); err != nil {
-			klog.Fatalf("watch config fail: %s", err)
-		}
-	}
-
-	go signal.ListenSignal(exit, reload)
-
-	<-ctx.Done()
-	inputs.stop()
 }
 
 func exit() {
