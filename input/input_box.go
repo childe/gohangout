@@ -23,8 +23,8 @@ type InputBox struct {
 
 	promCounter prometheus.Counter
 
-	shutdownWhenNil    bool
-	exit 						   func()
+	shutdownWhenNil bool
+	exit            func()
 
 	addFields map[field_setter.FieldSetter]value_render.ValueRender
 }
@@ -44,7 +44,7 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 
 		promCounter: topology.GetPromCounter(inputConfig),
 
-		exit:        exit,
+		exit: exit,
 	}
 	if add_fields, ok := inputConfig["add_fields"]; ok {
 		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)

@@ -3,6 +3,7 @@ package input
 import (
 	"bufio"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/childe/gohangout/codec"
@@ -15,7 +16,7 @@ type StdinInput struct {
 	decoder codec.Decoder
 
 	scanner  *bufio.Scanner
-	messages chan []byte
+	scanLock sync.Mutex
 
 	stop bool
 }
@@ -30,17 +31,18 @@ func newStdinInput(config map[interface{}]interface{}) topology.Input {
 		codertype = v.(string)
 	}
 	p := &StdinInput{
-
-		config:   config,
-		decoder:  codec.NewDecoder(codertype),
-		scanner:  bufio.NewScanner(os.Stdin),
-		messages: make(chan []byte, 10),
+		config:  config,
+		decoder: codec.NewDecoder(codertype),
+		scanner: bufio.NewScanner(os.Stdin),
 	}
 
 	return p
 }
 
 func (p *StdinInput) ReadOneEvent() map[string]interface{} {
+	p.scanLock.Lock()
+	defer p.scanLock.Unlock()
+
 	if p.scanner.Scan() {
 		t := p.scanner.Bytes()
 		msg := make([]byte, len(t))
