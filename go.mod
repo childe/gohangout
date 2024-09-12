@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/bytedance/mockey v1.2.10
+	github.com/bytedance/mockey v1.2.12
 	github.com/childe/cast v1.5.4
 	github.com/childe/healer v0.6.10
 	github.com/fsnotify/fsnotify v1.5.1
