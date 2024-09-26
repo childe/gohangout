@@ -18,6 +18,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
+	go.uber.org/automaxprocs v1.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/klog/v2 v2.120.1
 )

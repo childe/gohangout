@@ -12,6 +12,8 @@ import (
 	"sync"
 	_ "time/tzdata"
 
+	_ "go.uber.org/automaxprocs"
+
 	"github.com/childe/gohangout/input"
 	"github.com/childe/gohangout/internal/config"
 	"github.com/childe/gohangout/internal/signal"
