@@ -157,6 +157,6 @@ func (box *InputBox) shutdown() {
 
 // Shutdown shutdowns the inputs and outputs
 func (box *InputBox) Shutdown() {
-	box.shutdown()
 	box.stop = true
+	box.shutdown()
 }
