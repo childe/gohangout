@@ -19,6 +19,8 @@ type TCPInput struct {
 	l        net.Listener
 	messages chan []byte
 	stop     bool
+
+	connections []net.Conn
 }
 
 func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
@@ -86,6 +88,7 @@ func newTCPInput(config map[interface{}]interface{}) topology.Input {
 				}
 				klog.Error(err)
 			} else {
+				p.connections = append(p.connections, conn)
 				scanner := bufio.NewScanner(conn)
 				if v, ok := config["max_length"]; ok {
 					max := v.(int)
@@ -109,5 +112,8 @@ func (p *TCPInput) ReadOneEvent() map[string]interface{} {
 func (p *TCPInput) Shutdown() {
 	p.stop = true
 	p.l.Close()
+	for _, conn := range p.connections {
+		conn.Close()
+	}
 	close(p.messages)
 }
