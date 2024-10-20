@@ -114,15 +114,14 @@ func reload() {
 		klog.Errorf("could not parse config, ignore reload: %v", err)
 		return
 	}
+	klog.Info("stop old inputs")
+	inputs.stop()
+
 	boxes, err := buildPluginLink(gohangoutConfig)
 	if err != nil {
 		klog.Errorf("build plugin link error, ignore reload: %v", err)
 		return
 	}
-
-	klog.Info("stop old inputs")
-	inputs.stop()
-
 	inputs = gohangoutInputs(boxes)
 	klog.Info("start new inputs")
 	go inputs.start()
