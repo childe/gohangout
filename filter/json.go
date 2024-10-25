@@ -6,12 +6,14 @@ import (
 	"strings"
 
 	"github.com/childe/gohangout/topology"
+	"github.com/childe/gohangout/value_render"
 	"k8s.io/klog/v2"
 )
 
 // JSONFilter will parse json string in `field` and put the result into `target` field
 type JSONFilter struct {
 	field     string
+	vr        value_render.ValueRender
 	target    string
 	overwrite bool
 	include   []string
@@ -30,6 +32,7 @@ func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
 
 	if field, ok := config["field"]; ok {
 		plugin.field = field.(string)
+		plugin.vr = value_render.GetValueRender2(plugin.field)
 	} else {
 		klog.Fatal("field must be set in Json filter")
 	}
@@ -58,12 +61,12 @@ func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
 
 // Filter will parse json string in `field` and put the result into `target` field
 func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	s, ok := event[plugin.field]
-	if !ok {
+	f := plugin.vr.Render(event)
+	if f == nil {
 		return event, false
 	}
 
-	ss, ok := s.(string)
+	ss, ok := f.(string)
 	if !ok {
 		return event, false
 	}
