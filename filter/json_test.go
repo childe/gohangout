@@ -67,6 +67,38 @@ func TestJson(t *testing.T) {
 			},
 			true,
 		},
+		{
+			map[string]interface{}{
+				"message": `{"message":"hello","b":2}`,
+				"a":       10,
+			},
+			map[interface{}]interface{}{
+				"field":     "message",
+				"overwrite": true,
+			},
+			map[string]interface{}{
+				"message": "hello",
+				"a":       10,
+				"b":       json.Number("2"),
+			},
+			true,
+		},
+		{
+			map[string]interface{}{
+				"message": `{"message":"hello","b":2}`,
+				"a":       10,
+			},
+			map[interface{}]interface{}{
+				"field":     "$.message",
+				"overwrite": false,
+			},
+			map[string]interface{}{
+				"message": `{"message":"hello","b":2}`,
+				"a":       10,
+				"b":       json.Number("2"),
+			},
+			true,
+		},
 	}
 
 	for _, c := range cases {
