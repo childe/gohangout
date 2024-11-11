@@ -1047,6 +1047,8 @@ Rename:
     serverIP: server_ip
 ```
 
+将 host 字段改名为 hostname, 将 serverIP 字段改名为 server_ip
+
 
 ### Split
 
