@@ -1153,3 +1153,5 @@ Uppercase:
 ```
 
 使用 [https://pkg.go.dev/regexp#Regexp.ReplaceAll](https://pkg.go.dev/regexp#Regexp.ReplaceAll) 做替换。
+
+配置中 `$` 符号会被环境变量渲染掉，解决方案可以参考 [https://github.com/childe/gohangout/issues/258](https://github.com/childe/gohangout/issues/258)
