@@ -109,6 +109,8 @@ Add:
 
 如果一个 Kafka Topic 只有一个分区，那最多只有能有一个 Gohanout 去消费。因为后续的数据处理流程都在一个线程中，可能会有 CPU 瓶颈（比如 Grok 正则匹配等），这种情况下，可以通过增加 worker 提升数据处理能力。
 
+**注意，Kakfa 里面 topic:2 并不会开两个线程去处理数据，它只是 2 个线程去Kafka中取数据。**
+
 在 k8s 环境下，建议将 worker 配置成 CPU limit 值。
 
 ### 自动更新配置
@@ -339,7 +341,7 @@ Kafka:
 
 #### topic
 
-`weblog: 1` 是指开一个goroutine去消费 weblog 这个topic. 可以配置多个topic, 多个goroutine, 但我这边在实践中都是使用多进程(docker), 而不是多goroutine.
+`weblog: 1` 是指开一个goroutine去消费 weblog 这个topic. 这里设置成2，是开 2 个线程去消费数据，但后面Filter和Output的处理还是一个线程中。如果需要多线程处理数据，可以使用 `--worker` 参数。
 
 #### assign
 
