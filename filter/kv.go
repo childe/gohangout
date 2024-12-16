@@ -91,9 +91,6 @@ func (p *KVFilter) Filter(event map[string]interface{}) (map[string]interface{},
 		return event, false
 	}
 	A := strings.Split(msg.(string), p.field_split)
-	if len(A) == 1 {
-		return event, false
-	}
 
 	var o map[string]interface{} = event
 	if p.target != "" {

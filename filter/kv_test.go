@@ -103,3 +103,24 @@ func TestKVFilter(t *testing.T) {
 		t.Error("kv failed")
 	}
 }
+func TestKVFilterOneField(t *testing.T) {
+	config := make(map[interface{}]interface{})
+	config["field_split"] = " "
+	config["value_split"] = "="
+	config["src"] = "message"
+	f := BuildFilter("KV", config)
+
+	event := make(map[string]interface{})
+	event["message"] = "a=aaa"
+	t.Log(event)
+
+	event, ok := f.Filter(event)
+	if !ok {
+		t.Error("kv failed")
+	}
+	t.Log(event)
+
+	if event["a"] != "aaa" {
+		t.Error("kv failed")
+	}
+}
