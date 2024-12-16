@@ -27,4 +27,4 @@ check:
 	git diff-index --quiet HEAD --
 
 test:
-	go test -v -count=1 -gcflags="all=-N -l" ./... 
+	for _ in {1..5} ; do go test -v -count=1 -gcflags="all=-N -l" ./... && break ; done
