@@ -341,7 +341,7 @@ Kafka:
 
 #### topic
 
-`weblog: 1` 是指开一个goroutine去消费 weblog 这个topic. 这里设置成2，是开 2 个线程去消费数据，但后面Filter和Output的处理还是一个线程中。如果需要多线程处理数据，可以使用 `--worker` 参数。
+`weblog: 1` 是指开一个goroutine去消费 weblog 这个topic. 这里设置成2，是开 2 个线程去消费数据，但后面Filter和Output的处理还是一个线程中。**如果需要多线程处理数据，可以使用 `--worker` 参数。**
 
 #### assign
 
