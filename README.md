@@ -338,6 +338,8 @@ Kafka:
 默认为 false
 配置为 true 的话, 可以把 topic/partition/offset 信息添加到 ["@metadata"]["kafka"] 字段中
 
+增加如下三个字段：topic partition offset
+
 
 #### topic
 
