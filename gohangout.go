@@ -22,7 +22,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var version string
+var (
+	version   string
+	buildTime string
+)
 
 var options = &struct {
 	config     string
@@ -174,7 +177,7 @@ func main() {
 	flag.Parse()
 
 	if options.version {
-		fmt.Printf("gohangout version %s\n", version)
+		fmt.Printf("gohangout: %s compiled at %s with %v on %v/%v\n", version, buildTime, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 		return
 	}
 
