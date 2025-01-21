@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strings"
@@ -344,7 +345,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 			}
 			rst.scheme = scheme
 			rst.user = user
-			rst.password = password
+			rst.password = url.QueryEscape(password)
 			hosts = append(hosts, host)
 		}
 	} else {
