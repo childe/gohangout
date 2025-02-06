@@ -16,6 +16,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/prometheus/client_golang v1.12.1
+	github.com/relvacode/iso8601 v1.6.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/automaxprocs v1.6.0
