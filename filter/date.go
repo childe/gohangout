@@ -12,6 +12,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
+	"github.com/relvacode/iso8601"  // https://pkg.go.dev/github.com/relvacode/iso8601#section-readme
 	"k8s.io/klog/v2"
 )
 
@@ -119,6 +120,25 @@ func (p *UnixMSParser) Parse(t interface{}) (time.Time, error) {
 	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 }
 
+
+type ISO8601Parser struct{
+    location *time.Location   // If the input does not have timezone information, it will use the given location.
+}
+
+func (p *ISO8601Parser) Parse(t interface{}) (time.Time, error) {
+	var (
+		rst time.Time
+	)
+	if reflect.TypeOf(t).Kind() == reflect.String {
+	    if p.location == nil {
+        	return iso8601.ParseString(t.(string))
+        }
+		return iso8601.ParseStringInLocation(t.(string), p.location)
+	}
+
+	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
+}
+
 func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 	if format == "UNIX" {
 		return &UnixParser{}
@@ -128,6 +148,9 @@ func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 	}
 	if format == "RFC3339" {
 		return &FormatParser{time.RFC3339, l, addYear}
+	}
+	if format == "ISO8601" {
+	    return &ISO8601Parser{l}
 	}
 	return &FormatParser{format, l, addYear}
 }
