@@ -74,6 +74,32 @@ func TestFormatParserWithLocation(t *testing.T) {
 	}
 }
 
+func TestISO8601Parser(t *testing.T) {
+    var tArr = [5]string{
+        "2020-01-28T19:52:12",
+        "2020-01-28T19:52:12.000",
+        "2020-01-28T11:52:12Z",
+        "2020-01-28T19:52:12+0800",
+        "2020-01-28T19:52:12+08:00",
+    }
+    // further cases please see: https://github.com/relvacode/iso8601/blob/master/iso8601_test.go
+
+    location, _ := time.LoadLocation("Asia/Shanghai")
+	p := &ISO8601Parser{location}
+	for _, tStr := range tArr {
+	    r, err := p.Parse(tStr)
+
+    	if err != nil {
+    		t.Fatalf("%s", err)
+    	}
+
+    	rr := r.UnixNano() / 1000
+    	if rr != ts * 1000000 {
+    		t.Fatalf("%v %d", tStr, rr)
+    	}
+	}
+}
+
 func TestDateFilter(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	config["location"] = "Asia/Shanghai"
