@@ -12,7 +12,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/relvacode/iso8601"  // https://pkg.go.dev/github.com/relvacode/iso8601#section-readme
+	"github.com/relvacode/iso8601" // https://pkg.go.dev/github.com/relvacode/iso8601#section-readme
 	"k8s.io/klog/v2"
 )
 
@@ -33,14 +33,14 @@ func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 		rst time.Time
 		err error
 	)
-	if reflect.TypeOf(t).String() != "string" {
+	value, ok := t.(string)
+
+	if !ok {
 		return rst, MustStringTypeError
 	}
-	var value string
+
 	if dp.addYear {
-		value = fmt.Sprintf("%d%s", time.Now().Year(), t.(string))
-	} else {
-		value = t.(string)
+		value = fmt.Sprintf("%d%s", time.Now().Year(), value)
 	}
 	if dp.location == nil {
 		return time.Parse(dp.format, value)
@@ -94,46 +94,44 @@ func (p *UnixMSParser) Parse(t interface{}) (time.Time, error) {
 	var (
 		rst time.Time
 	)
-	if reflect.TypeOf(t).String() == "json.Number" {
-		t1, err := t.(json.Number).Int64()
+	if v, ok := t.(json.Number); ok {
+		t1, err := v.Int64()
 		if err != nil {
 			return rst, err
 		}
 		return time.Unix(t1/1000, t1%1000*1000000), nil
 	}
-	if reflect.TypeOf(t).Kind() == reflect.String {
-		t1, err := strconv.Atoi(t.(string))
+	if v, ok := t.(string); ok {
+		t1, err := strconv.Atoi(v)
 		if err != nil {
 			return rst, err
 		}
 		t2 := int64(t1)
 		return time.Unix(t2/1000, t2%1000*1000000), nil
 	}
-	if reflect.TypeOf(t).Kind() == reflect.Int {
-		t1 := int64(t.(int))
+	if v, ok := t.(int); ok {
+		t1 := int64(v)
 		return time.Unix(t1/1000, t1%1000*1000000), nil
 	}
-	if reflect.TypeOf(t).Kind() == reflect.Int64 {
-		t1 := t.(int64)
-		return time.Unix(t1/1000, t1%1000*1000000), nil
+	if v, ok := t.(int64); ok {
+		return time.Unix(v/1000, v%1000*1000000), nil
 	}
 	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
 }
 
-
-type ISO8601Parser struct{
-    location *time.Location   // If the input does not have timezone information, it will use the given location.
+type ISO8601Parser struct {
+	location *time.Location // If the input does not have timezone information, it will use the given location.
 }
 
 func (p *ISO8601Parser) Parse(t interface{}) (time.Time, error) {
 	var (
 		rst time.Time
 	)
-	if reflect.TypeOf(t).Kind() == reflect.String {
-	    if p.location == nil {
-        	return iso8601.ParseString(t.(string))
-        }
-		return iso8601.ParseStringInLocation(t.(string), p.location)
+	if v, ok := t.(string); ok {
+		if p.location == nil {
+			return iso8601.ParseString(v)
+		}
+		return iso8601.ParseStringInLocation(v, p.location)
 	}
 
 	return rst, fmt.Errorf("%s unknown type:%s", t, reflect.TypeOf(t).String())
@@ -150,7 +148,7 @@ func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 		return &FormatParser{time.RFC3339, l, addYear}
 	}
 	if format == "ISO8601" {
-	    return &ISO8601Parser{l}
+		return &ISO8601Parser{l}
 	}
 	return &FormatParser{format, l, addYear}
 }
