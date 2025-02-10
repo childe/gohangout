@@ -36,6 +36,7 @@
 - [使用kafka-go 的Kafka Input](https://github.com/huangjacky/gohangout-input-kafkago)
 - [Redis Input](https://github.com/childe/gohangout-input-redis)
 - [Split Filter](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-filter-split) 一条消息Split 成多条
+- [Dissect Filter](https://github.com/jingleniko/gohangout-filter-dissect)
 - [File Output](https://github.com/childe/gohangout-plugin-examples/tree/master/gohangout-file-output) 输出到文件
 - [zinc Output](https://github.com/9ji/gohangout-output-zinc) 输出到[zinc](https://github.com/prabhatsharma/zinc)
 - [pulasr input](https://github.com/zcola/gohangout-input-pulsar)
