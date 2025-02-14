@@ -24,7 +24,7 @@
 
 ### docker
 
-镜像地址 https://hub.docker.com/repository/docker/rmself/gohangout/general
+镜像地址 https://hub.docker.com/r/rmself/gohangout
 
 ### 第三方 Plugin
 
@@ -116,8 +116,9 @@ Add:
 
 ### 自动更新配置
 
-默认不会监听文件系统更新，只在首次初始化时加载配置
 --reload
+
+默认不会监听文件系统更新，只在首次初始化时加载配置
 
 开启这个参数后，当配置文件发生改变会马上触发shutdown，然后重新加载配置文件后运行
 
