@@ -33,17 +33,18 @@ func TestRenameFilter(t *testing.T) {
 		{
 			config: map[interface{}]interface{}{
 				"fields": map[interface{}]interface{}{
-					"name1": "n1",
-					"name2": "n2",
+					"[name][last]": "[name][first]",
 				},
 			},
 			event: map[string]interface{}{
-				"name1": "liu",
-				"name2": "dehua",
+				"name": map[string]interface{}{
+					"last": "liu",
+				},
 			},
 			expected: map[string]interface{}{
-				"n1": "liu",
-				"n2": "dehua",
+				"name": map[string]interface{}{
+					"first": "liu",
+				},
 			},
 		},
 	}

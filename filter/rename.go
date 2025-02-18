@@ -1,40 +1,52 @@
 package filter
 
 import (
+	"github.com/childe/gohangout/field_deleter"
+	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
+	"github.com/childe/gohangout/value_render"
 	"k8s.io/klog/v2"
 )
 
+type gsd struct {
+	g value_render.ValueRender
+	s field_setter.FieldSetter
+	d field_deleter.FieldDeleter
+}
+
 type RenameFilter struct {
 	config map[interface{}]interface{}
-	fields map[string]string
+	fields map[string]gsd
 }
 
 func init() {
 	Register("Rename", newRenameFilter)
 }
+
 func newRenameFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &RenameFilter{
 		config: config,
-		fields: make(map[string]string),
+		fields: make(map[string]gsd),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {
-		for k, v := range fieldsValue.(map[interface{}]interface{}) {
-			plugin.fields[k.(string)] = v.(string)
+		for src, dst := range fieldsValue.(map[interface{}]interface{}) {
+			g := value_render.GetValueRender2(src.(string))
+			s := field_setter.NewFieldSetter(dst.(string))
+			d := field_deleter.NewFieldDeleter(src.(string))
+			plugin.fields[src.(string)] = gsd{g, s, d}
 		}
 	} else {
-		klog.Fatal("fileds must be set in rename filter plugin")
+		klog.Fatal("fields must be set in rename filter plugin")
 	}
 	return plugin
 }
 
 func (plugin *RenameFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	for source, target := range plugin.fields {
-		if v, ok := event[source]; ok {
-			event[target] = v
-			delete(event, source)
-		}
+	for _, _gsd := range plugin.fields {
+		v := _gsd.g.Render(event)
+		_gsd.s.SetField(event, v, "", true)
+		_gsd.d.Delete(event)
 	}
 	return event, true
 }
