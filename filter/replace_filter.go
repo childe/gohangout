@@ -65,7 +65,7 @@ func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
 			}
 		}
 	} else {
-		klog.Fatal("fileds must be set in replace filter plugin")
+		klog.Fatal("fields must be set in replace filter plugin")
 	}
 	return p
 }

@@ -76,7 +76,7 @@ func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.fields = append(plugin.fields, field_setter.NewFieldSetter(f.(string)))
 		}
 	} else {
-		klog.Fatal("fileds must be set in split filter plugin")
+		klog.Fatal("fields must be set in split filter plugin")
 	}
 	plugin.fieldsLength = len(plugin.fields)
 

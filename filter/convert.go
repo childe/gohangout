@@ -170,7 +170,7 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 			}
 		}
 	} else {
-		klog.Fatal("fileds must be set in convert filter plugin")
+		klog.Fatal("fields must be set in convert filter plugin")
 	}
 	return plugin
 }

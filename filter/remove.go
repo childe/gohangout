@@ -26,7 +26,7 @@ func newRemoveFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.fieldsDeleters = append(plugin.fieldsDeleters, field_deleter.NewFieldDeleter(field.(string)))
 		}
 	} else {
-		klog.Fatal("fileds must be set in remove filter plugin")
+		klog.Fatal("fields must be set in remove filter plugin")
 	}
 	return plugin
 }

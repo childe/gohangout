@@ -109,7 +109,7 @@ func TestSplitFilter3(t *testing.T) {
 	}
 }
 
-// length of fileds do not match length of splited
+// length of fields do not match length of splited
 func TestSplitFilter4(t *testing.T) {
 	config := make(map[interface{}]interface{})
 	fields := []interface{}{"loglevel", "date", "time"}

@@ -34,7 +34,7 @@ func newUppercaseFilter(config map[interface{}]interface{}) topology.Filter {
 			plugin.fields[fieldSetter] = value_render.GetValueRender2(field.(string))
 		}
 	} else {
-		klog.Fatal("fileds must be set in remove filter plugin")
+		klog.Fatal("fields must be set in remove filter plugin")
 	}
 	return plugin
 }
