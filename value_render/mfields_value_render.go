@@ -21,21 +21,24 @@ func NewMultiLevelValueRender(fields []string) *MultiLevelValueRender {
 }
 
 // Render implements ValueRender
-func (vr *MultiLevelValueRender) Render(event map[string]interface{}) interface{} {
+func (vr *MultiLevelValueRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
 	var current map[string]interface{} = event
-	var value interface{}
-	var ok bool
 	for _, field := range vr.preFields {
-		value, ok = current[field]
-		if !ok || value == nil {
-			return nil
+		value, exist = current[field]
+		if !exist {
+			return false, nil
 		}
-		if current, ok = value.(map[string]interface{}); !ok {
-			return nil
+		if value == nil {
+			return true, nil
+		}
+		if current, exist = value.(map[string]interface{}); !exist {
+			return false, nil
 		}
 	}
+
 	if value, ok := current[vr.lastField]; ok {
-		return value
+		return true, value
+	} else {
+		return false, nil
 	}
-	return nil
 }

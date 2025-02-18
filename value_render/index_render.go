@@ -22,6 +22,12 @@ type field struct {
 	mv *MultiLevelValueRender
 }
 
+var errNotExists = errors.New("field does not exist")
+var errNotString = errors.New("field is not string")
+
+// render returns error , but it is not used in the caller
+// always use "null" as a result when err is not nil
+// for compatibility
 func (f *field) render(event map[string]interface{}, location *time.Location) (string, error) {
 	if f.literal {
 		return f.value, nil
@@ -34,11 +40,15 @@ func (f *field) render(event map[string]interface{}, location *time.Location) (s
 			return dateFormat(time.Now(), f.value, location)
 		}
 	}
-	v := f.mv.Render(event)
+	exist, v := f.mv.Render(event)
+	if !exist {
+		return "null", errNotExists
+	}
+
 	if v, ok := v.(string); ok {
 		return v, nil
 	}
-	return "null", nil
+	return "null", errNotString
 }
 
 type IndexRender struct {
@@ -133,14 +143,12 @@ func dateFormat(t interface{}, format string, location *time.Location) (string, 
 	return format, errors.New("could not tell the type timestamp field belongs to")
 }
 
-func (r *IndexRender) Render(event map[string]interface{}) interface{} {
+// Render implements ValueRender. note: it's field use "null" as result when error occurs
+func (r *IndexRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
 	fields := make([]string, len(r.fields))
 	for i, f := range r.fields {
-		if v, err := f.render(event, r.location); err != nil {
-			return "null"
-		} else {
-			fields[i] = v
-		}
+		v, _ := f.render(event, r.location)
+		fields[i] = v
 	}
-	return strings.Join(fields, "")
+	return true, strings.Join(fields, "")
 }

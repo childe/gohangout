@@ -17,7 +17,7 @@ func init() {
 }
 
 type ValueRender interface {
-	Render(map[string]interface{}) interface{}
+	Render(map[string]interface{}) (exist bool, value interface{})
 }
 
 // getValueRender matches all regexp pattern and return a ValueRender
