@@ -220,8 +220,8 @@ func newDateFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (plugin *DateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	inputI := plugin.srcVR.Render(event)
-	if inputI == nil {
+	inputI, err := plugin.srcVR.Render(event)
+	if err != nil || inputI == nil {
 		return event, false
 	}
 

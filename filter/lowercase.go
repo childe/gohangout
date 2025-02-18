@@ -43,8 +43,8 @@ func newLowercaseFilter(config map[interface{}]interface{}) topology.Filter {
 func (plugin *LowercaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	success := true
 	for s, v := range plugin.fields {
-		value := v.Render(event)
-		if value != nil {
+		value, err := v.Render(event)
+		if err != nil || value != nil {
 			if reflect.TypeOf(value).Kind() != reflect.String {
 				success = false
 				continue

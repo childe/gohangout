@@ -87,8 +87,9 @@ func (box *InputBox) beat(workerIdx int) {
 				continue
 			}
 		}
-		for fs, v := range box.addFields {
-			event = fs.SetField(event, v.Render(event), "", false)
+		for fs, r := range box.addFields {
+			v, _ := r.Render(event)
+			event = fs.SetField(event, v, "", false)
 		}
 		firstNode.Process(event)
 	}

@@ -149,10 +149,10 @@ func NewTemplateValueRender(t string) *TemplateValueRender {
 
 // Render return "exist" and value.
 // But the returned "exist" is meaningless; the user needs to see if the "value" is nil.
-func (r *TemplateValueRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
+func (r *TemplateValueRender) Render(event map[string]interface{}) (value interface{}, err error) {
 	b := bytes.NewBuffer(nil)
-	if r.tmpl.Execute(b, event) != nil {
-		return false, nil
+	if err := r.tmpl.Execute(b, event); err != nil {
+		return nil, err
 	}
-	return true, b.String()
+	return b.String(), nil
 }

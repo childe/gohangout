@@ -44,9 +44,11 @@ func newRenameFilter(config map[interface{}]interface{}) topology.Filter {
 
 func (plugin *RenameFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	for _, _gsd := range plugin.fields {
-		v := _gsd.g.Render(event)
-		_gsd.s.SetField(event, v, "", true)
-		_gsd.d.Delete(event)
+		v, err := _gsd.g.Render(event)
+		if err == nil {
+			_gsd.s.SetField(event, v, "", true)
+			_gsd.d.Delete(event)
+		}
 	}
 	return event, true
 }

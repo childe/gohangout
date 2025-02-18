@@ -74,10 +74,9 @@ func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
 func (p *ReplaceFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	success := true
 	for _, f := range p.fields {
-		value := f.v.Render(event)
-		if value == nil {
+		value, err := f.v.Render(event)
+		if err != nil || value == nil {
 			continue
-			success = false
 		}
 		if s, ok := value.(string); ok {
 			new := strings.Replace(s, f.old, f.new, f.n)

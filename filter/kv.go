@@ -86,8 +86,8 @@ func newKVFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (p *KVFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	msg := p.src.Render(event)
-	if msg == nil {
+	msg, err := p.src.Render(event)
+	if err != nil || msg == nil {
 		return event, false
 	}
 	A := strings.Split(msg.(string), p.field_split)

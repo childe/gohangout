@@ -82,8 +82,8 @@ func (p *KafkaOutput) Emit(event map[string]interface{}) {
 	if p.key == nil {
 		p.producer.AddMessage(nil, buf)
 	} else {
-		key := []byte(p.key.Render(event).(string))
-		p.producer.AddMessage(key, buf)
+		key, _ := p.key.Render(event)
+		p.producer.AddMessage([]byte(key.(string)), buf)
 	}
 }
 

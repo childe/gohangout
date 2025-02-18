@@ -512,18 +512,24 @@ func (p *ElasticsearchOutput) assebleHosts() (hosts []string) {
 
 // Emit adds the event to bulkProcessor
 func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
+
 	var (
-		index      string = p.index.Render(event).(string)
-		index_type string = p.index_type.Render(event).(string)
+		index      string
+		index_type string
 		op         string = p.action
 		es_version int    = p.es_version
 		id         string
 		routing    string
 	)
+	i, _ := p.index.Render(event)
+	index = i.(string)
+	i, _ = p.index_type.Render(event)
+	index_type = i.(string)
+
 	if p.id == nil {
 		id = ""
 	} else {
-		t := p.id.Render(event)
+		t, _ := p.id.Render(event)
 		if t == nil {
 			id = ""
 			klog.V(20).Infof("could not render id:%s", event)
@@ -535,7 +541,7 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	if p.routing == nil {
 		routing = ""
 	} else {
-		t := p.routing.Render(event)
+		t, _ := p.routing.Render(event)
 		if t == nil {
 			routing = ""
 			klog.V(20).Infof("could not render routing:%s", event)
@@ -547,14 +553,14 @@ func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
 	if p.source_field == nil && p.bytes_source_field == nil {
 		p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil, es_version})
 	} else if p.bytes_source_field != nil {
-		t := p.bytes_source_field.Render(event)
+		t, _ := p.bytes_source_field.Render(event)
 		if t == nil {
 			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil, es_version})
 		} else {
 			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, (t.([]byte)), es_version})
 		}
 	} else {
-		t := p.source_field.Render(event)
+		t, _ := p.source_field.Render(event)
 		if t == nil {
 			p.bulkProcessor.add(&Action{op, index, index_type, id, routing, event, nil, es_version})
 		} else {

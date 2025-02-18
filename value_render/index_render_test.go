@@ -94,7 +94,10 @@ func TestIndexRender(t *testing.T) {
 		},
 	} {
 		vr := NewIndexRender(c.template)
-		got := vr.Render(c.event).(string)
+		got, err := vr.Render(c.event)
+		if err != nil {
+			t.Errorf("err:%s\n", err)
+		}
 		if c.want != got {
 			t.Errorf("render %q, want %s, got %s", c.template, c.want, got)
 		}
@@ -102,7 +105,6 @@ func TestIndexRender(t *testing.T) {
 	var event map[string]interface{}
 	var template string
 	var vr ValueRender
-	var indexname string
 
 	// timestamp exists, appid missing
 	event = make(map[string]interface{})
@@ -111,8 +113,11 @@ func TestIndexRender(t *testing.T) {
 	template = "nginx-%{appid}-%{+2006.01.02}"
 
 	vr = NewIndexRender(template)
-	indexname = vr.Render(event).(string)
-	t.Log(indexname)
+	indexname, err := vr.Render(event)
+
+	if err != nil {
+		t.Errorf("err:%s\n", err)
+	}
 
 	if indexname != "nginx-null-2019.03.04" {
 		t.Errorf("%s != nginx-null-2019.03.04\n", indexname)

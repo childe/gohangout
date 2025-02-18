@@ -10,9 +10,9 @@ func NewOneLevelValueRender(template string) *OneLevelValueRender {
 	}
 }
 
-func (vr *OneLevelValueRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
+func (vr *OneLevelValueRender) Render(event map[string]interface{}) (value interface{}, err error) {
 	if value, ok := event[vr.field]; ok {
-		return true, value
+		return value, nil
 	}
-	return false, nil
+	return false, ErrNotExist
 }

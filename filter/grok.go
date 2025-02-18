@@ -240,8 +240,8 @@ func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
 
 func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	var input string
-	inputI := gf.vr.Render(event)
-	if inputI == nil {
+	inputI, err := gf.vr.Render(event)
+	if err != nil || inputI == nil {
 		return event, false
 	} else {
 		input = inputI.(string)

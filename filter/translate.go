@@ -117,8 +117,8 @@ func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (plugin *TranslateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	o := plugin.sourceVR.Render(event)
-	if o == nil {
+	o, err := plugin.sourceVR.Render(event)
+	if err != nil || o == nil {
 		return event, false
 	}
 	if targetValue, ok := plugin.dict[o]; ok {

@@ -26,8 +26,8 @@ type TemplateCondition struct {
 }
 
 func (s *TemplateCondition) Pass(event map[string]interface{}) bool {
-	r := s.ifCondition.Render(event)
-	if r == nil || r.(string) != s.ifResult {
+	r, err := s.ifCondition.Render(event)
+	if err != nil || r == nil || r.(string) != s.ifResult {
 		return false
 	}
 	return true

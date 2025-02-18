@@ -210,11 +210,14 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 }
 
 func (p *InfluxdbOutput) Emit(event map[string]interface{}) {
-	var (
-		measurement string = p.measurement.Render(event).(string)
-	)
-	p.bulkProcessor.add(&InAction{measurement, event, p.tags, p.fields, p.timestamp})
+	measurement, err := p.measurement.Render(event)
+	if err != nil {
+		klog.V(20).Infof("measurement render error: %v", err)
+		return
+	}
+	p.bulkProcessor.add(&InAction{measurement.(string), event, p.tags, p.fields, p.timestamp})
 }
+
 func (outputPlugin *InfluxdbOutput) Shutdown() {
 	outputPlugin.bulkProcessor.awaitclose(30 * time.Second)
 }

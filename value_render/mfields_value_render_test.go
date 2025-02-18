@@ -9,7 +9,8 @@ type mfieldsTestCase struct {
 	event  map[string]interface{}
 	fields []string
 
-	want interface{}
+	hasError bool
+	want     interface{}
 }
 
 func TestMultiLevelValueRender(t *testing.T) {
@@ -22,8 +23,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 					},
 				},
 			},
-			fields: []string{"a", "b", "c"},
-			want:   "c",
+			fields:   []string{"a", "b", "c"},
+			hasError: false,
+			want:     "c",
 		},
 		{
 			event: map[string]interface{}{
@@ -33,8 +35,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 					},
 				},
 			},
-			fields: []string{"a", "b", "d"},
-			want:   nil,
+			fields:   []string{"a", "b", "d"},
+			hasError: true,
+			want:     nil,
 		},
 		{
 			event: map[string]interface{}{
@@ -44,8 +47,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 					},
 				},
 			},
-			fields: []string{"a", "b", "c", "d"},
-			want:   nil,
+			fields:   []string{"a", "b", "c", "d"},
+			hasError: true,
+			want:     nil,
 		},
 		{
 			event: map[string]interface{}{
@@ -55,8 +59,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 					},
 				},
 			},
-			fields: []string{"a", "b", "c", "d", "e"},
-			want:   nil,
+			fields:   []string{"a", "b", "c", "d", "e"},
+			hasError: true,
+			want:     nil,
 		},
 		{
 			event: map[string]interface{}{
@@ -66,8 +71,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 					},
 				},
 			},
-			fields: []string{"a", "b", "c"},
-			want:   10,
+			fields:   []string{"a", "b", "c"},
+			hasError: false,
+			want:     10,
 		},
 		{
 			event: map[string]interface{}{
@@ -75,14 +81,20 @@ func TestMultiLevelValueRender(t *testing.T) {
 					"b": 10,
 				},
 			},
-			fields: []string{"a", "b", "c"},
-			want:   nil,
+			fields:   []string{"a", "b", "c"},
+			hasError: true,
+			want:     nil,
 		},
 	} {
 		v := NewMultiLevelValueRender(c.fields)
-		ans := v.Render(c.event)
-		if !reflect.DeepEqual(ans, c.want) {
-			t.Errorf("MultiLevelValueRender(%v) = %v, want %v", c.event, ans, c.want)
+		got, err := v.Render(c.event)
+
+		if c.hasError != (err != nil) {
+			t.Errorf("if has error, case: %v, want %v, got %v", c, c.hasError, err != nil)
+		}
+
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("case: %v, want %q, got %q", c, c.want, got)
 		}
 	}
 }

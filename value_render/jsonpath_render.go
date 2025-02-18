@@ -6,9 +6,6 @@ type JsonpathRender struct {
 	Pat *jsonpath.Compiled
 }
 
-func (r *JsonpathRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
-	if value, err := r.Pat.Lookup(event); err == nil {
-		return true, value
-	}
-	return false, nil
+func (r *JsonpathRender) Render(event map[string]interface{}) (value interface{}, err error) {
+	return r.Pat.Lookup(event)
 }

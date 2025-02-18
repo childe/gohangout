@@ -22,7 +22,6 @@ type field struct {
 	mv *MultiLevelValueRender
 }
 
-var errNotExists = errors.New("field does not exist")
 var errNotString = errors.New("field is not string")
 
 // render returns error , but it is not used in the caller
@@ -40,9 +39,9 @@ func (f *field) render(event map[string]interface{}, location *time.Location) (s
 			return dateFormat(time.Now(), f.value, location)
 		}
 	}
-	exist, v := f.mv.Render(event)
-	if !exist {
-		return "null", errNotExists
+	v, err := f.mv.Render(event)
+	if err != nil {
+		return "null", err
 	}
 
 	if v, ok := v.(string); ok {
@@ -143,12 +142,12 @@ func dateFormat(t interface{}, format string, location *time.Location) (string, 
 	return format, errors.New("could not tell the type timestamp field belongs to")
 }
 
-// Render implements ValueRender. note: it's field use "null" as result when error occurs
-func (r *IndexRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
+// Render implements ValueRender. note: it's field use "null" as result when error occurs for compatibility
+func (r *IndexRender) Render(event map[string]interface{}) (value interface{}, err error) {
 	fields := make([]string, len(r.fields))
 	for i, f := range r.fields {
 		v, _ := f.render(event, r.location)
 		fields[i] = v
 	}
-	return true, strings.Join(fields, "")
+	return strings.Join(fields, ""), nil
 }

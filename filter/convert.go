@@ -177,8 +177,8 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 
 func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	for fs, conveterAndRender := range plugin.fields {
-		originanV := conveterAndRender.valueRender.Render(event)
-		if originanV == nil {
+		originanV, err := conveterAndRender.valueRender.Render(event)
+		if err != nil || originanV == nil {
 			if conveterAndRender.settoIfNil != nil {
 				event = fs.SetField(event, conveterAndRender.settoIfNil, "", true)
 			}

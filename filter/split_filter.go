@@ -88,14 +88,21 @@ func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	src := plugin.src.Render(event)
-	if src == nil {
+	src, err := plugin.src.Render(event)
+	if err != nil || src == nil {
 		return event, false
 	}
 
 	var sep string
 	if plugin.dynamicSep {
-		sep = plugin.sepRender.Render(event).(string)
+		s, err := plugin.sepRender.Render(event)
+		if err != nil {
+			return event, false
+		}
+		var ok bool
+		if sep, ok = s.(string); !ok {
+			return event, false
+		}
 	} else {
 		sep = plugin.sep
 	}

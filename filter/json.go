@@ -61,8 +61,8 @@ func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
 
 // Filter will parse json string in `field` and put the result into `target` field
 func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	f := plugin.vr.Render(event)
-	if f == nil {
+	f, err := plugin.vr.Render(event)
+	if err != nil || f == nil {
 		return event, false
 	}
 
@@ -74,7 +74,7 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 	var o interface{} = nil
 	d := json.NewDecoder(strings.NewReader(ss))
 	d.UseNumber()
-	err := d.Decode(&o)
+	err = d.Decode(&o)
 	if err != nil || o == nil {
 		return event, false
 	}

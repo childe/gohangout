@@ -8,6 +8,6 @@ func NewLiteralValueRender(template string) *LiteralValueRender {
 	return &LiteralValueRender{template}
 }
 
-func (r *LiteralValueRender) Render(event map[string]interface{}) (exist bool, value interface{}) {
-	return true, r.value
+func (r *LiteralValueRender) Render(event map[string]interface{}) (value interface{}, err error) {
+	return r.value, nil
 }

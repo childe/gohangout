@@ -2,7 +2,6 @@ package filter
 
 import (
 	"net/url"
-	"reflect"
 
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
@@ -43,13 +42,16 @@ func newURLDecodeFilter(config map[interface{}]interface{}) topology.Filter {
 func (plugin *URLDecodeFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	success := true
 	for s, v := range plugin.fields {
-		value := v.Render(event)
-		if value != nil {
-			if reflect.TypeOf(value).Kind() != reflect.String {
-				success = false
-				continue
-			}
-			rst, err := url.QueryUnescape(value.(string))
+		value, err := v.Render(event)
+		if err != nil || value == nil {
+			success = false
+			continue
+		}
+		if t, ok := value.(string); !ok {
+			success = false
+			continue
+		} else {
+			rst, err := url.QueryUnescape(t)
 			if err != nil {
 				success = false
 				continue

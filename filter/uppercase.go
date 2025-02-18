@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"reflect"
 	"strings"
 
 	"github.com/childe/gohangout/field_setter"
@@ -43,13 +42,16 @@ func newUppercaseFilter(config map[interface{}]interface{}) topology.Filter {
 func (plugin *UppercaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	success := true
 	for s, v := range plugin.fields {
-		value := v.Render(event)
-		if value != nil {
-			if reflect.TypeOf(value).Kind() != reflect.String {
-				success = false
-				continue
-			}
-			s.SetField(event, strings.ToUpper(value.(string)), "", true)
+		value, err := v.Render(event)
+		if err != nil || value == nil {
+			success = false
+			continue
+		}
+		if t, ok := value.(string); !ok {
+			success = false
+			continue
+		} else {
+			s.SetField(event, strings.ToUpper(t), "", true)
 		}
 	}
 	return event, success

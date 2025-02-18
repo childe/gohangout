@@ -82,12 +82,11 @@ func newIPIPFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	inputI := plugin.srcVR.Render(event)
-	if inputI == nil {
+	inputI, err := plugin.srcVR.Render(event)
+	if err != nil || inputI == nil {
 		return event, false
 	}
 	var a []string
-	var err error
 	if plugin.data_type == "datx" {
 		city := (*datx.City)(plugin.city)
 		a, err = city.Find(inputI.(string))

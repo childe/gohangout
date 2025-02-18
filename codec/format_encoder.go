@@ -19,7 +19,11 @@ func NewFormatEncoder(format string) *FormatEncoder {
 }
 
 func (e *FormatEncoder) Encode(v interface{}) ([]byte, error) {
-	rst := e.render.Render(v.(map[string]interface{}))
+	rst, err := e.render.Render(v.(map[string]interface{}))
+	if err != nil {
+		return nil, err
+	}
+
 	if v, ok := rst.(string); ok {
 		return []byte(v), nil
 	}

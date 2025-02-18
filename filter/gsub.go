@@ -62,8 +62,8 @@ func newGsubFilter(config map[interface{}]interface{}) topology.Filter {
 func (f *GsubFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
 	rst := true
 	for _, config := range f.fields {
-		v := config.rs.r.Render(event)
-		if v == nil {
+		v, err := config.rs.r.Render(event)
+		if err != nil || v == nil {
 			rst = false
 			continue
 		}

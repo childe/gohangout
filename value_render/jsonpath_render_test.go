@@ -15,10 +15,14 @@ func TestJsonpathRender(t *testing.T) {
 	template = "$.msg"
 
 	vr = GetValueRender(template)
-	value := vr.Render(event).(string)
+	value, err := vr.Render(event)
 	t.Log(value)
 
+	if err != nil {
+		t.Errorf("err != nil")
+	}
+
 	if value != "this is msg line" {
-		t.Errorf(value)
+		t.Errorf("%q != %q", value, "this is msg line")
 	}
 }

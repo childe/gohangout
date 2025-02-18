@@ -43,8 +43,9 @@ func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (plugin *AddFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	for fs, v := range plugin.fields {
-		event = fs.SetField(event, v.Render(event), "", plugin.overwrite)
+	for fs, r := range plugin.fields {
+		v, _ := r.Render(event)
+		event = fs.SetField(event, v, "", plugin.overwrite)
 	}
 	return event, true
 }
