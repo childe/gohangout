@@ -47,6 +47,40 @@ func TestRenameFilter(t *testing.T) {
 				},
 			},
 		},
+		{
+			config: map[interface{}]interface{}{
+				"fields": map[interface{}]interface{}{
+					"[name][last]": "[name][first]",
+				},
+			},
+			event: map[string]interface{}{
+				"name": map[string]interface{}{
+					"last": nil,
+				},
+			},
+			expected: map[string]interface{}{
+				"name": map[string]interface{}{
+					"first": nil,
+				},
+			},
+		},
+		{
+			config: map[interface{}]interface{}{
+				"fields": map[interface{}]interface{}{
+					"[name][last]": "[name][first]",
+				},
+			},
+			event: map[string]interface{}{
+				"name": map[string]interface{}{
+					"full": "dehua liu",
+				},
+			},
+			expected: map[string]interface{}{
+				"name": map[string]interface{}{
+					"full": "dehua liu",
+				},
+			},
+		},
 	}
 	convey.Convey("RenameFilter", t, func() {
 		for _, tc := range testcases {
