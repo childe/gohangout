@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/bytedance/mockey v1.2.12
+	github.com/bytedance/mockey v1.2.14
 	github.com/childe/cast v1.5.4
 	github.com/childe/healer v0.6.17
 	github.com/fsnotify/fsnotify v1.5.1
@@ -17,7 +17,7 @@ require (
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/prometheus/client_golang v1.12.1
 	github.com/relvacode/iso8601 v1.6.0
-	github.com/smartystreets/goconvey v1.6.4
+	github.com/smartystreets/goconvey v1.7.2
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	go.uber.org/automaxprocs v1.6.0
 	gopkg.in/yaml.v2 v2.4.0
