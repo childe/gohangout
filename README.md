@@ -1051,9 +1051,12 @@ Rename:
   fields:
     host: hostname
     serverIP: server_ip
+    '[name][last]': '[name][first]'
 ```
 
-将 host 字段改名为 hostname, 将 serverIP 字段改名为 server_ip
+将 host 字段改名为 hostname, 将 serverIP 字段改名为 server_ip, 将 [name][last] 字段改名为 [name][first]
+
+如果没有这个字段，不做任何操作
 
 
 ### Split
