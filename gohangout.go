@@ -181,6 +181,10 @@ func main() {
 		return
 	}
 
+	if *worker <= 0 {
+		klog.Fatalf("worker must be greater than 0")
+	}
+
 	klog.Infof("gohangout version: %s", version)
 	defer klog.Flush()
 
