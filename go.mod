@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/bytedance/mockey v1.2.14
 	github.com/childe/cast v1.5.4
-	github.com/childe/healer v0.6.17
+	github.com/childe/healer v0.6.22
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ipipdotnet/datx-go v0.0.0-20181123035258-af996d4701a0
 	github.com/ipipdotnet/ipdb-go v1.3.1
@@ -29,7 +29,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/aviddiviner/go-murmur v0.0.0-20150519214947-b9740d71e571 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bkaradzic/go-lz4 v1.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
@@ -47,6 +46,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
