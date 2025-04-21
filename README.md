@@ -627,6 +627,8 @@ Drop:
 
 - `Exist(user,name)` [user][name]存在
 
+- `EQ(user,age,nil)` `EQ($.user.age,nil)` [user][age]存在并且等于nil
+
 - `EQ(user,age,20)` `EQ($.user.age,20)` [user][age]存在并等于20
 
 - `EQ(user,age,"20")` `EQ($.user.age,"20")` [user][age]存在并等于"20" (字符串)
