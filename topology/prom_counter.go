@@ -20,7 +20,7 @@ func hashValue(opts prometheus.CounterOpts) string {
 }
 
 // GetPromCounter creates a prometheus.Counter from config.
-// if same config exsits before, GetPromCounter would return the counter created before. Because tow counters with the same config leads to panic.
+// if same config exits before, GetPromCounter would return the counter created before. Because tow counters with the same config leads to panic.
 // Better practice maybe to let it panic, so owner can fix the config when program fails to start.
 // But if user use multi workers to run gohangout, panic are bound to happen, this is bad. So we use a manager to return one counter with save config.
 // Better way is to add {worker: idx} to ConstLabels, but it is too hard to implement it by code.
