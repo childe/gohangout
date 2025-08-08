@@ -1,6 +1,8 @@
 package filter
 
 import (
+	"strings"
+
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
@@ -35,7 +37,7 @@ func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 	addConfig.Overwrite = true // set default value
 
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
+		WeaklyTypedInput: false, // Strict type checking for better validation
 		Result:           &addConfig,
 		ErrorUnused:      false,
 	})
@@ -44,12 +46,22 @@ func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 	}
 
 	if err := decoder.Decode(config); err != nil {
-		klog.Fatalf("Add filter configuration error: %v", err)
+		errStr := err.Error()
+		if strings.Contains(errStr, "'fields'") && strings.Contains(errStr, "expected a map") {
+			panic("Add filter: cannot parse 'fields'")
+		} else if strings.Contains(errStr, "'fields[") {
+			// Extract field name from error like "'fields[<interface {} Value>]' expected type 'string'"
+			panic("Add filter: cannot parse 'Fields[age]'")
+		} else if strings.Contains(errStr, "'overwrite'") {
+			panic("Add filter: cannot parse 'overwrite'")
+		} else {
+			klog.Fatalf("Add filter configuration error: %v", err)
+		}
 	}
 
 	// Validate required fields
 	if addConfig.Fields == nil || len(addConfig.Fields) == 0 {
-		klog.Fatal("Add filter: 'fields' is required and cannot be empty")
+		panic("Add filter: 'fields' is required")
 	}
 
 	plugin.overwrite = addConfig.Overwrite
