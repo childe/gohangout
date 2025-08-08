@@ -38,19 +38,37 @@ func newGsubFilter(config map[interface{}]interface{}) topology.Filter {
 	gsubFilter := &GsubFilter{}
 	fields, ok := config["fields"]
 	if !ok {
-		klog.Fatal("fields must be set in gsub filter")
+		klog.Fatal("Gsub filter: 'fields' is required")
 	}
 
 	err := mapstructure.Decode(fields, &gsubFilter.fields)
 	if err != nil {
-		klog.Fatal("decode fields config in gusb error:", err)
+		klog.Fatalf("Gsub filter configuration error: %v", err)
 	}
 
-	for _, config := range gsubFilter.fields {
-		config.rs.r = value_render.GetValueRender2(config.Field)
-		config.rs.s = field_setter.NewFieldSetter(config.Field)
+	if len(gsubFilter.fields) == 0 {
+		klog.Fatal("Gsub filter: 'fields' cannot be empty")
+	}
 
-		config.srcRegexp = regexp.MustCompile(config.Src)
+	for _, fieldConfig := range gsubFilter.fields {
+		if fieldConfig.Field == "" {
+			klog.Fatal("Gsub filter: field 'field' is required in each field config")
+		}
+		if fieldConfig.Src == "" {
+			klog.Fatal("Gsub filter: field 'src' is required in each field config")
+		}
+		if fieldConfig.Repl == "" {
+			klog.Fatal("Gsub filter: field 'repl' is required in each field config")
+		}
+
+		fieldConfig.rs.r = value_render.GetValueRender2(fieldConfig.Field)
+		fieldConfig.rs.s = field_setter.NewFieldSetter(fieldConfig.Field)
+
+		var err error
+		fieldConfig.srcRegexp, err = regexp.Compile(fieldConfig.Src)
+		if err != nil {
+			klog.Fatalf("Gsub filter: invalid regex pattern '%s' for field '%s': %v", fieldConfig.Src, fieldConfig.Field, err)
+		}
 	}
 
 	return gsubFilter

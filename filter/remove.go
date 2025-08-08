@@ -6,6 +6,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// RemoveConfig defines the configuration structure for Remove filter
+type RemoveConfig struct {
+	Fields []string `mapstructure:"fields"`
+}
+
 type RemoveFilter struct {
 	config         map[interface{}]interface{}
 	fieldsDeleters []field_deleter.FieldDeleter
@@ -16,18 +21,29 @@ func init() {
 }
 
 func newRemoveFilter(config map[interface{}]interface{}) topology.Filter {
+	// Parse configuration using mapstructure
+	var removeConfig RemoveConfig
+
+	SafeDecodeConfig("Remove", config, &removeConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Remove", map[string]interface{}{
+		"fields": removeConfig.Fields,
+	})
+	if len(removeConfig.Fields) == 0 {
+		klog.Fatal("Remove filter: 'fields' cannot be empty")
+	}
+
 	plugin := &RemoveFilter{
 		config:         config,
 		fieldsDeleters: make([]field_deleter.FieldDeleter, 0),
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for _, field := range fieldsValue.([]interface{}) {
-			plugin.fieldsDeleters = append(plugin.fieldsDeleters, field_deleter.NewFieldDeleter(field.(string)))
-		}
-	} else {
-		klog.Fatal("fields must be set in remove filter plugin")
+	// Create field deleters
+	for _, field := range removeConfig.Fields {
+		plugin.fieldsDeleters = append(plugin.fieldsDeleters, field_deleter.NewFieldDeleter(field))
 	}
+
 	return plugin
 }
 

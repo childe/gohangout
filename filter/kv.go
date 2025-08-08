@@ -6,8 +6,19 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"k8s.io/klog/v2"
 )
+
+// KVConfig defines the configuration structure for KV filter
+type KVConfig struct {
+	Src         string   `mapstructure:"src"`
+	Target      string   `mapstructure:"target"`
+	FieldSplit  string   `mapstructure:"field_split"`
+	ValueSplit  string   `mapstructure:"value_split"`
+	Trim        string   `mapstructure:"trim"`
+	TrimKey     string   `mapstructure:"trim_key"`
+	IncludeKeys []string `mapstructure:"include_keys"`
+	ExcludeKeys []string `mapstructure:"exclude_keys"`
+}
 
 type KVFilter struct {
 	config       map[interface{}]interface{}
@@ -27,59 +38,40 @@ func init() {
 }
 
 func newKVFilter(config map[interface{}]interface{}) topology.Filter {
+	// Parse configuration using mapstructure
+	var kvConfig KVConfig
+
+	SafeDecodeConfig("KV", config, &kvConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("KV", map[string]interface{}{
+		"src":         kvConfig.Src,
+		"field_split": kvConfig.FieldSplit,
+		"value_split": kvConfig.ValueSplit,
+	})
+
 	plugin := &KVFilter{
-		config: config,
-		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
+		config:      config,
+		fields:      make(map[field_setter.FieldSetter]value_render.ValueRender),
+		target:      kvConfig.Target,
+		field_split: kvConfig.FieldSplit,
+		value_split: kvConfig.ValueSplit,
+		trim:        kvConfig.Trim,
+		trim_key:    kvConfig.TrimKey,
 	}
+	
+	plugin.src = value_render.GetValueRender2(kvConfig.Src)
 
-	if src, ok := config["src"]; ok {
-		plugin.src = value_render.GetValueRender2(src.(string))
-	} else {
-		klog.Fatal("src must be set in kv filter")
-	}
-
-	if target, ok := config["target"]; ok {
-		plugin.target = target.(string)
-	} else {
-		plugin.target = ""
-	}
-
-	if field_split, ok := config["field_split"]; ok {
-		plugin.field_split = field_split.(string)
-	} else {
-		klog.Fatal("field_split must be set in kv filter")
-	}
-
-	if value_split, ok := config["value_split"]; ok {
-		plugin.value_split = value_split.(string)
-	} else {
-		klog.Fatal("value_split must be set in kv filter")
-	}
-
-	if trim, ok := config["trim"]; ok {
-		plugin.trim = trim.(string)
-	} else {
-		plugin.trim = ""
-	}
-
-	if trim_key, ok := config["trim_key"]; ok {
-		plugin.trim_key = trim_key.(string)
-	} else {
-		plugin.trim_key = ""
-	}
-
+	// Convert include_keys slice to map
 	plugin.include_keys = make(map[string]bool)
-	if include_keys, ok := config["include_keys"]; ok {
-		for _, k := range include_keys.([]interface{}) {
-			plugin.include_keys[k.(string)] = true
-		}
+	for _, key := range kvConfig.IncludeKeys {
+		plugin.include_keys[key] = true
 	}
 
+	// Convert exclude_keys slice to map
 	plugin.exclude_keys = make(map[string]bool)
-	if exclude_keys, ok := config["exclude_keys"]; ok {
-		for _, k := range exclude_keys.([]interface{}) {
-			plugin.exclude_keys[k.(string)] = true
-		}
+	for _, key := range kvConfig.ExcludeKeys {
+		plugin.exclude_keys[key] = true
 	}
 
 	return plugin

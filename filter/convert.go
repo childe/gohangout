@@ -9,6 +9,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
+	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
 
@@ -111,6 +112,19 @@ type ConveterAndRender struct {
 	settoIfNil   interface{}
 }
 
+// FieldConvertConfig defines the configuration for a single field conversion
+type FieldConvertConfig struct {
+	To           string      `mapstructure:"to"`
+	RemoveIfFail bool        `mapstructure:"remove_if_fail"`
+	SettoIfFail  interface{} `mapstructure:"setto_if_fail"`
+	SettoIfNil   interface{} `mapstructure:"setto_if_nil"`
+}
+
+// ConvertConfig defines the configuration structure for Convert filter
+type ConvertConfig struct {
+	Fields map[string]FieldConvertConfig `mapstructure:"fields"`
+}
+
 type ConvertFilter struct {
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]ConveterAndRender
@@ -126,52 +140,64 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for f, vI := range fieldsValue.(map[interface{}]interface{}) {
-			v := vI.(map[interface{}]interface{})
-			fieldSetter := field_setter.NewFieldSetter(f.(string))
-			if fieldSetter == nil {
-				klog.Fatalf("could build field setter from %s", f.(string))
-			}
-
-			to := v["to"].(string)
-			remove_if_fail := false
-			if I, ok := v["remove_if_fail"]; ok {
-				remove_if_fail = I.(bool)
-			}
-			setto_if_fail := v["setto_if_fail"]
-			setto_if_nil := v["setto_if_nil"]
-
-			var converter Converter
-			if to == "float" {
-				converter = &FloatConverter{}
-			} else if to == "int" {
-				converter = &IntConverter{}
-			} else if to == "uint" {
-				converter = &UIntConverter{}
-			} else if to == "bool" {
-				converter = &BoolConverter{}
-			} else if to == "string" {
-				converter = &StringConverter{}
-			} else if to == "array(int)" {
-				converter = &ArrayIntConverter{}
-			} else if to == "array(float)" {
-				converter = &ArrayFloatConverter{}
-			} else {
-				klog.Fatal("can only convert to int/float/bool/array(int)/array(float)")
-			}
-
-			plugin.fields[fieldSetter] = ConveterAndRender{
-				converter:    converter,
-				valueRender:  value_render.GetValueRender2(f.(string)),
-				removeIfFail: remove_if_fail,
-				settoIfFail:  setto_if_fail,
-				settoIfNil:   setto_if_nil,
-			}
-		}
-	} else {
-		klog.Fatal("fields must be set in convert filter plugin")
+	// Parse configuration using mapstructure
+	var convertConfig ConvertConfig
+	
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &convertConfig,
+		ErrorUnused:      false,
+	})
+	if err != nil {
+		klog.Fatalf("Convert filter: failed to create config decoder: %v", err)
 	}
+
+	if err := decoder.Decode(config); err != nil {
+		klog.Fatalf("Convert filter configuration error: %v", err)
+	}
+
+	// Validate required fields
+	if convertConfig.Fields == nil || len(convertConfig.Fields) == 0 {
+		klog.Fatal("Convert filter: 'fields' is required and cannot be empty")
+	}
+
+	// Process each field conversion
+	for fieldName, fieldConfig := range convertConfig.Fields {
+		fieldSetter := field_setter.NewFieldSetter(fieldName)
+		if fieldSetter == nil {
+			klog.Fatalf("Convert filter: could not build field setter from '%s'", fieldName)
+		}
+
+		// Validate and get converter
+		var converter Converter
+		switch fieldConfig.To {
+		case "float":
+			converter = &FloatConverter{}
+		case "int":
+			converter = &IntConverter{}
+		case "uint":
+			converter = &UIntConverter{}
+		case "bool":
+			converter = &BoolConverter{}
+		case "string":
+			converter = &StringConverter{}
+		case "array(int)":
+			converter = &ArrayIntConverter{}
+		case "array(float)":
+			converter = &ArrayFloatConverter{}
+		default:
+			klog.Fatalf("Convert filter: field '%s' has invalid 'to' value '%s'. Must be one of: int/uint/float/bool/string/array(int)/array(float)", fieldName, fieldConfig.To)
+		}
+
+		plugin.fields[fieldSetter] = ConveterAndRender{
+			converter:    converter,
+			valueRender:  value_render.GetValueRender2(fieldName),
+			removeIfFail: fieldConfig.RemoveIfFail,
+			settoIfFail:  fieldConfig.SettoIfFail,
+			settoIfNil:   fieldConfig.SettoIfNil,
+		}
+	}
+
 	return plugin
 }
 

@@ -4,8 +4,15 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
+	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
+
+// AddConfig defines the configuration structure for Add filter
+type AddConfig struct {
+	Fields    map[string]string `mapstructure:"fields"`
+	Overwrite bool              `mapstructure:"overwrite"`
+}
 
 type AddFilter struct {
 	config    map[interface{}]interface{}
@@ -19,26 +26,43 @@ func init() {
 
 func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 	plugin := &AddFilter{
-		config:    config,
-		fields:    make(map[field_setter.FieldSetter]value_render.ValueRender),
-		overwrite: true,
+		config: config,
+		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
+	// Parse configuration using mapstructure
+	var addConfig AddConfig
+	addConfig.Overwrite = true // set default value
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &addConfig,
+		ErrorUnused:      false,
+	})
+	if err != nil {
+		klog.Fatalf("Add filter: failed to create config decoder: %v", err)
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for f, v := range fieldsValue.(map[interface{}]interface{}) {
-			fieldSetter := field_setter.NewFieldSetter(f.(string))
-			if fieldSetter == nil {
-				klog.Fatalf("could build field setter from %s", f.(string))
-			}
-			plugin.fields[fieldSetter] = value_render.GetValueRender(v.(string))
+	if err := decoder.Decode(config); err != nil {
+		klog.Fatalf("Add filter configuration error: %v", err)
+	}
+
+	// Validate required fields
+	if addConfig.Fields == nil || len(addConfig.Fields) == 0 {
+		klog.Fatal("Add filter: 'fields' is required and cannot be empty")
+	}
+
+	plugin.overwrite = addConfig.Overwrite
+
+	// Process each field mapping
+	for fieldName, fieldValue := range addConfig.Fields {
+		fieldSetter := field_setter.NewFieldSetter(fieldName)
+		if fieldSetter == nil {
+			klog.Fatalf("Add filter: could not build field setter from '%s'", fieldName)
 		}
-	} else {
-		klog.Fatal("fields must be set in add filter plugin")
+		plugin.fields[fieldSetter] = value_render.GetValueRender(fieldValue)
 	}
+
 	return plugin
 }
 

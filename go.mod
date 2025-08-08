@@ -1,6 +1,8 @@
 module github.com/childe/gohangout
 
-go 1.19
+go 1.23.0
+
+toolchain go1.23.2
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4

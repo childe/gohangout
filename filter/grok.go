@@ -12,6 +12,7 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
+	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
 
@@ -179,6 +180,16 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 	return grok
 }
 
+// GrokConfig defines the configuration structure for Grok filter
+type GrokConfig struct {
+	Src          string   `mapstructure:"src"`
+	Target       string   `mapstructure:"target"`
+	Match        []string `mapstructure:"match"`
+	PatternPaths []string `mapstructure:"pattern_paths"`
+	IgnoreBlank  bool     `mapstructure:"ignore_blank"`
+	Overwrite    bool     `mapstructure:"overwrite"`
+}
+
 type GrokFilter struct {
 	config    map[interface{}]interface{}
 	overwrite bool
@@ -193,47 +204,45 @@ func init() {
 }
 
 func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
-	var patternPaths []string = make([]string, 0)
-	if i, ok := config["pattern_paths"]; ok {
-		for _, p := range i.([]interface{}) {
-			patternPaths = append(patternPaths, p.(string))
-		}
+	// Parse configuration using mapstructure
+	var grokConfig GrokConfig
+	// Set default values
+	grokConfig.Src = "message"
+	grokConfig.IgnoreBlank = true
+	grokConfig.Overwrite = true
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &grokConfig,
+		ErrorUnused:      false,
+	})
+	if err != nil {
+		klog.Fatalf("Grok filter: failed to create config decoder: %v", err)
 	}
-	ignoreBlank := true
-	if i, ok := config["ignore_blank"]; ok {
-		ignoreBlank = i.(bool)
+
+	if err := decoder.Decode(config); err != nil {
+		klog.Fatalf("Grok filter configuration error: %v", err)
 	}
+
+	// Validate required fields
+	if grokConfig.Match == nil || len(grokConfig.Match) == 0 {
+		klog.Fatal("Grok filter: 'match' is required and cannot be empty")
+	}
+
+	// Create Grok instances
 	groks := make([]*Grok, 0)
-	if matchValue, ok := config["match"]; ok {
-		match := matchValue.([]interface{})
-		for _, mValue := range match {
-			groks = append(groks, NewGrok(mValue.(string), patternPaths, ignoreBlank))
-		}
-	} else {
-		klog.Fatal("match must be set in grok filter")
+	for _, pattern := range grokConfig.Match {
+		groks = append(groks, NewGrok(pattern, grokConfig.PatternPaths, grokConfig.IgnoreBlank))
 	}
 
 	gf := &GrokFilter{
 		config:    config,
 		groks:     groks,
-		overwrite: true,
-		target:    "",
-	}
-
-	if overwrite, ok := config["overwrite"]; ok {
-		gf.overwrite = overwrite.(bool)
-	}
-
-	if srcValue, ok := config["src"]; ok {
-		gf.src = srcValue.(string)
-	} else {
-		gf.src = "message"
+		overwrite: grokConfig.Overwrite,
+		target:    grokConfig.Target,
+		src:       grokConfig.Src,
 	}
 	gf.vr = value_render.GetValueRender2(gf.src)
-
-	if target, ok := config["target"]; ok {
-		gf.target = target.(string)
-	}
 
 	return gf
 }

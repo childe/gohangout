@@ -7,8 +7,18 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
+	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
+
+// JsonConfig defines the configuration structure for Json filter
+type JsonConfig struct {
+	Field     string   `mapstructure:"field"`
+	Target    string   `mapstructure:"target"`
+	Overwrite bool     `mapstructure:"overwrite"`
+	Include   []string `mapstructure:"include"`
+	Exclude   []string `mapstructure:"exclude"`
+}
 
 // JSONFilter will parse json string in `field` and put the result into `target` field
 type JSONFilter struct {
@@ -25,36 +35,37 @@ func init() {
 }
 
 func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
+	// Parse configuration using mapstructure
+	var jsonConfig JsonConfig
+	// Set default values
+	jsonConfig.Overwrite = true
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &jsonConfig,
+		ErrorUnused:      false,
+	})
+	if err != nil {
+		klog.Fatalf("Json filter: failed to create config decoder: %v", err)
+	}
+
+	if err := decoder.Decode(config); err != nil {
+		klog.Fatalf("Json filter configuration error: %v", err)
+	}
+
+	// Validate required fields
+	if jsonConfig.Field == "" {
+		klog.Fatal("Json filter: 'field' is required")
+	}
+
 	plugin := &JSONFilter{
-		overwrite: true,
-		target:    "",
+		field:     jsonConfig.Field,
+		target:    jsonConfig.Target,
+		overwrite: jsonConfig.Overwrite,
+		include:   jsonConfig.Include,
+		exclude:   jsonConfig.Exclude,
 	}
-
-	if field, ok := config["field"]; ok {
-		plugin.field = field.(string)
-		plugin.vr = value_render.GetValueRender2(plugin.field)
-	} else {
-		klog.Fatal("field must be set in Json filter")
-	}
-
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
-	}
-
-	if target, ok := config["target"]; ok {
-		plugin.target = target.(string)
-	}
-
-	if include, ok := config["include"]; ok {
-		for _, i := range include.([]interface{}) {
-			plugin.include = append(plugin.include, i.(string))
-		}
-	}
-	if exclude, ok := config["exclude"]; ok {
-		for _, i := range exclude.([]interface{}) {
-			plugin.exclude = append(plugin.exclude, i.(string))
-		}
-	}
+	plugin.vr = value_render.GetValueRender2(plugin.field)
 
 	return plugin
 }

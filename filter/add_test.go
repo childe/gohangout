@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -40,5 +41,87 @@ func TestAddFilter(t *testing.T) {
 	}
 	if firstname != "dehua" {
 		t.Error("firstname field should be `dehua`")
+	}
+}
+
+func TestAddConfigParsing(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[interface{}]interface{}
+		expectError bool
+		errorSubstr string
+	}{
+		{
+			name: "valid config",
+			config: map[interface{}]interface{}{
+				"fields": map[interface{}]interface{}{
+					"name": "test",
+					"type": "web",
+				},
+				"overwrite": true,
+			},
+			expectError: false,
+		},
+		{
+			name: "missing fields",
+			config: map[interface{}]interface{}{
+				"overwrite": true,
+			},
+			expectError: true,
+			errorSubstr: "fields' is required",
+		},
+		{
+			name: "wrong type for fields - string instead of map",
+			config: map[interface{}]interface{}{
+				"fields": "this should be a map",
+			},
+			expectError: true,
+			errorSubstr: "cannot parse 'fields'",
+		},
+		{
+			name: "wrong type for overwrite - string instead of bool",
+			config: map[interface{}]interface{}{
+				"fields": map[interface{}]interface{}{
+					"name": "test",
+				},
+				"overwrite": "not a boolean",
+			},
+			expectError: true,
+			errorSubstr: "cannot parse 'overwrite'",
+		},
+		{
+			name: "wrong type for field value - number instead of string",
+			config: map[interface{}]interface{}{
+				"fields": map[interface{}]interface{}{
+					"name": "test",
+					"age":  123, // this should be string
+				},
+			},
+			expectError: true,
+			errorSubstr: "cannot parse 'Fields[age]'",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.expectError {
+						t.Errorf("Expected no panic but got: %v", r)
+					} else {
+						errorStr := r.(string)
+						if !strings.Contains(errorStr, tt.errorSubstr) {
+							t.Errorf("Expected error to contain '%s', but got: %s", tt.errorSubstr, errorStr)
+						}
+					}
+				} else {
+					if tt.expectError {
+						t.Errorf("Expected error but got none")
+					}
+				}
+			}()
+
+			newAddFilter(tt.config)
+		})
 	}
 }

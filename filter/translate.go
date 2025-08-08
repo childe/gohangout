@@ -14,6 +14,14 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// TranslateConfig defines the configuration structure for Translate filter
+type TranslateConfig struct {
+	Source          string `mapstructure:"source"`
+	Target          string `mapstructure:"target"`
+	DictionaryPath  string `mapstructure:"dictionary_path"`
+	RefreshInterval int    `mapstructure:"refresh_interval"`
+}
+
 type TranslateFilter struct {
 	config          map[interface{}]interface{}
 	refreshInterval int
@@ -69,34 +77,28 @@ func init() {
 }
 
 func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
+	// Parse configuration using mapstructure
+	var translateConfig TranslateConfig
+	
+	SafeDecodeConfig("Translate", config, &translateConfig)
+	
+	// Validate required fields
+	ValidateRequiredFields("Translate", map[string]interface{}{
+		"source":           translateConfig.Source,
+		"target":           translateConfig.Target,
+		"dictionary_path":  translateConfig.DictionaryPath,
+		"refresh_interval": translateConfig.RefreshInterval,
+	})
+
 	plugin := &TranslateFilter{
-		config: config,
+		config:          config,
+		source:          translateConfig.Source,
+		target:          translateConfig.Target,
+		dictionaryPath:  translateConfig.DictionaryPath,
+		refreshInterval: translateConfig.RefreshInterval,
 	}
 
-	if source, ok := config["source"]; ok {
-		plugin.source = source.(string)
-	} else {
-		klog.Fatal("source must be set in translate filter plugin")
-	}
 	plugin.sourceVR = value_render.GetValueRender2(plugin.source)
-
-	if target, ok := config["target"]; ok {
-		plugin.target = target.(string)
-	} else {
-		klog.Fatal("target must be set in translate filter plugin")
-	}
-
-	if dictionaryPath, ok := config["dictionary_path"]; ok {
-		plugin.dictionaryPath = dictionaryPath.(string)
-	} else {
-		klog.Fatal("dictionary_path must be set in translate filter plugin")
-	}
-
-	if refreshInterval, ok := config["refresh_interval"]; ok {
-		plugin.refreshInterval = refreshInterval.(int)
-	} else {
-		klog.Fatal("refresh_interval must be set in translate filter plugin")
-	}
 
 	err := plugin.parseDict()
 	if err != nil {

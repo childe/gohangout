@@ -9,6 +9,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// UppercaseConfig defines the configuration structure for Uppercase filter
+type UppercaseConfig struct {
+	Fields []string `mapstructure:"fields"`
+}
+
 type UppercaseFilter struct {
 	config map[interface{}]interface{}
 	fields map[field_setter.FieldSetter]value_render.ValueRender
@@ -19,22 +24,33 @@ func init() {
 }
 
 func newUppercaseFilter(config map[interface{}]interface{}) topology.Filter {
+	// Parse configuration using mapstructure
+	var uppercaseConfig UppercaseConfig
+
+	SafeDecodeConfig("Uppercase", config, &uppercaseConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Uppercase", map[string]interface{}{
+		"fields": uppercaseConfig.Fields,
+	})
+	if len(uppercaseConfig.Fields) == 0 {
+		klog.Fatal("Uppercase filter: 'fields' cannot be empty")
+	}
+
 	plugin := &UppercaseFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for _, field := range fieldsValue.([]interface{}) {
-			fieldSetter := field_setter.NewFieldSetter(field.(string))
-			if fieldSetter == nil {
-				klog.Fatalf("could build field setter from %s", field.(string))
-			}
-			plugin.fields[fieldSetter] = value_render.GetValueRender2(field.(string))
+	// Create field setters and value renders
+	for _, field := range uppercaseConfig.Fields {
+		fieldSetter := field_setter.NewFieldSetter(field)
+		if fieldSetter == nil {
+			klog.Fatalf("Uppercase filter: could not build field setter from '%s'", field)
 		}
-	} else {
-		klog.Fatal("fields must be set in remove filter plugin")
+		plugin.fields[fieldSetter] = value_render.GetValueRender2(field)
 	}
+
 	return plugin
 }
 

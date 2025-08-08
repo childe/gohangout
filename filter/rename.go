@@ -14,6 +14,11 @@ type gsd struct {
 	d field_deleter.FieldDeleter
 }
 
+// RenameConfig defines the configuration structure for Rename filter
+type RenameConfig struct {
+	Fields map[string]string `mapstructure:"fields"`
+}
+
 type RenameFilter struct {
 	config map[interface{}]interface{}
 	fields map[string]gsd
@@ -24,21 +29,32 @@ func init() {
 }
 
 func newRenameFilter(config map[interface{}]interface{}) topology.Filter {
+	// Parse configuration using mapstructure
+	var renameConfig RenameConfig
+
+	SafeDecodeConfig("Rename", config, &renameConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Rename", map[string]interface{}{
+		"fields": renameConfig.Fields,
+	})
+	if len(renameConfig.Fields) == 0 {
+		klog.Fatal("Rename filter: 'fields' cannot be empty")
+	}
+
 	plugin := &RenameFilter{
 		config: config,
 		fields: make(map[string]gsd),
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for src, dst := range fieldsValue.(map[interface{}]interface{}) {
-			g := value_render.GetValueRender2(src.(string))
-			s := field_setter.NewFieldSetter(dst.(string))
-			d := field_deleter.NewFieldDeleter(src.(string))
-			plugin.fields[src.(string)] = gsd{g, s, d}
-		}
-	} else {
-		klog.Fatal("fields must be set in rename filter plugin")
+	// Process field mappings
+	for src, dst := range renameConfig.Fields {
+		g := value_render.GetValueRender2(src)
+		s := field_setter.NewFieldSetter(dst)
+		d := field_deleter.NewFieldDeleter(src)
+		plugin.fields[src] = gsd{g, s, d}
 	}
+
 	return plugin
 }
 
