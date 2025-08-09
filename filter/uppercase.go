@@ -15,7 +15,7 @@ type UppercaseConfig struct {
 }
 
 type UppercaseFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
@@ -23,14 +23,14 @@ func init() {
 	Register("Uppercase", newUppercaseFilter)
 }
 
-func newUppercaseFilter(config map[interface{}]interface{}) topology.Filter {
+func newUppercaseFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var uppercaseConfig UppercaseConfig
 
 	SafeDecodeConfig("Uppercase", config, &uppercaseConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("Uppercase", map[string]interface{}{
+	ValidateRequiredFields("Uppercase", map[string]any{
 		"fields": uppercaseConfig.Fields,
 	})
 	if len(uppercaseConfig.Fields) == 0 {
@@ -55,7 +55,7 @@ func newUppercaseFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 // 如果字段不是字符串, 返回false, 其它返回true
-func (plugin *UppercaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *UppercaseFilter) Filter(event map[string]any) (map[string]any, bool) {
 	success := true
 	for s, v := range plugin.fields {
 		value, err := v.Render(event)

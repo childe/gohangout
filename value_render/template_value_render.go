@@ -24,7 +24,7 @@ var ErrNotInt64 error = errors.New("Only int64 type value could be calculated")
 
 var funcMap = template.FuncMap{}
 
-func convertToInt(x interface{}) (int, error) {
+func convertToInt(x any) (int, error) {
 	if reflect.TypeOf(x).String() == "json.Number" {
 		b, _ := x.(json.Number).Int64()
 		return int(b), nil
@@ -55,7 +55,7 @@ func init() {
 	}
 
 	funcMap["now"] = func() int64 { return time.Now().UnixNano() / 1000000 }
-	funcMap["timestamp"] = func(event map[string]interface{}) int64 {
+	funcMap["timestamp"] = func(event map[string]any) int64 {
 		timestamp := event["@timestamp"]
 		if timestamp == nil {
 			return 0
@@ -66,7 +66,7 @@ func init() {
 		return 0
 	}
 
-	funcMap["before"] = func(event map[string]interface{}, s string) bool {
+	funcMap["before"] = func(event map[string]any, s string) bool {
 		timestamp := event["@timestamp"]
 		if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
 			return false
@@ -80,7 +80,7 @@ func init() {
 		return timestamp.(time.Time).Before(dst)
 	}
 
-	funcMap["after"] = func(event map[string]interface{}, s string) bool {
+	funcMap["after"] = func(event map[string]any, s string) bool {
 		timestamp := event["@timestamp"]
 		if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
 			return false
@@ -94,7 +94,7 @@ func init() {
 		return timestamp.(time.Time).After(dst)
 	}
 
-	funcMap["plus"] = func(x, y interface{}) (float64, error) {
+	funcMap["plus"] = func(x, y any) (float64, error) {
 		if xf, ok := x.(float64); ok {
 			if yf, ok := y.(float64); ok {
 				return xf + yf, nil
@@ -103,7 +103,7 @@ func init() {
 		return 0, ErrNotFloat64
 	}
 
-	funcMap["minus"] = func(x, y interface{}) (float64, error) {
+	funcMap["minus"] = func(x, y any) (float64, error) {
 		if xf, ok := x.(float64); ok {
 			if yf, ok := y.(float64); ok {
 				return xf - yf, nil
@@ -111,7 +111,7 @@ func init() {
 		}
 		return 0, ErrNotFloat64
 	}
-	funcMap["multiply"] = func(x, y interface{}) (float64, error) {
+	funcMap["multiply"] = func(x, y any) (float64, error) {
 		if xf, ok := x.(float64); ok {
 			if yf, ok := y.(float64); ok {
 				return xf * yf, nil
@@ -119,7 +119,7 @@ func init() {
 		}
 		return 0, ErrNotFloat64
 	}
-	funcMap["divide"] = func(x, y interface{}) (float64, error) {
+	funcMap["divide"] = func(x, y any) (float64, error) {
 		if xf, ok := x.(float64); ok {
 			if yf, ok := y.(float64); ok {
 				return xf / yf, nil
@@ -127,7 +127,7 @@ func init() {
 		}
 		return 0, ErrNotFloat64
 	}
-	funcMap["mod"] = func(x, y interface{}) (int64, error) {
+	funcMap["mod"] = func(x, y any) (int64, error) {
 		if xf, ok := x.(int64); ok {
 			if yf, ok := y.(int64); ok {
 				return xf % yf, nil
@@ -149,7 +149,7 @@ func NewTemplateValueRender(t string) *TemplateValueRender {
 
 // Render return "exist" and value.
 // But the returned "exist" is meaningless; the user needs to see if the "value" is nil.
-func (r *TemplateValueRender) Render(event map[string]interface{}) (value interface{}, err error) {
+func (r *TemplateValueRender) Render(event map[string]any) (value any, err error) {
 	b := bytes.NewBuffer(nil)
 	if err := r.tmpl.Execute(b, event); err != nil {
 		return nil, err

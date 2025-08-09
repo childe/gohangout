@@ -6,21 +6,21 @@ import (
 )
 
 type HostSelector interface {
-	Next() interface{}
+	Next() any
 	ReduceWeight()
 	AddWeight()
 	Size() int
 }
 
 type RRHostSelector struct {
-	hosts      []interface{}
+	hosts      []any
 	initWeight int
 	weight     []int
 	index      int
 	hostsCount int
 }
 
-func NewRRHostSelector(hosts []interface{}, weight int) *RRHostSelector {
+func NewRRHostSelector(hosts []any, weight int) *RRHostSelector {
 	rand.Seed(time.Now().UnixNano())
 	hostsCount := len(hosts)
 	rst := &RRHostSelector{
@@ -37,7 +37,7 @@ func NewRRHostSelector(hosts []interface{}, weight int) *RRHostSelector {
 	return rst
 }
 
-func (s *RRHostSelector) Next() interface{} {
+func (s *RRHostSelector) Next() any {
 	for i := 1; i <= s.hostsCount; i++ {
 		idx := (s.index + i) % s.hostsCount
 		if s.weight[idx] > 0 {

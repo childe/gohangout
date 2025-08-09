@@ -12,7 +12,7 @@ import (
 )
 
 type IPIPFilter struct {
-	config    map[interface{}]interface{}
+	config    map[any]any
 	src       string
 	srcVR     value_render.ValueRender
 	target    string
@@ -29,7 +29,7 @@ func init() {
 	Register("IPIP", newIPIPFilter)
 }
 
-func newIPIPFilter(config map[interface{}]interface{}) topology.Filter {
+func newIPIPFilter(config map[any]any) topology.Filter {
 	plugin := &IPIPFilter{
 		config:    config,
 		target:    "geoip",
@@ -81,7 +81,7 @@ func newIPIPFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *IPIPFilter) Filter(event map[string]any) (map[string]any, bool) {
 	inputI, err := plugin.srcVR.Render(event)
 	if err != nil || inputI == nil {
 		return event, false
@@ -110,11 +110,11 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 			longitude, _ := strconv.ParseFloat(a[6], bitSize)
 			event["latitude"] = latitude
 			event["longitude"] = longitude
-			event["location"] = []interface{}{longitude, latitude}
+			event["location"] = []any{longitude, latitude}
 			event["country_code"] = a[11]
 		}
 	} else {
-		target := make(map[string]interface{})
+		target := make(map[string]any)
 		target["country_name"] = a[0]
 		target["province_name"] = a[1]
 		target["city_name"] = a[2]
@@ -126,7 +126,7 @@ func (plugin *IPIPFilter) Filter(event map[string]interface{}) (map[string]inter
 			longitude, _ := strconv.ParseFloat(a[6], bitSize)
 			target["latitude"] = latitude
 			target["longitude"] = longitude
-			target["location"] = []interface{}{longitude, latitude}
+			target["location"] = []any{longitude, latitude}
 			target["country_code"] = a[11]
 		}
 		event[plugin.target] = target

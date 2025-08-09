@@ -7,7 +7,7 @@ import (
 )
 
 type Output interface {
-	Emit(map[string]interface{})
+	Emit(map[string]any)
 	Shutdown()
 }
 
@@ -17,16 +17,16 @@ type OutputBox struct {
 	promCounter prometheus.Counter
 }
 
-type buildOutputFunc func(outputType string, config map[interface{}]interface{}) *OutputBox
+type buildOutputFunc func(outputType string, config map[any]any) *OutputBox
 
-func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc) []*OutputBox {
+func BuildOutputs(config map[string]any, buildOutput buildOutputFunc) []*OutputBox {
 	rst := make([]*OutputBox, 0)
 
-	for _, outputs := range config["outputs"].([]interface{}) {
-		for outputType, outputConfig := range outputs.(map[interface{}]interface{}) {
+	for _, outputs := range config["outputs"].([]any) {
+		for outputType, outputConfig := range outputs.(map[any]any) {
 			outputType := outputType.(string)
 			klog.Infof("output type: %s", outputType)
-			outputConfig := outputConfig.(map[interface{}]interface{})
+			outputConfig := outputConfig.(map[any]any)
 			output := buildOutput(outputType, outputConfig)
 
 			output.promCounter = GetPromCounter(outputConfig)
@@ -38,7 +38,7 @@ func BuildOutputs(config map[string]interface{}, buildOutput buildOutputFunc) []
 }
 
 // Process implement Processor interface
-func (p *OutputBox) Process(event map[string]interface{}) map[string]interface{} {
+func (p *OutputBox) Process(event map[string]any) map[string]any {
 	if p.Pass(event) {
 		if p.promCounter != nil {
 			p.promCounter.Inc()
@@ -51,7 +51,7 @@ func (p *OutputBox) Process(event map[string]interface{}) map[string]interface{}
 type OutputsProcessor []*OutputBox
 
 // Process implement Processor interface
-func (p OutputsProcessor) Process(event map[string]interface{}) map[string]interface{} {
+func (p OutputsProcessor) Process(event map[string]any) map[string]any {
 	for _, o := range ([]*OutputBox)(p) {
 		if o.Pass(event) {
 			if o.promCounter != nil {

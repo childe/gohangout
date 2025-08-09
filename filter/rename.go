@@ -20,7 +20,7 @@ type RenameConfig struct {
 }
 
 type RenameFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields map[string]gsd
 }
 
@@ -28,14 +28,14 @@ func init() {
 	Register("Rename", newRenameFilter)
 }
 
-func newRenameFilter(config map[interface{}]interface{}) topology.Filter {
+func newRenameFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var renameConfig RenameConfig
 
 	SafeDecodeConfig("Rename", config, &renameConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("Rename", map[string]interface{}{
+	ValidateRequiredFields("Rename", map[string]any{
 		"fields": renameConfig.Fields,
 	})
 	if len(renameConfig.Fields) == 0 {
@@ -58,7 +58,7 @@ func newRenameFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *RenameFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *RenameFilter) Filter(event map[string]any) (map[string]any, bool) {
 	for _, _gsd := range plugin.fields {
 		v, err := _gsd.g.Render(event)
 		if err == nil {

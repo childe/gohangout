@@ -20,15 +20,15 @@ func NewMultiLevelFieldSetter(fields []string) *MultiLevelFieldSetter {
 	}
 }
 
-func (fs *MultiLevelFieldSetter) SetField(event map[string]interface{}, value interface{}, field string, overwrite bool) map[string]interface{} {
+func (fs *MultiLevelFieldSetter) SetField(event map[string]any, value any, field string, overwrite bool) map[string]any {
 	current := event
 	for _, field := range fs.preFields {
 		if value, ok := current[field]; ok {
 			if reflect.TypeOf(value).Kind() == reflect.Map {
-				current = value.(map[string]interface{})
+				current = value.(map[string]any)
 			}
 		} else {
-			a := make(map[string]interface{})
+			a := make(map[string]any)
 			current[field] = a
 			current = a
 		}

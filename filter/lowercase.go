@@ -16,7 +16,7 @@ type LowercaseConfig struct {
 }
 
 type LowercaseFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
@@ -24,14 +24,14 @@ func init() {
 	Register("Lowercase", newLowercaseFilter)
 }
 
-func newLowercaseFilter(config map[interface{}]interface{}) topology.Filter {
+func newLowercaseFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var lowercaseConfig LowercaseConfig
 
 	SafeDecodeConfig("Lowercase", config, &lowercaseConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("Lowercase", map[string]interface{}{
+	ValidateRequiredFields("Lowercase", map[string]any{
 		"fields": lowercaseConfig.Fields,
 	})
 	if len(lowercaseConfig.Fields) == 0 {
@@ -56,7 +56,7 @@ func newLowercaseFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 // 如果字段不是字符串, 返回false, 其它返回true
-func (plugin *LowercaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *LowercaseFilter) Filter(event map[string]any) (map[string]any, bool) {
 	success := true
 	for s, v := range plugin.fields {
 		value, err := v.Render(event)

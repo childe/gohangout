@@ -4,7 +4,7 @@ import "regexp"
 
 // FieldSetter is the interface that wraps the SetField method.
 type FieldSetter interface {
-	SetField(event map[string]interface{}, value interface{}, fieldName string, overwrite bool) map[string]interface{}
+	SetField(event map[string]any, value any, fieldName string, overwrite bool) map[string]any
 }
 
 // NewFieldSetter creates a new FieldSetter.

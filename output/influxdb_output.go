@@ -16,7 +16,7 @@ const ()
 
 type InAction struct {
 	measurement string
-	event       map[string]interface{}
+	event       map[string]any
 	tags        []string
 	fields      []string
 	timestamp   string
@@ -85,7 +85,7 @@ func (br *InfluxdbBulkRequest) readBuf() []byte {
 }
 
 type InfluxdbOutput struct {
-	config map[interface{}]interface{}
+	config map[any]any
 
 	db          string
 	measurement value_render.ValueRender
@@ -104,7 +104,7 @@ func init() {
 	Register("Influxdb", newInfluxdbOutput)
 }
 
-func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
+func newInfluxdbOutput(config map[any]any) topology.Output {
 	rst := &InfluxdbOutput{
 		config: config,
 	}
@@ -122,12 +122,12 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 	}
 
 	if v, ok := config["tags"]; ok {
-		for _, t := range v.([]interface{}) {
+		for _, t := range v.([]any) {
 			rst.tags = append(rst.tags, t.(string))
 		}
 	}
 	if v, ok := config["fields"]; ok {
-		for _, f := range v.([]interface{}) {
+		for _, f := range v.([]any) {
 			rst.fields = append(rst.fields, f.(string))
 		}
 	}
@@ -173,7 +173,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 
 	var hosts []string
 	if v, ok := config["hosts"]; ok {
-		for _, h := range v.([]interface{}) {
+		for _, h := range v.([]any) {
 			hosts = append(hosts, h.(string)+"/write?db="+rst.db)
 		}
 	} else {
@@ -182,7 +182,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 
 	headers := make(map[string]string)
 	if v, ok := config["headers"]; ok {
-		for keyI, valueI := range v.(map[interface{}]interface{}) {
+		for keyI, valueI := range v.(map[any]any) {
 			headers[keyI.(string)] = valueI.(string)
 		}
 	}
@@ -190,7 +190,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 
 	retryResponseCode := make(map[int]bool)
 	if v, ok := config["retry_response_code"]; ok {
-		for _, cI := range v.([]interface{}) {
+		for _, cI := range v.([]any) {
 			retryResponseCode[cI.(int)] = true
 		}
 	}
@@ -209,7 +209,7 @@ func newInfluxdbOutput(config map[interface{}]interface{}) topology.Output {
 	return rst
 }
 
-func (p *InfluxdbOutput) Emit(event map[string]interface{}) {
+func (p *InfluxdbOutput) Emit(event map[string]any) {
 	measurement, err := p.measurement.Render(event)
 	if err != nil {
 		klog.V(20).Infof("measurement render error: %v", err)

@@ -3,8 +3,8 @@ package filter
 import "testing"
 
 func TestSplitFilter1(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := []interface{}{"loglevel", "date", "time", "message"}
+	config := make(map[any]any)
+	fields := []any{"loglevel", "date", "time", "message"}
 	config["src"] = "message"
 	config["fields"] = fields
 	config["sep"] = " "
@@ -12,7 +12,7 @@ func TestSplitFilter1(t *testing.T) {
 	config["trim"] = "[]"
 	f := BuildFilter("Split", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`
 
 	event, ok := f.Filter(event)
@@ -39,8 +39,8 @@ func TestSplitFilter1(t *testing.T) {
 }
 
 func TestSplitFilter2(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := []interface{}{"loglevel", "logtime", "message"}
+	config := make(map[any]any)
+	fields := []any{"loglevel", "logtime", "message"}
 	config["src"] = "message"
 	config["fields"] = fields
 	config["sep"] = "] "
@@ -48,7 +48,7 @@ func TestSplitFilter2(t *testing.T) {
 	config["trim"] = "[]"
 	f := BuildFilter("Split", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`
 
 	event, ok := f.Filter(event)
@@ -72,8 +72,8 @@ func TestSplitFilter2(t *testing.T) {
 
 // dynamic sep
 func TestSplitFilter3(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := []interface{}{"loglevel", "date", "time", "message"}
+	config := make(map[any]any)
+	fields := []any{"loglevel", "date", "time", "message"}
 	config["src"] = "message"
 	config["fields"] = fields
 	config["sep"] = "[sep]"
@@ -82,7 +82,7 @@ func TestSplitFilter3(t *testing.T) {
 	config["trim"] = "[]"
 	f := BuildFilter("Split", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`
 	event["sep"] = " "
 
@@ -111,8 +111,8 @@ func TestSplitFilter3(t *testing.T) {
 
 // length of fields do not match length of splited
 func TestSplitFilter4(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := []interface{}{"loglevel", "date", "time"}
+	config := make(map[any]any)
+	fields := []any{"loglevel", "date", "time"}
 	config["src"] = "message"
 	config["fields"] = fields
 	config["sep"] = "[sep]"
@@ -121,7 +121,7 @@ func TestSplitFilter4(t *testing.T) {
 	config["trim"] = "[]"
 	f := BuildFilter("Split", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = `[INFO] [2019-03-21 23:59:59,998] messages ...`
 	event["sep"] = " "
 

@@ -71,7 +71,7 @@ type HTTPBulkProcessor struct {
 }
 
 func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMethod string, retryResponseCode map[int]bool, bulk_size, bulk_actions, flush_interval, concurrent int, compress bool, newBulkRequestFunc NewBulkRequestFunc, getRetryEventsFunc GetRetryEventsFunc) *HTTPBulkProcessor {
-	hostsI := make([]interface{}, len(hosts))
+	hostsI := make([]any, len(hosts))
 	for i, h := range hosts {
 		hostsI[i] = h
 	}
@@ -116,7 +116,7 @@ func NewHTTPBulkProcessor(headers map[string]string, hosts []string, requestMeth
 }
 
 func (p *HTTPBulkProcessor) resetHosts(hosts []string) {
-	hostsI := make([]interface{}, 0)
+	hostsI := make([]any, 0)
 	for _, h := range hosts {
 		hostsI = append(hostsI, h)
 	}

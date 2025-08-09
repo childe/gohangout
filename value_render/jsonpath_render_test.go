@@ -5,11 +5,11 @@ import (
 )
 
 func TestJsonpathRender(t *testing.T) {
-	var event map[string]interface{}
+	var event map[string]any
 	var template string
 	var vr ValueRender
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["msg"] = "this is msg line"
 
 	template = "$.msg"

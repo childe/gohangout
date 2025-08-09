@@ -19,7 +19,7 @@ type stats struct {
 
 type LinkStatsMetricFilter struct {
 	next              topology.Processor
-	config            map[interface{}]interface{}
+	config            map[any]any
 	timestamp         string
 	batchWindow       int64
 	reserveWindow     int64
@@ -33,8 +33,8 @@ type LinkStatsMetricFilter struct {
 	lastField         string
 	fieldsLength      int
 
-	metric       map[int64]interface{}
-	metricToEmit map[int64]interface{}
+	metric       map[int64]any
+	metricToEmit map[int64]any
 
 	mutex sync.Locker
 }
@@ -47,11 +47,11 @@ func init() {
 	Register("LinkStatsMetric", newLinkStatsMetricFilter)
 }
 
-func newLinkStatsMetricFilter(config map[interface{}]interface{}) topology.Filter {
+func newLinkStatsMetricFilter(config map[any]any) topology.Filter {
 	p := &LinkStatsMetricFilter{
 		config:       config,
-		metric:       make(map[int64]interface{}),
-		metricToEmit: make(map[int64]interface{}),
+		metric:       make(map[int64]any),
+		metricToEmit: make(map[int64]any),
 
 		mutex: &sync.Mutex{},
 	}
@@ -124,16 +124,16 @@ func newLinkStatsMetricFilter(config map[interface{}]interface{}) topology.Filte
 	return p
 }
 
-func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface{}, level int) []map[string]interface{} {
+func (f *LinkStatsMetricFilter) metricToEvents(metrics map[any]any, level int) []map[string]any {
 	var (
 		fieldName string                   = f.fields[level]
-		events    []map[string]interface{} = make([]map[string]interface{}, 0)
+		events    []map[string]any = make([]map[string]any, 0)
 	)
 
 	if level == f.fieldsLength-1 {
 		for _, statsI := range metrics {
 			s := statsI.(*stats)
-			event := make(map[string]interface{})
+			event := make(map[string]any)
 			event["count"] = s.count
 			event["sum"] = s.sum
 			event["min"] = s.min
@@ -145,8 +145,8 @@ func (f *LinkStatsMetricFilter) metricToEvents(metrics map[interface{}]interface
 	}
 
 	for fieldValue, nextLevelMetrics := range metrics {
-		for _, e := range f.metricToEvents(nextLevelMetrics.(map[interface{}]interface{}), level+1) {
-			event := make(map[string]interface{})
+		for _, e := range f.metricToEvents(nextLevelMetrics.(map[any]any), level+1) {
+			event := make(map[string]any)
 			event[fieldName] = fieldValue
 			for k, v := range e {
 				event[k] = v
@@ -166,7 +166,7 @@ func (f *LinkStatsMetricFilter) swap_Metric_MetricToEmit() {
 		timestamp := time.Now().Unix()
 		timestamp -= timestamp % f.batchWindow
 
-		f.metricToEmit = make(map[int64]interface{})
+		f.metricToEmit = make(map[int64]any)
 		for k, v := range f.metric {
 			if k <= timestamp-f.batchWindow*f.windowOffset {
 				f.metricToEmit[k] = v
@@ -174,9 +174,9 @@ func (f *LinkStatsMetricFilter) swap_Metric_MetricToEmit() {
 		}
 
 		if f.accumulateMode == 1 {
-			f.metric = make(map[int64]interface{})
+			f.metric = make(map[int64]any)
 		} else {
-			newMetric := make(map[int64]interface{})
+			newMetric := make(map[int64]any)
 			for k, v := range f.metric {
 				if k >= timestamp-f.reserveWindow {
 					newMetric[k] = v
@@ -186,7 +186,7 @@ func (f *LinkStatsMetricFilter) swap_Metric_MetricToEmit() {
 		}
 	}
 }
-func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
+func (f *LinkStatsMetricFilter) updateMetric(event map[string]any) {
 	var value float64
 	var (
 		count int
@@ -245,11 +245,11 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 	}
 
 	timestamp -= timestamp % f.batchWindow
-	var set map[interface{}]interface{} = nil
+	var set map[any]any = nil
 	if v, ok := f.metric[timestamp]; ok {
-		set = v.(map[interface{}]interface{})
+		set = v.(map[any]any)
 	} else {
-		set = make(map[interface{}]interface{})
+		set = make(map[any]any)
 		f.metric[timestamp] = set
 	}
 
@@ -259,10 +259,10 @@ func (f *LinkStatsMetricFilter) updateMetric(event map[string]interface{}) {
 			return
 		}
 		if v, ok := set[fieldValue]; ok {
-			set = v.(map[interface{}]interface{})
+			set = v.(map[any]any)
 		} else {
-			set[fieldValue] = make(map[interface{}]interface{})
-			set = set[fieldValue].(map[interface{}]interface{})
+			set[fieldValue] = make(map[any]any)
+			set = set[fieldValue].(map[any]any)
 		}
 	}
 
@@ -286,17 +286,17 @@ func (f *LinkStatsMetricFilter) emitMetrics() {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
-	var event map[string]interface{}
+	var event map[string]any
 	for timestamp, metrics := range f.metricToEmit {
-		for _, event = range f.metricToEvents(metrics.(map[interface{}]interface{}), 0) {
+		for _, event = range f.metricToEvents(metrics.(map[any]any), 0) {
 			event[f.timestamp] = time.Unix(timestamp, 0)
 			f.next.Process(event)
 		}
 	}
-	f.metricToEmit = make(map[int64]interface{})
+	f.metricToEmit = make(map[int64]any)
 }
 
-func (f *LinkStatsMetricFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (f *LinkStatsMetricFilter) Filter(event map[string]any) (map[string]any, bool) {
 	f.updateMetric(event)
 	if f.dropOriginalEvent {
 		return nil, false

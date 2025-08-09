@@ -10,7 +10,7 @@ import (
 )
 
 type URLDecodeFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
@@ -18,14 +18,14 @@ func init() {
 	Register("URLDecode", newURLDecodeFilter)
 }
 
-func newURLDecodeFilter(config map[interface{}]interface{}) topology.Filter {
+func newURLDecodeFilter(config map[any]any) topology.Filter {
 	plugin := &URLDecodeFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
 	if fieldsValue, ok := config["fields"]; ok {
-		for _, field := range fieldsValue.([]interface{}) {
+		for _, field := range fieldsValue.([]any) {
 			fieldSetter := field_setter.NewFieldSetter(field.(string))
 			if fieldSetter == nil {
 				klog.Fatalf("could build field setter from %s", field.(string))
@@ -39,7 +39,7 @@ func newURLDecodeFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 // 如果字段不是字符串, 返回false, 其它返回true
-func (plugin *URLDecodeFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *URLDecodeFilter) Filter(event map[string]any) (map[string]any, bool) {
 	success := true
 	for s, v := range plugin.fields {
 		value, err := v.Render(event)

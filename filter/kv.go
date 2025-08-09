@@ -21,7 +21,7 @@ type KVConfig struct {
 }
 
 type KVFilter struct {
-	config       map[interface{}]interface{}
+	config       map[any]any
 	fields       map[field_setter.FieldSetter]value_render.ValueRender
 	src          value_render.ValueRender
 	target       string
@@ -37,14 +37,14 @@ func init() {
 	Register("KV", newKVFilter)
 }
 
-func newKVFilter(config map[interface{}]interface{}) topology.Filter {
+func newKVFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var kvConfig KVConfig
 
 	SafeDecodeConfig("KV", config, &kvConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("KV", map[string]interface{}{
+	ValidateRequiredFields("KV", map[string]any{
 		"src":         kvConfig.Src,
 		"field_split": kvConfig.FieldSplit,
 		"value_split": kvConfig.ValueSplit,
@@ -77,16 +77,16 @@ func newKVFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (p *KVFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (p *KVFilter) Filter(event map[string]any) (map[string]any, bool) {
 	msg, err := p.src.Render(event)
 	if err != nil || msg == nil {
 		return event, false
 	}
 	A := strings.Split(msg.(string), p.field_split)
 
-	var o map[string]interface{} = event
+	var o map[string]any = event
 	if p.target != "" {
-		o = make(map[string]interface{})
+		o = make(map[string]any)
 		event[p.target] = o
 	}
 

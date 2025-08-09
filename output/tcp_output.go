@@ -16,21 +16,21 @@ func init() {
 }
 
 type TCPOutput struct {
-	config    map[interface{}]interface{}
+	config    map[any]any
 	network   string
 	address   string
 	timeout   time.Duration
 	keepalive time.Duration
 
 	concurrent int
-	messages   chan map[string]interface{}
+	messages   chan map[string]any
 	conn       []net.Conn
 	//writer *bufio.Writer
 
 	dialLock sync.Mutex
 }
 
-func newTCPOutput(config map[interface{}]interface{}) topology.Output {
+func newTCPOutput(config map[any]any) topology.Output {
 	p := &TCPOutput{
 		config:     config,
 		concurrent: 1,
@@ -63,7 +63,7 @@ func newTCPOutput(config map[interface{}]interface{}) topology.Output {
 	if v, ok := config["concurrent"]; ok {
 		p.concurrent = v.(int)
 	}
-	p.messages = make(chan map[string]interface{}, p.concurrent)
+	p.messages = make(chan map[string]any, p.concurrent)
 	p.conn = make([]net.Conn, p.concurrent)
 
 	for i := 0; i < p.concurrent; i++ {
@@ -135,7 +135,7 @@ func probe(conn net.Conn) {
 	}
 }
 
-func (p *TCPOutput) Emit(event map[string]interface{}) {
+func (p *TCPOutput) Emit(event map[string]any) {
 	p.messages <- event
 	//buf = append(buf, '\n')
 	//n, err := p.writer.Write(buf)

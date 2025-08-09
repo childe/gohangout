@@ -10,7 +10,7 @@ var ts int64 = 1580212332
 var tsMs int64 = 1580212332123
 
 func TestUnix(t *testing.T) {
-	for _, v := range []interface{}{ts, int(ts), "1580212332"} {
+	for _, v := range []any{ts, int(ts), "1580212332"} {
 		p := &UnixParser{}
 		r, err := p.Parse(v)
 
@@ -26,7 +26,7 @@ func TestUnix(t *testing.T) {
 }
 
 func TestUnixMs(t *testing.T) {
-	for _, v := range []interface{}{tsMs, int(tsMs), "1580212332123"} {
+	for _, v := range []any{tsMs, int(tsMs), "1580212332123"} {
 		p := &UnixMSParser{}
 		r, err := p.Parse(v)
 
@@ -101,13 +101,13 @@ func TestISO8601Parser(t *testing.T) {
 }
 
 func TestDateFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
+	config := make(map[any]any)
 	config["location"] = "Asia/Shanghai"
 	config["src"] = "@timestamp"
-	config["formats"] = []interface{}{"RFC3339", "UNIX"}
+	config["formats"] = []any{"RFC3339", "UNIX"}
 	f := BuildFilter("Date", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["@timestamp"] = time.Now().Unix()
 	t.Log(event)
 
@@ -139,7 +139,7 @@ func TestDateFilter(t *testing.T) {
 	}
 
 	config["location"] = "Etc/UTC"
-	config["formats"] = []interface{}{"2006-01-02T15:04:05"}
+	config["formats"] = []any{"2006-01-02T15:04:05"}
 	f = BuildFilter("Date", config)
 	event["@timestamp"] = "2018-01-23T17:06:05"
 	t.Log(event)

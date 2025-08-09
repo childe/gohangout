@@ -23,7 +23,7 @@ const (
 )
 
 type ClickhouseOutput struct {
-	config map[interface{}]interface{}
+	config map[any]any
 
 	bulk_actions int
 	hosts        []string
@@ -35,12 +35,12 @@ type ClickhouseOutput struct {
 	fieldsLength int
 	query        string
 	desc         map[string]*rowDesc
-	defaultValue map[string]interface{} // columnName -> defaultValue
+	defaultValue map[string]any // columnName -> defaultValue
 
-	bulkChan   chan []map[string]interface{}
+	bulkChan   chan []map[string]any
 	concurrent int
 
-	events       []map[string]interface{}
+	events       []map[string]any
 	execution_id uint64
 
 	dbSelector HostSelector
@@ -92,7 +92,7 @@ func (c *ClickhouseOutput) setTableDesc() {
 		}
 
 		for rows.Next() {
-			values := make([]interface{}, 0)
+			values := make([]any, 0)
 			for range columns {
 				var a string
 				values = append(values, &a)
@@ -156,7 +156,7 @@ func (c *ClickhouseOutput) setTableDesc() {
 func (c *ClickhouseOutput) setColumnDefault() {
 	c.setTableDesc()
 
-	c.defaultValue = make(map[string]interface{})
+	c.defaultValue = make(map[string]any)
 
 	var defaultValue *string
 
@@ -260,14 +260,14 @@ func init() {
 	Register("Clickhouse", newClickhouseOutput)
 }
 
-func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
+func newClickhouseOutput(config map[any]any) topology.Output {
 	rand.Seed(time.Now().UnixNano())
 	p := &ClickhouseOutput{
 		config: config,
 	}
 
 	if v, ok := config["fields"]; ok {
-		for _, f := range v.([]interface{}) {
+		for _, f := range v.([]any) {
 			p.fields = append(p.fields, f.(string))
 		}
 	}
@@ -285,7 +285,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	}
 
 	if v, ok := config["hosts"]; ok {
-		for _, h := range v.([]interface{}) {
+		for _, h := range v.([]any) {
 			p.hosts = append(p.hosts, h.(string))
 		}
 	} else {
@@ -335,7 +335,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 		klog.Fatal("no available host")
 	}
 
-	dbsI := make([]interface{}, len(dbs))
+	dbsI := make([]any, len(dbs))
 	for i, h := range dbs {
 		dbsI[i] = h
 	}
@@ -365,7 +365,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 	p.concurrent = concurrent
 	p.closeChan = make(chan bool, concurrent)
 
-	p.bulkChan = make(chan []map[string]interface{}, concurrent)
+	p.bulkChan = make(chan []map[string]any, concurrent)
 	for i := 0; i < concurrent; i++ {
 		p.wg.Add(1)
 		go func() {
@@ -403,7 +403,7 @@ func newClickhouseOutput(config map[interface{}]interface{}) topology.Output {
 }
 
 // convert int and float fields to coresponding type
-func (c *ClickhouseOutput) convert(event map[string]interface{}) {
+func (c *ClickhouseOutput) convert(event map[string]any) {
 	for _, key := range c.transIntColumn {
 		if keyIntValue, ok := event[key]; ok {
 			if intConverterValue, err := cast.ToInt64E(keyIntValue); err == nil {
@@ -417,7 +417,7 @@ func (c *ClickhouseOutput) convert(event map[string]interface{}) {
 
 	for _, key := range c.transIntArrayColumn {
 		if keyArrayValue, ok := event[key]; ok {
-			arrayIntValue := keyArrayValue.([]interface{})
+			arrayIntValue := keyArrayValue.([]any)
 			ints := make([]int64, len(arrayIntValue))
 			for i, v := range arrayIntValue {
 				if v, err := cast.ToInt64E(v); err == nil {
@@ -444,7 +444,7 @@ func (c *ClickhouseOutput) convert(event map[string]interface{}) {
 	}
 }
 
-func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
+func (c *ClickhouseOutput) innerFlush(events []map[string]any) {
 	execution_id := atomic.AddUint64(&c.execution_id, 1)
 	klog.Infof("write %d docs to clickhouse with execution_id %d", len(events), execution_id)
 
@@ -478,7 +478,7 @@ func (c *ClickhouseOutput) innerFlush(events []map[string]interface{}) {
 				c.convert(event)
 			}
 
-			args := make([]interface{}, c.fieldsLength)
+			args := make([]any, c.fieldsLength)
 			for i, field := range c.fields {
 				if v, ok := event[field]; ok && v != nil {
 					args[i] = v
@@ -510,14 +510,14 @@ func (c *ClickhouseOutput) flush() {
 	c.mux.Lock()
 	if len(c.events) > 0 {
 		events := c.events
-		c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+		c.events = make([]map[string]any, 0, c.bulk_actions)
 		c.bulkChan <- events
 	}
 	c.mux.Unlock()
 }
 
 // Emit appends event to c.events, and push to bulkChan if needed
-func (c *ClickhouseOutput) Emit(event map[string]interface{}) {
+func (c *ClickhouseOutput) Emit(event map[string]any) {
 	c.mux.Lock()
 	c.events = append(c.events, event)
 	if len(c.events) < c.bulk_actions {
@@ -526,7 +526,7 @@ func (c *ClickhouseOutput) Emit(event map[string]interface{}) {
 	}
 
 	events := c.events
-	c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+	c.events = make([]map[string]any, 0, c.bulk_actions)
 	c.mux.Unlock()
 
 	c.bulkChan <- events
@@ -560,7 +560,7 @@ func (c *ClickhouseOutput) awaitclose(timeout time.Duration) {
 		c.mux.Unlock()
 	} else {
 		events := c.events
-		c.events = make([]map[string]interface{}, 0, c.bulk_actions)
+		c.events = make([]map[string]any, 0, c.bulk_actions)
 		c.mux.Unlock()
 
 		klog.Infof("ramain %d docs, write them to clickhouse", len(events))

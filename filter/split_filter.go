@@ -22,7 +22,7 @@ type SplitConfig struct {
 }
 
 type SplitFilter struct {
-	config       map[interface{}]interface{}
+	config       map[any]any
 	fields       []field_setter.FieldSetter
 	fieldsLength int
 	sep          string
@@ -39,7 +39,7 @@ func init() {
 	Register("Split", newSplitFilter)
 }
 
-func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
+func newSplitFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var splitConfig SplitConfig
 	// Set default values
@@ -51,7 +51,7 @@ func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 	SafeDecodeConfig("Split", config, &splitConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("Split", map[string]interface{}{
+	ValidateRequiredFields("Split", map[string]any{
 		"sep":    splitConfig.Sep,
 		"fields": splitConfig.Fields,
 	})
@@ -85,7 +85,7 @@ func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *SplitFilter) Filter(event map[string]any) (map[string]any, bool) {
 	src, err := plugin.src.Render(event)
 	if err != nil || src == nil {
 		return event, false

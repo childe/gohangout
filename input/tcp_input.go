@@ -10,7 +10,7 @@ import (
 )
 
 type TCPInput struct {
-	config  map[interface{}]interface{}
+	config  map[any]any
 	network string
 	address string
 
@@ -40,7 +40,7 @@ func readLine(scanner *bufio.Scanner, c net.Conn, messages chan<- []byte) {
 func init() {
 	Register("TCP", newTCPInput)
 }
-func newTCPInput(config map[interface{}]interface{}) topology.Input {
+func newTCPInput(config map[any]any) topology.Input {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
@@ -101,7 +101,7 @@ func newTCPInput(config map[interface{}]interface{}) topology.Input {
 	return p
 }
 
-func (p *TCPInput) ReadOneEvent() map[string]interface{} {
+func (p *TCPInput) ReadOneEvent() map[string]any {
 	text, more := <-p.messages
 	if !more || text == nil {
 		return nil

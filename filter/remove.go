@@ -12,7 +12,7 @@ type RemoveConfig struct {
 }
 
 type RemoveFilter struct {
-	config         map[interface{}]interface{}
+	config         map[any]any
 	fieldsDeleters []field_deleter.FieldDeleter
 }
 
@@ -20,14 +20,14 @@ func init() {
 	Register("Remove", newRemoveFilter)
 }
 
-func newRemoveFilter(config map[interface{}]interface{}) topology.Filter {
+func newRemoveFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var removeConfig RemoveConfig
 
 	SafeDecodeConfig("Remove", config, &removeConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("Remove", map[string]interface{}{
+	ValidateRequiredFields("Remove", map[string]any{
 		"fields": removeConfig.Fields,
 	})
 	if len(removeConfig.Fields) == 0 {
@@ -47,7 +47,7 @@ func newRemoveFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *RemoveFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *RemoveFilter) Filter(event map[string]any) (map[string]any, bool) {
 	for _, d := range plugin.fieldsDeleters {
 		d.Delete(event)
 	}

@@ -34,7 +34,7 @@ func init() {
 	Register("Json", newJSONFilter)
 }
 
-func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
+func newJSONFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var jsonConfig JsonConfig
 	// Set default values
@@ -71,7 +71,7 @@ func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 // Filter will parse json string in `field` and put the result into `target` field
-func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *JSONFilter) Filter(event map[string]any) (map[string]any, bool) {
 	f, err := plugin.vr.Render(event)
 	if err != nil || f == nil {
 		return event, false
@@ -82,7 +82,7 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 		return event, false
 	}
 
-	var o interface{} = nil
+	var o any = nil
 	d := json.NewDecoder(strings.NewReader(ss))
 	d.UseNumber()
 	err = d.Decode(&o)
@@ -91,8 +91,8 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 	}
 
 	if len(plugin.include) > 0 {
-		oo := map[string]interface{}{}
-		if o, ok := o.(map[string]interface{}); ok {
+		oo := map[string]any{}
+		if o, ok := o.(map[string]any); ok {
 			for _, k := range plugin.include {
 				oo[k] = o[k]
 			}
@@ -102,7 +102,7 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 		}
 		o = oo
 	} else if len(plugin.exclude) > 0 {
-		if o, ok := o.(map[string]interface{}); ok {
+		if o, ok := o.(map[string]any); ok {
 			for _, k := range plugin.exclude {
 				delete(o, k)
 			}
@@ -118,11 +118,11 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 			return event, false
 		}
 		if plugin.overwrite {
-			for k, v := range o.(map[string]interface{}) {
+			for k, v := range o.(map[string]any) {
 				event[k] = v
 			}
 		} else {
-			for k, v := range o.(map[string]interface{}) {
+			for k, v := range o.(map[string]any) {
 				if _, ok := event[k]; !ok {
 					event[k] = v
 				}

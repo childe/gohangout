@@ -12,7 +12,7 @@ import (
 )
 
 type StdinInput struct {
-	config  map[interface{}]interface{}
+	config  map[any]any
 	decoder codec.Decoder
 
 	scanner  *bufio.Scanner
@@ -25,7 +25,7 @@ func init() {
 	Register("Stdin", newStdinInput)
 }
 
-func newStdinInput(config map[interface{}]interface{}) topology.Input {
+func newStdinInput(config map[any]any) topology.Input {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
@@ -39,7 +39,7 @@ func newStdinInput(config map[interface{}]interface{}) topology.Input {
 	return p
 }
 
-func (p *StdinInput) ReadOneEvent() map[string]interface{} {
+func (p *StdinInput) ReadOneEvent() map[string]any {
 	p.scanLock.Lock()
 	defer p.scanLock.Unlock()
 

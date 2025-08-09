@@ -27,7 +27,7 @@ var errNotString = errors.New("field is not string")
 // render returns error , but it is not used in the caller
 // always use "null" as a result when err is not nil
 // for compatibility
-func (f *field) render(event map[string]interface{}, location *time.Location) (string, error) {
+func (f *field) render(event map[string]any, location *time.Location) (string, error) {
 	if f.literal {
 		return f.value, nil
 	}
@@ -113,7 +113,7 @@ func (r *IndexRender) SetTimeLocation(loc string) {
 	r.location = location
 }
 
-func dateFormat(t interface{}, format string, location *time.Location) (string, error) {
+func dateFormat(t any, format string, location *time.Location) (string, error) {
 	if t1, ok := t.(time.Time); ok {
 		return t1.In(location).Format(format), nil
 	}
@@ -143,7 +143,7 @@ func dateFormat(t interface{}, format string, location *time.Location) (string, 
 }
 
 // Render implements ValueRender. note: it's field use "null" as result when error occurs for compatibility
-func (r *IndexRender) Render(event map[string]interface{}) (value interface{}, err error) {
+func (r *IndexRender) Render(event map[string]any) (value any, err error) {
 	fields := make([]string, len(r.fields))
 	for i, f := range r.fields {
 		v, _ := f.render(event, r.location)

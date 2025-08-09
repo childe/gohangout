@@ -17,7 +17,7 @@ type AddConfig struct {
 }
 
 type AddFilter struct {
-	config    map[interface{}]interface{}
+	config    map[any]any
 	fields    map[field_setter.FieldSetter]value_render.ValueRender
 	overwrite bool
 }
@@ -26,7 +26,7 @@ func init() {
 	Register("Add", newAddFilter)
 }
 
-func newAddFilter(config map[interface{}]interface{}) topology.Filter {
+func newAddFilter(config map[any]any) topology.Filter {
 	plugin := &AddFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
@@ -78,7 +78,7 @@ func newAddFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *AddFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *AddFilter) Filter(event map[string]any) (map[string]any, bool) {
 	for fs, r := range plugin.fields {
 		v, _ := r.Render(event)
 		event = fs.SetField(event, v, "", plugin.overwrite)

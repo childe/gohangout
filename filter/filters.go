@@ -8,7 +8,7 @@ import (
 )
 
 type FiltersFilter struct {
-	config        map[interface{}]interface{}
+	config        map[any]any
 	processorNode *topology.ProcessorNode
 	filterBoxes   []*topology.FilterBox
 }
@@ -17,12 +17,12 @@ func init() {
 	Register("Filters", newFiltersFilter)
 }
 
-func newFiltersFilter(config map[interface{}]interface{}) topology.Filter {
+func newFiltersFilter(config map[any]any) topology.Filter {
 	f := &FiltersFilter{
 		config: config,
 	}
 
-	_config := make(map[string]interface{})
+	_config := make(map[string]any)
 	for k, v := range config {
 		_config[k.(string)] = v
 	}
@@ -39,7 +39,7 @@ func newFiltersFilter(config map[interface{}]interface{}) topology.Filter {
 	return f
 }
 
-func (f *FiltersFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (f *FiltersFilter) Filter(event map[string]any) (map[string]any, bool) {
 	return f.processorNode.Process(event), true
 }
 

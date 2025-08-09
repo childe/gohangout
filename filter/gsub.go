@@ -34,7 +34,7 @@ type GsubFilter struct {
 	fields []*oneFieldConfig
 }
 
-func newGsubFilter(config map[interface{}]interface{}) topology.Filter {
+func newGsubFilter(config map[any]any) topology.Filter {
 	gsubFilter := &GsubFilter{}
 	fields, ok := config["fields"]
 	if !ok {
@@ -77,7 +77,7 @@ func newGsubFilter(config map[interface{}]interface{}) topology.Filter {
 // Filter implements topology.Filter.
 // One field config fails if could not get src or src is not string.
 // Filter returns false if either field config fails.
-func (f *GsubFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (f *GsubFilter) Filter(event map[string]any) (map[string]any, bool) {
 	rst := true
 	for _, config := range f.fields {
 		v, err := config.rs.r.Render(event)

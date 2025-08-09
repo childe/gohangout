@@ -7,14 +7,14 @@ import (
 )
 
 func TestAddFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := make(map[interface{}]interface{})
+	config := make(map[any]any)
+	fields := make(map[any]any)
 	fields["name"] = `{{.first}} {{.last}}`
 	fields["firstname"] = `$.first`
 	config["fields"] = fields
 	f := BuildFilter("Add", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["@timestamp"] = time.Now().Unix()
 	event["first"] = "dehua"
 	event["last"] = "liu"
@@ -47,14 +47,14 @@ func TestAddFilter(t *testing.T) {
 func TestAddConfigParsing(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      map[interface{}]interface{}
+		config      map[any]any
 		expectError bool
 		errorSubstr string
 	}{
 		{
 			name: "valid config",
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"name": "test",
 					"type": "web",
 				},
@@ -64,7 +64,7 @@ func TestAddConfigParsing(t *testing.T) {
 		},
 		{
 			name: "missing fields",
-			config: map[interface{}]interface{}{
+			config: map[any]any{
 				"overwrite": true,
 			},
 			expectError: true,
@@ -72,7 +72,7 @@ func TestAddConfigParsing(t *testing.T) {
 		},
 		{
 			name: "wrong type for fields - string instead of map",
-			config: map[interface{}]interface{}{
+			config: map[any]any{
 				"fields": "this should be a map",
 			},
 			expectError: true,
@@ -80,8 +80,8 @@ func TestAddConfigParsing(t *testing.T) {
 		},
 		{
 			name: "wrong type for overwrite - string instead of bool",
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"name": "test",
 				},
 				"overwrite": "not a boolean",
@@ -91,8 +91,8 @@ func TestAddConfigParsing(t *testing.T) {
 		},
 		{
 			name: "wrong type for field value - number instead of string",
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"name": "test",
 					"age":  123, // this should be string
 				},

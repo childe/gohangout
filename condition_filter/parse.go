@@ -44,7 +44,7 @@ func parseBoolTree(c string) (node *OPNode, err error) {
 		return nil, err
 	}
 	//klog.Info(s2)
-	s := make([]interface{}, 0)
+	s := make([]any, 0)
 
 	for _, e := range s2 {
 		if c, ok := e.(Condition); ok {
@@ -81,7 +81,7 @@ func parseBoolTree(c string) (node *OPNode, err error) {
 	return s[0].(*OPNode), nil
 }
 
-func buildRPNStack(c string) ([]interface{}, error) {
+func buildRPNStack(c string) ([]any, error) {
 	var (
 		state               = _OUTSIDES_CONDITION
 		i                   int
@@ -90,7 +90,7 @@ func buildRPNStack(c string) ([]interface{}, error) {
 		condition_start_pos int
 
 		s1 = []int{_op_sharp}
-		s2 = make([]interface{}, 0)
+		s2 = make([]any, 0)
 	)
 
 	// 哪些导致状态变化??
@@ -189,7 +189,7 @@ func buildRPNStack(c string) ([]interface{}, error) {
 	return s2, nil
 }
 
-func pushOp(op int, s1 *[]int, s2 *[]interface{}) bool {
+func pushOp(op int, s1 *[]int, s2 *[]any) bool {
 	if op == _op_right {
 		return findLeftInS1(s1, s2)
 	}
@@ -197,7 +197,7 @@ func pushOp(op int, s1 *[]int, s2 *[]interface{}) bool {
 }
 
 // find ( in s1
-func findLeftInS1(s1 *[]int, s2 *[]interface{}) bool {
+func findLeftInS1(s1 *[]int, s2 *[]any) bool {
 	var j int
 	for j = len(*s1) - 1; j > 0 && (*s1)[j] != _op_left; j-- {
 		*s2 = append(*s2, (*s1)[j])
@@ -212,7 +212,7 @@ func findLeftInS1(s1 *[]int, s2 *[]interface{}) bool {
 }
 
 // compare op with ops in s1, and put them to s2
-func compareOpWithS1(op int, s1 *[]int, s2 *[]interface{}) bool {
+func compareOpWithS1(op int, s1 *[]int, s2 *[]any) bool {
 	var j int
 	for j = len(*s1) - 1; j > 0; j-- {
 		//if (*s1)[j] == _op_left || op > (*s1)[j] {

@@ -18,7 +18,7 @@ import (
 )
 
 type DateParser interface {
-	Parse(interface{}) (time.Time, error)
+	Parse(any) (time.Time, error)
 }
 
 type FormatParser struct {
@@ -29,7 +29,7 @@ type FormatParser struct {
 
 var MustStringTypeError = errors.New("timestamp field must be string")
 
-func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
+func (dp *FormatParser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 		err error
@@ -55,7 +55,7 @@ func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 
 type UnixParser struct{}
 
-func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
+func (p *UnixParser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 	)
@@ -91,7 +91,7 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 
 type UnixMSParser struct{}
 
-func (p *UnixMSParser) Parse(t interface{}) (time.Time, error) {
+func (p *UnixMSParser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 	)
@@ -124,7 +124,7 @@ type ISO8601Parser struct {
 	location *time.Location // If the input does not have timezone information, it will use the given location.
 }
 
-func (p *ISO8601Parser) Parse(t interface{}) (time.Time, error) {
+func (p *ISO8601Parser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 	)
@@ -165,7 +165,7 @@ type DateConfig struct {
 }
 
 type DateFilter struct {
-	config      map[interface{}]interface{}
+	config      map[any]any
 	dateParsers []DateParser
 	overwrite   bool
 	src         string
@@ -178,7 +178,7 @@ func init() {
 	Register("Date", newDateFilter)
 }
 
-func newDateFilter(config map[interface{}]interface{}) topology.Filter {
+func newDateFilter(config map[any]any) topology.Filter {
 	plugin := &DateFilter{
 		config:      config,
 		dateParsers: make([]DateParser, 0),
@@ -235,7 +235,7 @@ func newDateFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *DateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *DateFilter) Filter(event map[string]any) (map[string]any, bool) {
 	inputI, err := plugin.srcVR.Render(event)
 	if err != nil || inputI == nil {
 		return event, false

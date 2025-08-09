@@ -8,75 +8,75 @@ import (
 
 func TestRenameFilter(t *testing.T) {
 	type testcase struct {
-		config   map[interface{}]interface{}
-		event    map[string]interface{}
-		expected map[string]interface{}
+		config   map[any]any
+		event    map[string]any
+		expected map[string]any
 	}
 
 	testcases := []testcase{
 		{
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"name1": "n1",
 					"name2": "n2",
 				},
 			},
-			event: map[string]interface{}{
+			event: map[string]any{
 				"name1": "liu",
 				"name2": "dehua",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"n1": "liu",
 				"n2": "dehua",
 			},
 		},
 		{
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"[name][last]": "[name][first]",
 				},
 			},
-			event: map[string]interface{}{
-				"name": map[string]interface{}{
+			event: map[string]any{
+				"name": map[string]any{
 					"last": "liu",
 				},
 			},
-			expected: map[string]interface{}{
-				"name": map[string]interface{}{
+			expected: map[string]any{
+				"name": map[string]any{
 					"first": "liu",
 				},
 			},
 		},
 		{
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"[name][last]": "[name][first]",
 				},
 			},
-			event: map[string]interface{}{
-				"name": map[string]interface{}{
+			event: map[string]any{
+				"name": map[string]any{
 					"last": nil,
 				},
 			},
-			expected: map[string]interface{}{
-				"name": map[string]interface{}{
+			expected: map[string]any{
+				"name": map[string]any{
 					"first": nil,
 				},
 			},
 		},
 		{
-			config: map[interface{}]interface{}{
-				"fields": map[interface{}]interface{}{
+			config: map[any]any{
+				"fields": map[any]any{
 					"[name][last]": "[name][first]",
 				},
 			},
-			event: map[string]interface{}{
-				"name": map[string]interface{}{
+			event: map[string]any{
+				"name": map[string]any{
 					"full": "dehua liu",
 				},
 			},
-			expected: map[string]interface{}{
-				"name": map[string]interface{}{
+			expected: map[string]any{
+				"name": map[string]any{
 					"full": "dehua liu",
 				},
 			},

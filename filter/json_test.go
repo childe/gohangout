@@ -8,23 +8,23 @@ import (
 
 func TestJson(t *testing.T) {
 	type testCase struct {
-		event   map[string]interface{}
-		config  map[interface{}]interface{}
-		want    map[string]interface{}
+		event   map[string]any
+		config  map[any]any
+		want    map[string]any
 		success bool
 	}
 
 	cases := []testCase{
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2}`,
 				"a":       10,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": true,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2}`,
 				"a":       json.Number("1"),
 				"b":       json.Number("2"),
@@ -32,15 +32,15 @@ func TestJson(t *testing.T) {
 			true,
 		},
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2}`,
 				"a":       10,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": false,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2}`,
 				"a":       10,
 				"b":       json.Number("2"),
@@ -48,19 +48,19 @@ func TestJson(t *testing.T) {
 			true,
 		},
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2}`,
 				"a":       10,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": false,
 				"target":    "c",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2}`,
 				"a":       10,
-				"c": map[string]interface{}{
+				"c": map[string]any{
 					"a": json.Number("1"),
 					"b": json.Number("2"),
 				},
@@ -68,15 +68,15 @@ func TestJson(t *testing.T) {
 			true,
 		},
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"message":"hello","b":2}`,
 				"a":       10,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": true,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": "hello",
 				"a":       10,
 				"b":       json.Number("2"),
@@ -84,15 +84,15 @@ func TestJson(t *testing.T) {
 			true,
 		},
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"message":"hello","b":2}`,
 				"a":       10,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "$.message",
 				"overwrite": false,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"message":"hello","b":2}`,
 				"a":       10,
 				"b":       json.Number("2"),
@@ -116,23 +116,23 @@ func TestJson(t *testing.T) {
 
 func TestIncludeExclude(t *testing.T) {
 	type testCase struct {
-		event   map[string]interface{}
-		config  map[interface{}]interface{}
-		want    map[string]interface{}
+		event   map[string]any
+		config  map[any]any
+		want    map[string]any
 		success bool
 	}
 
 	cases := []testCase{
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2, "c": 3}`,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": true,
-				"include":   []interface{}{"a", "b"},
+				"include":   []any{"a", "b"},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2, "c": 3}`,
 				"a":       json.Number("1"),
 				"b":       json.Number("2"),
@@ -140,31 +140,31 @@ func TestIncludeExclude(t *testing.T) {
 			true,
 		},
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2, "c": 3}`,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": true,
-				"exclude":   []interface{}{"a", "b"},
+				"exclude":   []any{"a", "b"},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2, "c": 3}`,
 				"c":       json.Number("3"),
 			},
 			true,
 		},
 		{
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2, "c": 3}`,
 			},
-			map[interface{}]interface{}{
+			map[any]any{
 				"field":     "message",
 				"overwrite": true,
-				"include":   []interface{}{"a", "b"},
-				"exclude":   []interface{}{"a", "b"},
+				"include":   []any{"a", "b"},
+				"exclude":   []any{"a", "b"},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"message": `{"a":1,"b":2, "c": 3}`,
 				"a":       json.Number("1"),
 				"b":       json.Number("2"),

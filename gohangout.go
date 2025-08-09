@@ -77,19 +77,19 @@ func (inputs gohangoutInputs) stop() {
 	}
 }
 
-func buildPluginLink(config map[string]interface{}) (boxes []*input.InputBox, err error) {
+func buildPluginLink(config map[string]any) (boxes []*input.InputBox, err error) {
 	boxes = make([]*input.InputBox, 0)
 
-	for inputIdx, inputI := range config["inputs"].([]interface{}) {
+	for inputIdx, inputI := range config["inputs"].([]any) {
 		var inputPlugin topology.Input
 
-		i := inputI.(map[interface{}]interface{})
+		i := inputI.(map[any]any)
 		klog.Infof("input[%d] %v", inputIdx+1, i)
 
 		// len(i) is 1
 		for inputTypeI, inputConfigI := range i {
 			inputType := inputTypeI.(string)
-			inputConfig := inputConfigI.(map[interface{}]interface{})
+			inputConfig := inputConfigI.(map[any]any)
 
 			inputPlugin = input.GetInput(inputType, inputConfig)
 			if inputPlugin == nil {

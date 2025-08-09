@@ -11,8 +11,8 @@ func TestGetPath(t *testing.T) {
 }
 
 func TestGrokFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	match := make([]interface{}, 2)
+	config := make(map[any]any)
+	match := make([]any, 2)
 	match[0] = `(?P<logtime>\S+ \S+) \[(?P<level>\w+)\] (?P<msg>.*)$`
 	match[1] = `(?P<logtime>\S+ \S+)`
 	config["match"] = match
@@ -20,7 +20,7 @@ func TestGrokFilter(t *testing.T) {
 
 	f := BuildFilter("Grok", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
 
 	event, ok := f.Filter(event)
@@ -40,8 +40,8 @@ func TestGrokFilter(t *testing.T) {
 }
 
 func TestTarget(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	match := make([]interface{}, 2)
+	config := make(map[any]any)
+	match := make([]any, 2)
 	match[0] = `(?P<logtime>\S+ \S+) \[(?P<level>\w+)\] (?P<msg>.*)$`
 	match[1] = `(?P<logtime>\S+ \S+)`
 	config["match"] = match
@@ -50,7 +50,7 @@ func TestTarget(t *testing.T) {
 
 	f := BuildFilter("Grok", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
 
 	event, ok := f.Filter(event)
@@ -61,7 +61,7 @@ func TestTarget(t *testing.T) {
 	}
 
 	if grok, ok := event["grok"]; ok {
-		if msg, ok := grok.(map[string]interface{})["msg"]; !ok || msg.(string) != "message" {
+		if msg, ok := grok.(map[string]any)["msg"]; !ok || msg.(string) != "message" {
 			t.Error("msg field do not match")
 		}
 	} else {
@@ -84,15 +84,15 @@ func TestPattern(t *testing.T) {
 		t.Error(p)
 	}
 
-	config := make(map[interface{}]interface{})
-	match := make([]interface{}, 1)
+	config := make(map[any]any)
+	match := make([]any, 1)
 	match[0] = grok.translateMatchPattern(`^%{IP:ip} %{USER:user} \[(?P<loglevel>\w+)\] (?P<msg>.*)`)
 	config["match"] = match
 	config["src"] = "message"
 
 	f := BuildFilter("Grok", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "10.10.10.255 childe [info] message"
 
 	event, ok := f.Filter(event)
@@ -136,8 +136,8 @@ func TestPattern(t *testing.T) {
 }
 
 func TestOverwrite(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	match := make([]interface{}, 1)
+	config := make(map[any]any)
+	match := make([]any, 1)
 	match[0] = `(?P<logtime>\S+ \S+) \[(?P<level>\w+)\] (?P<msg>.*)$`
 	config["match"] = match
 	config["src"] = "message"
@@ -145,7 +145,7 @@ func TestOverwrite(t *testing.T) {
 
 	f := BuildFilter("Grok", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "2018-07-12T14:45:00 +0800 [info] message"
 	event["level"] = "warning"
 	event, ok := f.Filter(event)

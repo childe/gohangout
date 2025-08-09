@@ -4,7 +4,7 @@ import "testing"
 
 func TestGetPromCounter(t *testing.T) {
 	type TestCase struct {
-		config map[interface{}]interface{}
+		config map[any]any
 		want   bool
 	}
 
@@ -14,11 +14,11 @@ func TestGetPromCounter(t *testing.T) {
 			want:   false,
 		},
 		{
-			config: map[interface{}]interface{}{"prometheus_counter": "test"},
+			config: map[any]any{"prometheus_counter": "test"},
 			want:   false,
 		},
 		{
-			config: map[interface{}]interface{}{"prometheus_counter": map[string]string{
+			config: map[any]any{"prometheus_counter": map[string]string{
 				"name":      "gohangout_add_filter",
 				"namespace": "rack_a",
 				"help":      "rack_a gohangout add filter counter",
@@ -26,7 +26,7 @@ func TestGetPromCounter(t *testing.T) {
 			want: true,
 		},
 		{
-			config: map[interface{}]interface{}{"prometheus_counter": map[string]string{
+			config: map[any]any{"prometheus_counter": map[string]string{
 				"name":      "gohangout_add_filter",
 				"namespace": "rack_a",
 				"help":      "rack_a gohangout add filter counter",
@@ -34,7 +34,7 @@ func TestGetPromCounter(t *testing.T) {
 			want: true,
 		},
 		{
-			config: map[interface{}]interface{}{"prometheus_counter": map[string]string{
+			config: map[any]any{"prometheus_counter": map[string]string{
 				"name":      "gohangout_add_filter",
 				"namespace": "rack_a",
 				"help":      "xxxxxxxxxxx",
@@ -42,7 +42,7 @@ func TestGetPromCounter(t *testing.T) {
 			want: true,
 		},
 		{
-			config: map[interface{}]interface{}{"prometheus_counter": map[string]string{
+			config: map[any]any{"prometheus_counter": map[string]string{
 				"name":      "gohangout_raname_filter",
 				"namespace": "rack_a",
 				"help":      "rack_a gohangout add filter counter",

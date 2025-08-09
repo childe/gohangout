@@ -101,7 +101,7 @@ func (d *SimpleJsonDecoder) string(s string) int {
 	return d.Len() - len0
 }
 
-func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
+func (d *SimpleJsonDecoder) encodeV(v any) error {
 	if v == nil {
 		d.WriteString("null")
 		return nil
@@ -134,7 +134,7 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 		// it could be either string or json.Number
 		d.string(reflect.ValueOf(v).String())
 	case reflect.Map:
-		return d.encodeMap(v.(map[string]interface{}))
+		return d.encodeMap(v.(map[string]any))
 	case reflect.Slice, reflect.Array:
 		return d.encodeSlice(v)
 	default:
@@ -151,7 +151,7 @@ func (d *SimpleJsonDecoder) encodeV(v interface{}) error {
 	return nil
 }
 
-func (d *SimpleJsonDecoder) encodeSlice(value interface{}) error {
+func (d *SimpleJsonDecoder) encodeSlice(value any) error {
 	switch v := value.(type) {
 	case []byte:
 		d.string(string(v))
@@ -202,7 +202,7 @@ func (d *SimpleJsonDecoder) encodeFloat(f float64, bits int) error {
 	return nil
 }
 
-func (d *SimpleJsonDecoder) encodeMap(e map[string]interface{}) error {
+func (d *SimpleJsonDecoder) encodeMap(e map[string]any) error {
 	if e == nil {
 		d.WriteString("null")
 		return nil
@@ -233,7 +233,7 @@ func (d *SimpleJsonDecoder) encodeMap(e map[string]interface{}) error {
 	return nil
 }
 
-func (d *SimpleJsonDecoder) encodeArray(v []interface{}) error {
+func (d *SimpleJsonDecoder) encodeArray(v []any) error {
 	d.WriteByte('[')
 	n := len(v)
 	for i := 0; i < n; i++ {
@@ -246,7 +246,7 @@ func (d *SimpleJsonDecoder) encodeArray(v []interface{}) error {
 	return nil
 }
 
-func (d *SimpleJsonDecoder) Encode(e interface{}) ([]byte, error) {
+func (d *SimpleJsonDecoder) Encode(e any) ([]byte, error) {
 	if err := d.encodeV(e); err != nil {
 		return nil, err
 	}

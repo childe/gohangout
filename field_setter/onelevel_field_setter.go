@@ -11,7 +11,7 @@ func NewOneLevelFieldSetter(field string) *OneLevelFieldSetter {
 	return r
 }
 
-func (fs *OneLevelFieldSetter) SetField(event map[string]interface{}, value interface{}, field string, overwrite bool) map[string]interface{} {
+func (fs *OneLevelFieldSetter) SetField(event map[string]any, value any, field string, overwrite bool) map[string]any {
 	if _, ok := event[fs.field]; !ok || overwrite {
 		event[fs.field] = value
 	}

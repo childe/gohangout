@@ -11,7 +11,7 @@ import (
 )
 
 type KafkaInput struct {
-	config         map[interface{}]interface{}
+	config         map[any]any
 	decorateEvents bool
 
 	messages chan *healer.FullMessage
@@ -26,15 +26,15 @@ func init() {
 	Register("Kafka", newKafkaInput)
 }
 
-func newKafkaInput(config map[interface{}]interface{}) topology.Input {
+func newKafkaInput(config map[any]any) topology.Input {
 	var (
 		codertype      string = "plain"
 		decorateEvents        = false
-		topics         map[interface{}]interface{}
+		topics         map[any]any
 		assign         map[string][]int
 	)
 
-	consumer_settings := make(map[string]interface{})
+	consumer_settings := make(map[string]any)
 	if v, ok := config["consumer_settings"]; !ok {
 		klog.Fatal("kafka input must have consumer_settings")
 	} else {
@@ -47,15 +47,15 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 		}
 	}
 	if v, ok := config["topic"]; ok {
-		topics = v.(map[interface{}]interface{})
+		topics = v.(map[any]any)
 	} else {
 		topics = nil
 	}
 	if v, ok := config["assign"]; ok {
 		assign = make(map[string][]int)
-		for topicName, partitions := range v.(map[interface{}]interface{}) {
-			assign[topicName.(string)] = make([]int, len(partitions.([]interface{})))
-			for i, p := range partitions.([]interface{}) {
+		for topicName, partitions := range v.(map[any]any) {
+			assign[topicName.(string)] = make([]int, len(partitions.([]any)))
+			for i, p := range partitions.([]any) {
 				assign[topicName.(string)][i] = p.(int)
 			}
 		}
@@ -131,7 +131,7 @@ func newKafkaInput(config map[interface{}]interface{}) topology.Input {
 
 // ReadOneEvent implement method in topology.Input.
 // gohangout call this method to get one event and pass it to filter or output
-func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
+func (p *KafkaInput) ReadOneEvent() map[string]any {
 	message, more := <-p.messages
 	if !more {
 		return nil
@@ -143,11 +143,11 @@ func (p *KafkaInput) ReadOneEvent() map[string]interface{} {
 	}
 	event := p.decoder.Decode(message.Message.Value)
 	if p.decorateEvents {
-		kafkaMeta := make(map[string]interface{})
+		kafkaMeta := make(map[string]any)
 		kafkaMeta["topic"] = message.TopicName
 		kafkaMeta["partition"] = message.PartitionID
 		kafkaMeta["offset"] = message.Message.Offset
-		event["@metadata"] = map[string]interface{}{"kafka": kafkaMeta}
+		event["@metadata"] = map[string]any{"kafka": kafkaMeta}
 	}
 	return event
 }

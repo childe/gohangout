@@ -3,13 +3,13 @@ package filter
 import "testing"
 
 func TestReplaceFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := make(map[interface{}]interface{})
-	fields["msg"] = []interface{}{"'", `"`}
+	config := make(map[any]any)
+	fields := make(map[any]any)
+	fields["msg"] = []any{"'", `"`}
 	config["fields"] = fields
 	f := BuildFilter("Replace", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["msg"] = `this is 'cat'`
 
 	event, ok := f.Filter(event)
@@ -22,14 +22,14 @@ func TestReplaceFilter(t *testing.T) {
 		t.Error(event["msg"])
 	}
 
-	config = make(map[interface{}]interface{})
-	fields = make(map[interface{}]interface{})
-	fields["name1"] = []interface{}{"wang", "Wang", 1}
-	fields["name2"] = []interface{}{"en", "eng"}
+	config = make(map[any]any)
+	fields = make(map[any]any)
+	fields["name1"] = []any{"wang", "Wang", 1}
+	fields["name2"] = []any{"en", "eng"}
 	config["fields"] = fields
 	f = BuildFilter("Replace", config)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["name1"] = "wang wangwang"
 	event["name2"] = "wang henhen"
 

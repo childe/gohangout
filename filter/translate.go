@@ -23,7 +23,7 @@ type TranslateConfig struct {
 }
 
 type TranslateFilter struct {
-	config          map[interface{}]interface{}
+	config          map[any]any
 	refreshInterval int
 	source          string
 	target          string
@@ -31,7 +31,7 @@ type TranslateFilter struct {
 	dictionaryPath  string
 
 	// TODO put code to utils
-	dict map[interface{}]interface{}
+	dict map[any]any
 }
 
 func (plugin *TranslateFilter) parseDict() error {
@@ -63,7 +63,7 @@ func (plugin *TranslateFilter) parseDict() error {
 		}
 	}
 
-	dict := make(map[interface{}]interface{})
+	dict := make(map[any]any)
 	err = yaml.Unmarshal(buffer, &dict)
 	if err != nil {
 		return err
@@ -76,14 +76,14 @@ func init() {
 	Register("Translate", newTranslateFilter)
 }
 
-func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
+func newTranslateFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var translateConfig TranslateConfig
 	
 	SafeDecodeConfig("Translate", config, &translateConfig)
 	
 	// Validate required fields
-	ValidateRequiredFields("Translate", map[string]interface{}{
+	ValidateRequiredFields("Translate", map[string]any{
 		"source":           translateConfig.Source,
 		"target":           translateConfig.Target,
 		"dictionary_path":  translateConfig.DictionaryPath,
@@ -118,7 +118,7 @@ func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *TranslateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *TranslateFilter) Filter(event map[string]any) (map[string]any, bool) {
 	o, err := plugin.sourceVR.Render(event)
 	if err != nil || o == nil {
 		return event, false

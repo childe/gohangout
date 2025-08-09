@@ -24,11 +24,11 @@ func hashValue(opts prometheus.CounterOpts) string {
 // Better practice maybe to let it panic, so owner can fix the config when program fails to start.
 // But if user use multi workers to run gohangout, panic are bound to happen, this is bad. So we use a manager to return one counter with save config.
 // Better way is to add {worker: idx} to ConstLabels, but it is too hard to implement it by code.
-func GetPromCounter(config map[interface{}]interface{}) prometheus.Counter {
+func GetPromCounter(config map[any]any) prometheus.Counter {
 	lock.Lock()
 	defer lock.Unlock()
 	if promConf, ok := config["prometheus_counter"]; ok {
-		// promConf := promConf.(map[interface{}]interface{})
+		// promConf := promConf.(map[any]any)
 
 		var opts prometheus.CounterOpts = prometheus.CounterOpts{}
 		err := mapstructure.Decode(promConf, &opts)

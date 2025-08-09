@@ -3,7 +3,7 @@ package field_deleter
 import "regexp"
 
 type FieldDeleter interface {
-	Delete(map[string]interface{})
+	Delete(map[string]any)
 }
 
 func NewFieldDeleter(template string) FieldDeleter {

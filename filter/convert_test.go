@@ -7,8 +7,8 @@ import (
 
 func TestIntConverter(t *testing.T) {
 	type testCase struct {
-		v    interface{}
-		want interface{}
+		v    any
+		want any
 		err  bool
 	}
 
@@ -49,8 +49,8 @@ func TestIntConverter(t *testing.T) {
 
 func TestUIntConverter(t *testing.T) {
 	type testCase struct {
-		v    interface{}
-		want interface{}
+		v    any
+		want any
 		err  bool
 	}
 
@@ -91,8 +91,8 @@ func TestUIntConverter(t *testing.T) {
 
 func TestFloatConverter(t *testing.T) {
 	type testCase struct {
-		v    interface{}
-		want interface{}
+		v    any
+		want any
 		err  bool
 	}
 
@@ -136,8 +136,8 @@ func TestFloatConverter(t *testing.T) {
 
 func TestBoolConverter(t *testing.T) {
 	type testCase struct {
-		v    interface{}
-		want interface{}
+		v    any
+		want any
 		err  bool
 	}
 
@@ -174,15 +174,15 @@ func TestBoolConverter(t *testing.T) {
 }
 
 func TestSettoIfNil(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := make(map[interface{}]interface{})
-	fields["timeTaken"] = map[interface{}]interface{}{
+	config := make(map[any]any)
+	fields := make(map[any]any)
+	fields["timeTaken"] = map[any]any{
 		"to":           "float",
 		"setto_if_nil": 0.0,
 	}
 	config["fields"] = fields
 	f := BuildFilter("Convert", config)
-	event := map[string]interface{}{}
+	event := map[string]any{}
 
 	event, ok := f.Filter(event)
 	t.Log(event)
@@ -197,22 +197,22 @@ func TestSettoIfNil(t *testing.T) {
 }
 
 func TestConvertFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := make(map[interface{}]interface{})
-	fields["id"] = map[interface{}]interface{}{
+	config := make(map[any]any)
+	fields := make(map[any]any)
+	fields["id"] = map[any]any{
 		"to":            "uint",
 		"setto_if_fail": 0,
 	}
-	fields["responseSize"] = map[interface{}]interface{}{
+	fields["responseSize"] = map[any]any{
 		"to":            "int",
 		"setto_if_fail": 0,
 	}
-	fields["timeTaken"] = map[interface{}]interface{}{
+	fields["timeTaken"] = map[any]any{
 		"to":             "float",
 		"remove_if_fail": true,
 	}
 	// add to string test case
-	fields["toString"] = map[interface{}]interface{}{
+	fields["toString"] = map[any]any{
 		"to":             "string",
 		"remove_if_fail": true,
 	}
@@ -220,7 +220,7 @@ func TestConvertFilter(t *testing.T) {
 	f := BuildFilter("Convert", config)
 
 	case1 := map[string]int{"a": 5, "b": 7}
-	event := map[string]interface{}{
+	event := map[string]any{
 		"id":           "12345678901234567890",
 		"responseSize": "10",
 		"timeTaken":    "0.010",
@@ -247,7 +247,7 @@ func TestConvertFilter(t *testing.T) {
 	if event["toString"].(string) != "{\"a\":5,\"b\":7}" {
 		t.Error("toString is unexpected")
 	}
-	event = map[string]interface{}{
+	event = map[string]any{
 		"responseSize": "10.1",
 		"timeTaken":    "abcd",
 		"toString":     "huangjacky",

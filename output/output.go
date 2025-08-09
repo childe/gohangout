@@ -9,7 +9,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type BuildOutputFunc func(map[interface{}]interface{}) topology.Output
+type BuildOutputFunc func(map[any]any) topology.Output
 
 var registeredOutput map[string]BuildOutputFunc = make(map[string]BuildOutputFunc)
 
@@ -23,7 +23,7 @@ func Register(outputType string, bf BuildOutputFunc) {
 }
 
 // BuildOutput builds OutputBox. it firstly tries built-in plugin, and then try 3rd party plugin
-func BuildOutput(outputType string, config map[interface{}]interface{}) *topology.OutputBox {
+func BuildOutput(outputType string, config map[any]any) *topology.OutputBox {
 	var output topology.Output
 	var err error
 	if v, ok := registeredOutput[outputType]; ok {
@@ -43,7 +43,7 @@ func BuildOutput(outputType string, config map[interface{}]interface{}) *topolog
 	}
 }
 
-func getOutputFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Output, error) {
+func getOutputFromPlugin(pluginPath string, config map[any]any) (topology.Output, error) {
 	p, err := plugin.Open(pluginPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not open %s: %v", pluginPath, err)
@@ -53,7 +53,7 @@ func getOutputFromPlugin(pluginPath string, config map[interface{}]interface{}) 
 		return nil, fmt.Errorf("could not find `New` function in %s: %s", pluginPath, err)
 	}
 
-	f, ok := newFunc.(func(map[interface{}]interface{}) interface{})
+	f, ok := newFunc.(func(map[any]any) any)
 	if !ok {
 		return nil, fmt.Errorf("`New` func in %s format error", pluginPath)
 	}

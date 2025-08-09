@@ -9,8 +9,8 @@ import (
 
 func TestInJsonpath(t *testing.T) {
 	var condition string
-	var event map[string]interface{} = make(map[string]interface{})
-	event["tags"] = []interface{}{"app", "error", 10, 11.11}
+	var event map[string]any = make(map[string]any)
+	event["tags"] = []any{"app", "error", 10, 11.11}
 
 	// single test
 	condition = `IN($.tags,"error")`
@@ -52,7 +52,7 @@ func TestNilInEQ(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse %s error", condition)
 	}
-	event := map[string]interface{}{"a": nil}
+	event := map[string]any{"a": nil}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("pass failed. `%s` %#v", condition, event)
@@ -73,7 +73,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	d := json.NewDecoder(strings.NewReader(`{"a":1}`))
 	d.UseNumber()
 	d.Decode(&event)
@@ -89,7 +89,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	d = json.NewDecoder(strings.NewReader(`{"a":1.1}`))
 	d.UseNumber()
 	d.Decode(&event)
@@ -105,7 +105,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	d = json.NewDecoder(strings.NewReader(`{"a":1.1}`))
 	d.UseNumber()
 	d.Decode(&event)
@@ -121,7 +121,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	d = json.NewDecoder(strings.NewReader(`{"a":1}`))
 	d.UseNumber()
 	d.Decode(&event)
@@ -137,7 +137,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	d = json.NewDecoder(strings.NewReader(`{"a":1}`))
 	d.Decode(&event)
 	pass = root.Pass(event)
@@ -152,7 +152,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	d = json.NewDecoder(strings.NewReader(`{"a":1}`))
 	d.Decode(&event)
 	pass = root.Pass(event)
@@ -167,7 +167,7 @@ func TestJsonNumberInEQ(t *testing.T) {
 		t.Fatalf("parse %s error", condition)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	d = json.NewDecoder(strings.NewReader(`{"a":1.0}`))
 	d.Decode(&event)
 	pass = root.Pass(event)
@@ -191,8 +191,8 @@ func TestEQJsonpathSingleCondition(t *testing.T) {
 		t.Errorf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "liu"}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("pass failed. `%s` %#v", condition, event)
@@ -206,8 +206,8 @@ func TestEQJsonpath(t *testing.T) {
 		t.Errorf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "liu"}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("pass failed. `%s` %#v", condition, event)
@@ -221,8 +221,8 @@ func TestHasPrefixJsonpath(t *testing.T) {
 		t.Errorf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "ji", "last": "liuu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "ji", "last": "liuu"}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("pass failed. `%s` %#v", condition, event)
@@ -236,8 +236,8 @@ func TestHasSuffixJsonpath(t *testing.T) {
 		t.Errorf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "ji", "last": "uliu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "ji", "last": "uliu"}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("pass failed. `%s` %#v", condition, event)
@@ -251,8 +251,8 @@ func TestMatchJsonpath(t *testing.T) {
 		t.Errorf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "liu"}
 	event["fullname"] = "liu,jia"
 	pass := root.Pass(event)
 	if !pass {
@@ -267,8 +267,8 @@ func TestContainsJsonpath(t *testing.T) {
 		t.Errorf("parse %s error", condition)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "ji", "last": "uliu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "ji", "last": "uliu"}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("pass failed. `%s` %#v", condition, event)
@@ -298,15 +298,15 @@ func TestSuccessiveNot(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event := make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event := make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "liu"}
 	pass := root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "XXX"}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -318,7 +318,7 @@ func TestComplexCondition(t *testing.T) {
 		condition string
 		root      *OPNode
 		err       error
-		event     map[string]interface{}
+		event     map[string]any
 		pass      bool
 	)
 	condition = `(EQ(namespace,"elasticsearch") && EQ(kubernetes.container.name,"nginx")) || (EQ(namespace,"kibana") && EQ(kubernetes.container.name,"nginx-100014379"))`
@@ -328,7 +328,7 @@ func TestComplexCondition(t *testing.T) {
 	}
 
 	// pass
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["namespace"] = "elasticsearch"
 	event["kubernetes.container.name"] = "nginx"
 
@@ -338,7 +338,7 @@ func TestComplexCondition(t *testing.T) {
 	}
 
 	// not pass
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["namespace"] = "elasticsearch"
 	event["kubernetes.container.name"] = "nginx-100014379"
 
@@ -353,12 +353,12 @@ func TestParseCondition(t *testing.T) {
 		condition string
 		root      *OPNode
 		err       error
-		event     map[string]interface{}
+		event     map[string]any
 		pass      bool
 	)
 
-	config := make(map[interface{}]interface{})
-	conditions := make([]interface{}, 3)
+	config := make(map[any]any)
+	conditions := make([]any, 3)
 	conditions[0] = "{{if .name}}y{{end}}"
 	conditions[1] = "{{if .name.first}}y{{end}}"
 	conditions[2] = `{{if eq .name.first "dehua"}}y{{end}}`
@@ -366,9 +366,9 @@ func TestParseCondition(t *testing.T) {
 	f := NewConditionFilter(config)
 
 	// should drop
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Now().Unix()
-	event["name"] = map[string]interface{}{"first": "dehua"}
+	event["name"] = map[string]any{"first": "dehua"}
 
 	pass = f.Pass(event)
 
@@ -377,9 +377,9 @@ func TestParseCondition(t *testing.T) {
 	}
 
 	// should not drop
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Now().Unix()
-	event["name"] = map[string]interface{}{"last": "liu"}
+	event["name"] = map[string]any{"last": "liu"}
 
 	pass = f.Pass(event)
 
@@ -394,8 +394,8 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "jia"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -407,15 +407,15 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
-	event["user"] = map[string]interface{}{"name": "liujia"}
+	event = make(map[string]any)
+	event["user"] = map[string]any{"name": "liujia"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
-	event["user"] = map[string]interface{}{"name": "lujia"}
+	event = make(map[string]any)
+	event["user"] = map[string]any{"name": "lujia"}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -429,14 +429,14 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["name"] = "liujia"
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["name"] = nil
 	pass = root.Pass(event)
 	if pass {
@@ -449,7 +449,7 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["name"] = "liujia"
 	pass = root.Pass(event)
 	if pass {
@@ -463,8 +463,8 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "XX"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "XX"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -477,8 +477,8 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "liu"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -492,7 +492,7 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["path"] = "/var/log/messages"
 	pass = root.Pass(event)
 	if !pass {
@@ -507,15 +507,15 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "liu"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "liu"}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "XXX"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -571,15 +571,15 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "jia", "last": "XXX"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "jia", "last": "XXX"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
-	event["name"] = map[string]interface{}{"first": "XXX", "last": "liu"}
+	event = make(map[string]any)
+	event["name"] = map[string]any{"first": "XXX", "last": "liu"}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -592,21 +592,21 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["via"] = "abc"
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["XXX"] = "ak"
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["via"] = "ak"
 	pass = root.Pass(event)
 	if pass {
@@ -620,31 +620,31 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = map[string]interface{}{"a": "", "b": "", "c": ""}
+	event = map[string]any{"a": "", "b": "", "c": ""}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = map[string]interface{}{"a": "", "b": ""}
+	event = map[string]any{"a": "", "b": ""}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = map[string]interface{}{"a": "", "c": ""}
+	event = map[string]any{"a": "", "c": ""}
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = map[string]interface{}{"b": "", "c": ""}
+	event = map[string]any{"b": "", "c": ""}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = map[string]interface{}{"a": ""}
+	event = map[string]any{"a": ""}
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
@@ -657,14 +657,14 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Now()
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Now().Add(time.Duration(time.Second * 86500))
 	pass = root.Pass(event)
 	if !pass {
@@ -678,13 +678,13 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Now()
 	pass = root.Pass(event)
 	if !pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Now().Add(time.Duration(time.Second * -86500))
 	pass = root.Pass(event)
 	if pass {
@@ -698,13 +698,13 @@ func TestParseCondition(t *testing.T) {
 		t.Errorf("parse %s error: %s", condition, err)
 	}
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["via"] = `"ak"`
 	pass = root.Pass(event)
 	if pass {
 		t.Errorf("`%s` %#v", condition, event)
 	}
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["via"] = `ak`
 	pass = root.Pass(event)
 	if !pass {

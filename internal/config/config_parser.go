@@ -9,13 +9,13 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type Config map[string]interface{}
+type Config map[string]any
 
 type Parser interface {
-	parse(filename string) (map[string]interface{}, error)
+	parse(filename string) (map[string]any, error)
 }
 
-func ParseConfig(filename string) (map[string]interface{}, error) {
+func ParseConfig(filename string) (map[string]any, error) {
 	lowerFilename := strings.ToLower(filename)
 	if strings.HasSuffix(lowerFilename, ".yaml") || strings.HasSuffix(lowerFilename, ".yml") {
 		yp := &YamlParser{}
@@ -25,7 +25,7 @@ func ParseConfig(filename string) (map[string]interface{}, error) {
 }
 
 // remove sensitive info before output
-func RemoveSensitiveInfo(config map[string]interface{}) string {
+func RemoveSensitiveInfo(config map[string]any) string {
 	re := regexp.MustCompile(`(.*password:\s+)(.*)`)
 	re2 := regexp.MustCompile(`(http(s)?://\w+:)\w+`)
 

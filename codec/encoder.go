@@ -9,7 +9,7 @@ import (
 )
 
 type Encoder interface {
-	Encode(interface{}) ([]byte, error)
+	Encode(any) ([]byte, error)
 }
 
 func NewEncoder(t string) Encoder {
@@ -39,5 +39,5 @@ func NewEncoder(t string) Encoder {
 	if err != nil {
 		klog.Fatalf("could not find New function in %s: %s", t, err)
 	}
-	return newFunc.(func() interface{})().(Encoder)
+	return newFunc.(func() any)().(Encoder)
 }

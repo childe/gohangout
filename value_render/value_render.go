@@ -20,7 +20,7 @@ var ErrNotExist = fmt.Errorf("field does not exist")
 var ErrInvalidType = fmt.Errorf("field is not a valid type")
 
 type ValueRender interface {
-	Render(map[string]interface{}) (value interface{}, err error)
+	Render(map[string]any) (value any, err error)
 }
 
 // getValueRender matches all regexp pattern and return a ValueRender

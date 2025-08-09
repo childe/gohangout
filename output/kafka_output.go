@@ -15,7 +15,7 @@ func init() {
 }
 
 type KafkaOutput struct {
-	config map[interface{}]interface{}
+	config map[any]any
 
 	encoder codec.Encoder
 
@@ -23,7 +23,7 @@ type KafkaOutput struct {
 	key      value_render.ValueRender
 }
 
-func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
+func newKafkaOutput(config map[any]any) topology.Output {
 	p := &KafkaOutput{
 		config: config,
 	}
@@ -38,11 +38,11 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 	if !ok {
 		klog.Fatal("kafka output must have producer_settings")
 	}
-	newPc := make(map[string]interface{})
-	for k, v := range pc.(map[interface{}]interface{}) {
+	newPc := make(map[string]any)
+	for k, v := range pc.(map[any]any) {
 		newPc[k.(string)] = v
 	}
-	producer_settings := make(map[string]interface{})
+	producer_settings := make(map[string]any)
 	if b, err := json.Marshal(newPc); err != nil {
 		klog.Fatalf("could not init kafka producer config: %v", err)
 	} else {
@@ -73,7 +73,7 @@ func newKafkaOutput(config map[interface{}]interface{}) topology.Output {
 	return p
 }
 
-func (p *KafkaOutput) Emit(event map[string]interface{}) {
+func (p *KafkaOutput) Emit(event map[string]any) {
 	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		klog.Errorf("marshal %v error: %s", event, err)

@@ -19,11 +19,11 @@ type replaceConfig struct {
 
 // ReplaceConfig defines the configuration structure for Replace filter
 type ReplaceFilterConfig struct {
-	Fields map[string][]interface{} `mapstructure:"fields"`
+	Fields map[string][]any `mapstructure:"fields"`
 }
 
 type ReplaceFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields []replaceConfig
 }
 
@@ -31,14 +31,14 @@ func init() {
 	Register("Replace", newReplaceFilter)
 }
 
-func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
+func newReplaceFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var replaceFilterConfig ReplaceFilterConfig
 
 	SafeDecodeConfig("Replace", config, &replaceFilterConfig)
 
 	// Validate required fields
-	ValidateRequiredFields("Replace", map[string]interface{}{
+	ValidateRequiredFields("Replace", map[string]any{
 		"fields": replaceFilterConfig.Fields,
 	})
 	if len(replaceFilterConfig.Fields) == 0 {
@@ -100,7 +100,7 @@ func newReplaceFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 // 如果字段不是字符串, 返回false, 其它返回true
-func (p *ReplaceFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (p *ReplaceFilter) Filter(event map[string]any) (map[string]any, bool) {
 	success := true
 	for _, f := range p.fields {
 		value, err := f.v.Render(event)

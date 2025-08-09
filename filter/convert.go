@@ -14,32 +14,32 @@ import (
 )
 
 type Converter interface {
-	convert(v interface{}) (interface{}, error)
+	convert(v any) (any, error)
 }
 
 var ErrConvertUnknownFormat error = errors.New("unknown format")
 
 type IntConverter struct{}
 
-func (c *IntConverter) convert(v interface{}) (interface{}, error) {
+func (c *IntConverter) convert(v any) (any, error) {
 	return cast.ToInt64E(v)
 }
 
 type UIntConverter struct{}
 
-func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
+func (c *UIntConverter) convert(v any) (any, error) {
 	return cast.ToUint64E(v)
 }
 
 type FloatConverter struct{}
 
-func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
+func (c *FloatConverter) convert(v any) (any, error) {
 	return cast.ToFloat64E(v)
 }
 
 type BoolConverter struct{}
 
-func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
+func (c *BoolConverter) convert(v any) (any, error) {
 	if v, ok := v.(string); ok {
 		rst, err := strconv.ParseBool(v)
 		if err != nil {
@@ -53,7 +53,7 @@ func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
 
 type StringConverter struct{}
 
-func (c *StringConverter) convert(v interface{}) (interface{}, error) {
+func (c *StringConverter) convert(v any) (any, error) {
 	if r, ok := v.(json.Number); ok {
 		return r.String(), nil
 	}
@@ -71,8 +71,8 @@ func (c *StringConverter) convert(v interface{}) (interface{}, error) {
 
 type ArrayIntConverter struct{}
 
-func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
-	if v1, ok1 := v.([]interface{}); ok1 {
+func (c *ArrayIntConverter) convert(v any) (any, error) {
+	if v1, ok1 := v.([]any); ok1 {
 		var t2 = []int{}
 		for _, i := range v1 {
 			j, err := i.(json.Number).Int64()
@@ -89,8 +89,8 @@ func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
 
 type ArrayFloatConverter struct{}
 
-func (c *ArrayFloatConverter) convert(v interface{}) (interface{}, error) {
-	if v1, ok1 := v.([]interface{}); ok1 {
+func (c *ArrayFloatConverter) convert(v any) (any, error) {
+	if v1, ok1 := v.([]any); ok1 {
 		var t2 = []float64{}
 		for _, i := range v1 {
 			j, err := i.(json.Number).Float64()
@@ -108,16 +108,16 @@ type ConveterAndRender struct {
 	converter    Converter
 	valueRender  value_render.ValueRender
 	removeIfFail bool
-	settoIfFail  interface{}
-	settoIfNil   interface{}
+	settoIfFail  any
+	settoIfNil   any
 }
 
 // FieldConvertConfig defines the configuration for a single field conversion
 type FieldConvertConfig struct {
 	To           string      `mapstructure:"to"`
 	RemoveIfFail bool        `mapstructure:"remove_if_fail"`
-	SettoIfFail  interface{} `mapstructure:"setto_if_fail"`
-	SettoIfNil   interface{} `mapstructure:"setto_if_nil"`
+	SettoIfFail  any `mapstructure:"setto_if_fail"`
+	SettoIfNil   any `mapstructure:"setto_if_nil"`
 }
 
 // ConvertConfig defines the configuration structure for Convert filter
@@ -126,7 +126,7 @@ type ConvertConfig struct {
 }
 
 type ConvertFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields map[field_setter.FieldSetter]ConveterAndRender
 }
 
@@ -134,7 +134,7 @@ func init() {
 	Register("Convert", newConvertFilter)
 }
 
-func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
+func newConvertFilter(config map[any]any) topology.Filter {
 	plugin := &ConvertFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
@@ -201,7 +201,7 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *ConvertFilter) Filter(event map[string]any) (map[string]any, bool) {
 	for fs, conveterAndRender := range plugin.fields {
 		originanV, err := conveterAndRender.valueRender.Render(event)
 		if err != nil || originanV == nil {

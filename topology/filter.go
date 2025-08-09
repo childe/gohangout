@@ -12,7 +12,7 @@ import (
 )
 
 type Filter interface {
-	Filter(map[string]interface{}) (map[string]interface{}, bool)
+	Filter(map[string]any) (map[string]any, bool)
 }
 
 type FilterBox struct {
@@ -22,14 +22,14 @@ type FilterBox struct {
 
 	promCounter prometheus.Counter
 
-	config map[interface{}]interface{}
+	config map[any]any
 
 	failTag      string
 	removeFields []field_deleter.FieldDeleter
 	addFields    map[field_setter.FieldSetter]value_render.ValueRender
 }
 
-func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
+func NewFilterBox(config map[any]any) *FilterBox {
 	f := FilterBox{
 		config:          config,
 		conditionFilter: condition_filter.NewConditionFilter(config),
@@ -44,7 +44,7 @@ func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
 
 	if remove_fields, ok := config["remove_fields"]; ok {
 		f.removeFields = make([]field_deleter.FieldDeleter, 0)
-		for _, field := range remove_fields.([]interface{}) {
+		for _, field := range remove_fields.([]any) {
 			f.removeFields = append(f.removeFields, field_deleter.NewFieldDeleter(field.(string)))
 		}
 	} else {
@@ -53,7 +53,7 @@ func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
 
 	if add_fields, ok := config["add_fields"]; ok {
 		f.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
-		for k, v := range add_fields.(map[interface{}]interface{}) {
+		for k, v := range add_fields.(map[any]any) {
 			fieldSetter := field_setter.NewFieldSetter(k.(string))
 			if fieldSetter == nil {
 				klog.Fatalf("could build field setter from %s", k.(string))
@@ -66,7 +66,7 @@ func NewFilterBox(config map[interface{}]interface{}) *FilterBox {
 	return &f
 }
 
-func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[string]interface{} {
+func (f *FilterBox) PostProcess(event map[string]any, success bool) map[string]any {
 	if success {
 		for fs, r := range f.addFields {
 			v, _ := r.Render(event)
@@ -81,9 +81,9 @@ func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[
 		if f.failTag != "" {
 			if tags, ok := event["tags"]; ok {
 				if reflect.TypeOf(tags).Kind() == reflect.String {
-					event["tags"] = []interface{}{tags.(string), f.failTag}
+					event["tags"] = []any{tags.(string), f.failTag}
 				} else if reflect.TypeOf(tags).Kind() == reflect.Array {
-					event["tags"] = append(tags.([]interface{}), f.failTag)
+					event["tags"] = append(tags.([]any), f.failTag)
 				}
 			} else {
 				event["tags"] = f.failTag
@@ -93,7 +93,7 @@ func (f *FilterBox) PostProcess(event map[string]interface{}, success bool) map[
 	return event
 }
 
-func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{} {
+func (b *FilterBox) Process(event map[string]any) map[string]any {
 	var rst bool
 
 	if b.conditionFilter.Pass(event) {
@@ -109,21 +109,21 @@ func (b *FilterBox) Process(event map[string]interface{}) map[string]interface{}
 	return event
 }
 
-type buildFilterFunc func(filterType string, config map[interface{}]interface{}) Filter
+type buildFilterFunc func(filterType string, config map[any]any) Filter
 
-func BuildFilterBoxes(config map[string]interface{}, buildFilter buildFilterFunc) []*FilterBox {
+func BuildFilterBoxes(config map[string]any, buildFilter buildFilterFunc) []*FilterBox {
 	if _, ok := config["filters"]; !ok {
 		return nil
 	}
 
-	filtersI := config["filters"].([]interface{})
+	filtersI := config["filters"].([]any)
 	filters := make([]Filter, len(filtersI))
 
 	for i := 0; i < len(filters); i++ {
-		for filterTypeI, filterConfigI := range filtersI[i].(map[interface{}]interface{}) {
+		for filterTypeI, filterConfigI := range filtersI[i].(map[any]any) {
 			filterType := filterTypeI.(string)
 			klog.Infof("filter type: %s", filterType)
-			filterConfig := filterConfigI.(map[interface{}]interface{})
+			filterConfig := filterConfigI.(map[any]any)
 			klog.Infof("filter config: %v", filterConfig)
 
 			filterPlugin := buildFilter(filterType, filterConfig)
@@ -134,8 +134,8 @@ func BuildFilterBoxes(config map[string]interface{}, buildFilter buildFilterFunc
 
 	boxes := make([]*FilterBox, len(filters))
 	for i := 0; i < len(filters); i++ {
-		for _, cfg := range filtersI[i].(map[interface{}]interface{}) {
-			boxes[i] = NewFilterBox(cfg.(map[interface{}]interface{}))
+		for _, cfg := range filtersI[i].(map[any]any) {
+			boxes[i] = NewFilterBox(cfg.(map[any]any))
 			boxes[i].Filter = filters[i]
 		}
 	}

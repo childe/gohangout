@@ -191,7 +191,7 @@ type GrokConfig struct {
 }
 
 type GrokFilter struct {
-	config    map[interface{}]interface{}
+	config    map[any]any
 	overwrite bool
 	groks     []*Grok
 	target    string
@@ -203,7 +203,7 @@ func init() {
 	Register("Grok", newGrokFilter)
 }
 
-func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
+func newGrokFilter(config map[any]any) topology.Filter {
 	// Parse configuration using mapstructure
 	var grokConfig GrokConfig
 	// Set default values
@@ -247,7 +247,7 @@ func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
 	return gf
 }
 
-func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (gf *GrokFilter) Filter(event map[string]any) (map[string]any, bool) {
 	var input string
 	inputI, err := gf.vr.Render(event)
 	if err != nil || inputI == nil {
@@ -275,7 +275,7 @@ func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface
 				}
 			}
 		} else {
-			target := make(map[string]interface{})
+			target := make(map[string]any)
 			for field, value := range rst {
 				target[field] = value
 			}
