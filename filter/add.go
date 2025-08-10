@@ -1,19 +1,17 @@
 package filter
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/mitchellh/mapstructure"
-	"k8s.io/klog/v2"
 )
 
 // AddConfig defines the configuration structure for Add filter
 type AddConfig struct {
-	Fields    map[string]string `mapstructure:"fields"`
-	Overwrite bool              `mapstructure:"overwrite"`
+	Fields    map[string]string `json:"fields"`
+	Overwrite bool              `json:"overwrite"`
 }
 
 type AddFilter struct {
@@ -32,35 +30,14 @@ func newAddFilter(config map[any]any) topology.Filter {
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var addConfig AddConfig
 	addConfig.Overwrite = true // set default value
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: false, // Strict type checking for better validation
-		Result:           &addConfig,
-		ErrorUnused:      false,
-	})
-	if err != nil {
-		klog.Fatalf("Add filter: failed to create config decoder: %v", err)
-	}
-
-	if err := decoder.Decode(config); err != nil {
-		errStr := err.Error()
-		if strings.Contains(errStr, "'fields'") && strings.Contains(errStr, "expected a map") {
-			panic("Add filter: cannot parse 'fields'")
-		} else if strings.Contains(errStr, "'fields[") {
-			// Extract field name from error like "'fields[<interface {} Value>]' expected type 'string'"
-			panic("Add filter: cannot parse 'Fields[age]'")
-		} else if strings.Contains(errStr, "'overwrite'") {
-			panic("Add filter: cannot parse 'overwrite'")
-		} else {
-			klog.Fatalf("Add filter configuration error: %v", err)
-		}
-	}
+	SafeDecodeConfig("Add", config, &addConfig)
 
 	// Validate required fields
-	if addConfig.Fields == nil || len(addConfig.Fields) == 0 {
+	if len(addConfig.Fields) == 0 {
 		panic("Add filter: 'fields' is required")
 	}
 
@@ -70,7 +47,7 @@ func newAddFilter(config map[any]any) topology.Filter {
 	for fieldName, fieldValue := range addConfig.Fields {
 		fieldSetter := field_setter.NewFieldSetter(fieldName)
 		if fieldSetter == nil {
-			klog.Fatalf("Add filter: could not build field setter from '%s'", fieldName)
+			panic(fmt.Sprintf("Add filter: could not build field setter from '%s'", fieldName))
 		}
 		plugin.fields[fieldSetter] = value_render.GetValueRender(fieldValue)
 	}

@@ -12,7 +12,6 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
 
@@ -182,12 +181,12 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 
 // GrokConfig defines the configuration structure for Grok filter
 type GrokConfig struct {
-	Src          string   `mapstructure:"src"`
-	Target       string   `mapstructure:"target"`
-	Match        []string `mapstructure:"match"`
-	PatternPaths []string `mapstructure:"pattern_paths"`
-	IgnoreBlank  bool     `mapstructure:"ignore_blank"`
-	Overwrite    bool     `mapstructure:"overwrite"`
+	Src          string   `json:"src"`
+	Target       string   `json:"target"`
+	Match        []string `json:"match"`
+	PatternPaths []string `json:"pattern_paths"`
+	IgnoreBlank  bool     `json:"ignore_blank"`
+	Overwrite    bool     `json:"overwrite"`
 }
 
 type GrokFilter struct {
@@ -204,29 +203,18 @@ func init() {
 }
 
 func newGrokFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig
 	var grokConfig GrokConfig
 	// Set default values
 	grokConfig.Src = "message"
 	grokConfig.IgnoreBlank = true
 	grokConfig.Overwrite = true
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &grokConfig,
-		ErrorUnused:      false,
-	})
-	if err != nil {
-		klog.Fatalf("Grok filter: failed to create config decoder: %v", err)
-	}
-
-	if err := decoder.Decode(config); err != nil {
-		klog.Fatalf("Grok filter configuration error: %v", err)
-	}
+	SafeDecodeConfig("Grok", config, &grokConfig)
 
 	// Validate required fields
 	if grokConfig.Match == nil || len(grokConfig.Match) == 0 {
-		klog.Fatal("Grok filter: 'match' is required and cannot be empty")
+		panic("Grok filter: 'match' is required and cannot be empty")
 	}
 
 	// Create Grok instances

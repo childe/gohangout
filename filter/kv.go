@@ -10,14 +10,14 @@ import (
 
 // KVConfig defines the configuration structure for KV filter
 type KVConfig struct {
-	Src         string   `mapstructure:"src"`
-	Target      string   `mapstructure:"target"`
-	FieldSplit  string   `mapstructure:"field_split"`
-	ValueSplit  string   `mapstructure:"value_split"`
-	Trim        string   `mapstructure:"trim"`
-	TrimKey     string   `mapstructure:"trim_key"`
-	IncludeKeys []string `mapstructure:"include_keys"`
-	ExcludeKeys []string `mapstructure:"exclude_keys"`
+	Src         string   `json:"src"`
+	Target      string   `json:"target"`
+	FieldSplit  string   `json:"field_split"`
+	ValueSplit  string   `json:"value_split"`
+	Trim        string   `json:"trim"`
+	TrimKey     string   `json:"trim_key"`
+	IncludeKeys []string `json:"include_keys"`
+	ExcludeKeys []string `json:"exclude_keys"`
 }
 
 type KVFilter struct {
@@ -38,7 +38,7 @@ func init() {
 }
 
 func newKVFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var kvConfig KVConfig
 
 	SafeDecodeConfig("KV", config, &kvConfig)

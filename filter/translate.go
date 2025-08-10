@@ -16,10 +16,10 @@ import (
 
 // TranslateConfig defines the configuration structure for Translate filter
 type TranslateConfig struct {
-	Source          string `mapstructure:"source"`
-	Target          string `mapstructure:"target"`
-	DictionaryPath  string `mapstructure:"dictionary_path"`
-	RefreshInterval int    `mapstructure:"refresh_interval"`
+	Source          string `json:"source"`
+	Target          string `json:"target"`
+	DictionaryPath  string `json:"dictionary_path"`
+	RefreshInterval int    `json:"refresh_interval"`
 }
 
 type TranslateFilter struct {
@@ -77,7 +77,7 @@ func init() {
 }
 
 func newTranslateFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var translateConfig TranslateConfig
 	
 	SafeDecodeConfig("Translate", config, &translateConfig)

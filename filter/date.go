@@ -12,9 +12,7 @@ import (
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/mitchellh/mapstructure"
 	"github.com/relvacode/iso8601" // https://pkg.go.dev/github.com/relvacode/iso8601#section-readme
-	"k8s.io/klog/v2"
 )
 
 type DateParser interface {
@@ -156,12 +154,12 @@ func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 
 // DateConfig defines the configuration structure for Date filter
 type DateConfig struct {
-	Src       string   `mapstructure:"src"`
-	Target    string   `mapstructure:"target"`
-	Location  string   `mapstructure:"location"`
-	AddYear   bool     `mapstructure:"add_year"`
-	Overwrite bool     `mapstructure:"overwrite"`
-	Formats   []string `mapstructure:"formats"`
+	Src       string   `json:"src"`
+	Target    string   `json:"target"`
+	Location  string   `json:"location"`
+	AddYear   bool     `json:"add_year"`
+	Overwrite bool     `json:"overwrite"`
+	Formats   []string `json:"formats"`
 }
 
 type DateFilter struct {
@@ -184,32 +182,21 @@ func newDateFilter(config map[any]any) topology.Filter {
 		dateParsers: make([]DateParser, 0),
 	}
 
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig
 	var dateConfig DateConfig
 	// Set default values
 	dateConfig.Target = "@timestamp"
 	dateConfig.Overwrite = true
 	dateConfig.AddYear = false
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &dateConfig,
-		ErrorUnused:      false,
-	})
-	if err != nil {
-		klog.Fatalf("Date filter: failed to create config decoder: %v", err)
-	}
-
-	if err := decoder.Decode(config); err != nil {
-		klog.Fatalf("Date filter configuration error: %v", err)
-	}
+	SafeDecodeConfig("Date", config, &dateConfig)
 
 	// Validate required fields
 	if dateConfig.Src == "" {
-		klog.Fatal("Date filter: 'src' is required")
+		panic("Date filter: 'src' is required")
 	}
 	if dateConfig.Formats == nil || len(dateConfig.Formats) == 0 {
-		klog.Fatal("Date filter: 'formats' is required and cannot be empty")
+		panic("Date filter: 'formats' is required and cannot be empty")
 	}
 
 	plugin.overwrite = dateConfig.Overwrite
@@ -221,9 +208,10 @@ func newDateFilter(config map[any]any) topology.Filter {
 	// Parse location
 	var location *time.Location
 	if dateConfig.Location != "" {
+		var err error
 		location, err = time.LoadLocation(dateConfig.Location)
 		if err != nil {
-			klog.Fatalf("Date filter: load location error: %s", err)
+			panic(fmt.Sprintf("Date filter: load location error: %s", err))
 		}
 	}
 

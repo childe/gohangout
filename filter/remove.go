@@ -8,7 +8,7 @@ import (
 
 // RemoveConfig defines the configuration structure for Remove filter
 type RemoveConfig struct {
-	Fields []string `mapstructure:"fields"`
+	Fields []string `json:"fields"`
 }
 
 type RemoveFilter struct {
@@ -21,7 +21,7 @@ func init() {
 }
 
 func newRemoveFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var removeConfig RemoveConfig
 
 	SafeDecodeConfig("Remove", config, &removeConfig)

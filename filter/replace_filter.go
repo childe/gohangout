@@ -1,6 +1,8 @@
 package filter
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/childe/gohangout/field_setter"
@@ -19,7 +21,7 @@ type replaceConfig struct {
 
 // ReplaceConfig defines the configuration structure for Replace filter
 type ReplaceFilterConfig struct {
-	Fields map[string][]any `mapstructure:"fields"`
+	Fields map[string][]any `json:"fields"`
 }
 
 type ReplaceFilter struct {
@@ -32,7 +34,7 @@ func init() {
 }
 
 func newReplaceFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var replaceFilterConfig ReplaceFilterConfig
 
 	SafeDecodeConfig("Replace", config, &replaceFilterConfig)
@@ -81,8 +83,14 @@ func newReplaceFilter(config map[any]any) topology.Filter {
 				count = int(countFloat)
 			} else if countInt, ok := replaceParams[2].(int); ok {
 				count = countInt
+			} else if countNum, ok := replaceParams[2].(json.Number); ok {
+				if intVal, err := countNum.Int64(); err == nil {
+					count = int(intVal)
+				} else {
+					panic(fmt.Sprintf("Replace filter: field '%s' parameter 3 (count) must be integer, got invalid number %s", fieldName, countNum.String()))
+				}
 			} else {
-				klog.Fatalf("Replace filter: field '%s' parameter 3 (count) must be integer, got %T", fieldName, replaceParams[2])
+				panic(fmt.Sprintf("Replace filter: field '%s' parameter 3 (count) must be integer, got %T", fieldName, replaceParams[2]))
 			}
 		}
 

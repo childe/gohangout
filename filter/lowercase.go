@@ -12,7 +12,7 @@ import (
 
 // LowercaseConfig defines the configuration structure for Lowercase filter
 type LowercaseConfig struct {
-	Fields []string `mapstructure:"fields"`
+	Fields []string `json:"fields"`
 }
 
 type LowercaseFilter struct {
@@ -25,7 +25,7 @@ func init() {
 }
 
 func newLowercaseFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var lowercaseConfig LowercaseConfig
 
 	SafeDecodeConfig("Lowercase", config, &lowercaseConfig)

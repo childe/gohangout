@@ -1,13 +1,12 @@
 package filter
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/mitchellh/mapstructure"
-	"k8s.io/klog/v2"
 )
 
 type rs struct {
@@ -38,27 +37,29 @@ func newGsubFilter(config map[any]any) topology.Filter {
 	gsubFilter := &GsubFilter{}
 	fields, ok := config["fields"]
 	if !ok {
-		klog.Fatal("Gsub filter: 'fields' is required")
+		panic("Gsub filter: 'fields' is required")
 	}
 
-	err := mapstructure.Decode(fields, &gsubFilter.fields)
-	if err != nil {
-		klog.Fatalf("Gsub filter configuration error: %v", err)
+	// Extract the decoded fields
+	var tempStruct struct {
+		Fields []*oneFieldConfig `json:"fields"`
 	}
+	SafeDecodeConfig("Gsub", map[any]any{"fields": fields}, &tempStruct)
+	gsubFilter.fields = tempStruct.Fields
 
 	if len(gsubFilter.fields) == 0 {
-		klog.Fatal("Gsub filter: 'fields' cannot be empty")
+		panic("Gsub filter: 'fields' cannot be empty")
 	}
 
 	for _, fieldConfig := range gsubFilter.fields {
 		if fieldConfig.Field == "" {
-			klog.Fatal("Gsub filter: field 'field' is required in each field config")
+			panic("Gsub filter: field 'field' is required in each field config")
 		}
 		if fieldConfig.Src == "" {
-			klog.Fatal("Gsub filter: field 'src' is required in each field config")
+			panic("Gsub filter: field 'src' is required in each field config")
 		}
 		if fieldConfig.Repl == "" {
-			klog.Fatal("Gsub filter: field 'repl' is required in each field config")
+			panic("Gsub filter: field 'repl' is required in each field config")
 		}
 
 		fieldConfig.rs.r = value_render.GetValueRender2(fieldConfig.Field)
@@ -67,7 +68,7 @@ func newGsubFilter(config map[any]any) topology.Filter {
 		var err error
 		fieldConfig.srcRegexp, err = regexp.Compile(fieldConfig.Src)
 		if err != nil {
-			klog.Fatalf("Gsub filter: invalid regex pattern '%s' for field '%s': %v", fieldConfig.Src, fieldConfig.Field, err)
+			panic(fmt.Sprintf("Gsub filter: invalid regex pattern '%s' for field '%s': %v", fieldConfig.Src, fieldConfig.Field, err))
 		}
 	}
 

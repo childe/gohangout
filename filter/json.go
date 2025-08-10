@@ -7,17 +7,16 @@ import (
 
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
 
 // JsonConfig defines the configuration structure for Json filter
 type JsonConfig struct {
-	Field     string   `mapstructure:"field"`
-	Target    string   `mapstructure:"target"`
-	Overwrite bool     `mapstructure:"overwrite"`
-	Include   []string `mapstructure:"include"`
-	Exclude   []string `mapstructure:"exclude"`
+	Field     string   `json:"field"`
+	Target    string   `json:"target"`
+	Overwrite bool     `json:"overwrite"`
+	Include   []string `json:"include"`
+	Exclude   []string `json:"exclude"`
 }
 
 // JSONFilter will parse json string in `field` and put the result into `target` field
@@ -35,27 +34,16 @@ func init() {
 }
 
 func newJSONFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig
 	var jsonConfig JsonConfig
 	// Set default values
 	jsonConfig.Overwrite = true
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &jsonConfig,
-		ErrorUnused:      false,
-	})
-	if err != nil {
-		klog.Fatalf("Json filter: failed to create config decoder: %v", err)
-	}
-
-	if err := decoder.Decode(config); err != nil {
-		klog.Fatalf("Json filter configuration error: %v", err)
-	}
+	SafeDecodeConfig("Json", config, &jsonConfig)
 
 	// Validate required fields
 	if jsonConfig.Field == "" {
-		klog.Fatal("Json filter: 'field' is required")
+		panic("Json filter: 'field' is required")
 	}
 
 	plugin := &JSONFilter{

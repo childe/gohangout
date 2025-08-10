@@ -191,8 +191,18 @@ func TestSettoIfNil(t *testing.T) {
 		t.Error("ConvertFilter fail")
 	}
 
-	if event["timeTaken"].(float64) != 0.0 {
-		t.Error("timeTaken convert error")
+	// Note: Due to JSON serialization, 0.0 becomes 0 (int), so we need to handle both types
+	switch v := event["timeTaken"].(type) {
+	case float64:
+		if v != 0.0 {
+			t.Error("timeTaken convert error")
+		}
+	case int:
+		if v != 0 {
+			t.Error("timeTaken convert error")
+		}
+	default:
+		t.Errorf("timeTaken should be 0 (int or float64), got %T: %v", v, v)
 	}
 }
 

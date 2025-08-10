@@ -11,14 +11,14 @@ import (
 
 // SplitConfig defines the configuration structure for Split filter
 type SplitConfig struct {
-	Src         string   `mapstructure:"src"`
-	Sep         string   `mapstructure:"sep"`
-	MaxSplit    int      `mapstructure:"maxSplit"`
-	Fields      []string `mapstructure:"fields"`
-	IgnoreBlank bool     `mapstructure:"ignore_blank"`
-	Overwrite   bool     `mapstructure:"overwrite"`
-	Trim        string   `mapstructure:"trim"`
-	DynamicSep  bool     `mapstructure:"dynamicSep"`
+	Src         string   `json:"src"`
+	Sep         string   `json:"sep"`
+	MaxSplit    int      `json:"maxSplit"`
+	Fields      []string `json:"fields"`
+	IgnoreBlank bool     `json:"ignore_blank"`
+	Overwrite   bool     `json:"overwrite"`
+	Trim        string   `json:"trim"`
+	DynamicSep  bool     `json:"dynamicSep"`
 }
 
 type SplitFilter struct {
@@ -40,7 +40,7 @@ func init() {
 }
 
 func newSplitFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var splitConfig SplitConfig
 	// Set default values
 	splitConfig.Src = "message"

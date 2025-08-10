@@ -76,7 +76,7 @@ func TestAddConfigParsing(t *testing.T) {
 				"fields": "this should be a map",
 			},
 			expectError: true,
-			errorSubstr: "cannot parse 'fields'",
+			errorSubstr: "cannot unmarshal string into Go struct field AddConfig.fields",
 		},
 		{
 			name: "wrong type for overwrite - string instead of bool",
@@ -87,7 +87,7 @@ func TestAddConfigParsing(t *testing.T) {
 				"overwrite": "not a boolean",
 			},
 			expectError: true,
-			errorSubstr: "cannot parse 'overwrite'",
+			errorSubstr: "cannot unmarshal string into Go struct field AddConfig.overwrite",
 		},
 		{
 			name: "wrong type for field value - number instead of string",
@@ -98,7 +98,7 @@ func TestAddConfigParsing(t *testing.T) {
 				},
 			},
 			expectError: true,
-			errorSubstr: "cannot parse 'Fields[age]'",
+			errorSubstr: "cannot unmarshal number into Go struct field AddConfig.fields of type string",
 		},
 	}
 

@@ -16,7 +16,7 @@ type gsd struct {
 
 // RenameConfig defines the configuration structure for Rename filter
 type RenameConfig struct {
-	Fields map[string]string `mapstructure:"fields"`
+	Fields map[string]string `json:"fields"`
 }
 
 type RenameFilter struct {
@@ -29,7 +29,7 @@ func init() {
 }
 
 func newRenameFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var renameConfig RenameConfig
 
 	SafeDecodeConfig("Rename", config, &renameConfig)

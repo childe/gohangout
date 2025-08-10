@@ -1,26 +1,53 @@
 package filter
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/mitchellh/mapstructure"
-	"k8s.io/klog/v2"
+	"strings"
 )
 
-// SafeDecodeConfig safely decodes filter configuration using mapstructure
-// This provides much better error messages than manual type assertions
+// ConvertToJSONCompatible recursively converts map[any]any to map[string]any for JSON compatibility
+func ConvertToJSONCompatible(input any) any {
+	switch v := input.(type) {
+	case map[any]any:
+		result := make(map[string]any)
+		for k, val := range v {
+			if keyStr, ok := k.(string); ok {
+				result[keyStr] = ConvertToJSONCompatible(val)
+			} else {
+				panic(fmt.Sprintf("config key '%v' is not a string", k))
+			}
+		}
+		return result
+	case []any:
+		result := make([]any, len(v))
+		for i, val := range v {
+			result[i] = ConvertToJSONCompatible(val)
+		}
+		return result
+	default:
+		return v
+	}
+}
+
+// SafeDecodeConfig safely decodes filter configuration using encoding/json
+// This provides detailed error messages from the standard library
 func SafeDecodeConfig(filterType string, config map[any]any, result any) {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           result,
-		ErrorUnused:      false,
-	})
+	// Convert config to JSON-serializable format
+	jsonConfig := ConvertToJSONCompatible(config)
+
+	// Convert map to JSON and then unmarshal to struct
+	jsonBytes, err := json.Marshal(jsonConfig)
 	if err != nil {
-		klog.Fatalf("%s filter: failed to create config decoder: %v", filterType, err)
+		panic(fmt.Sprintf("%s filter: failed to marshal config to JSON: %v", filterType, err))
 	}
 
-	if err := decoder.Decode(config); err != nil {
-		klog.Fatalf("%s filter configuration error: %v", filterType, err)
+	// Use a decoder with UseNumber to preserve number precision and allow type flexibility
+	decoder := json.NewDecoder(strings.NewReader(string(jsonBytes)))
+	decoder.UseNumber()
+	
+	if err := decoder.Decode(result); err != nil {
+		panic(fmt.Sprintf("%s filter configuration error: %v", filterType, err))
 	}
 }
 
@@ -28,7 +55,7 @@ func SafeDecodeConfig(filterType string, config map[any]any, result any) {
 func ValidateRequiredFields(filterType string, fields map[string]any) {
 	for fieldName, fieldValue := range fields {
 		if fieldValue == nil || (fmt.Sprintf("%v", fieldValue) == "") {
-			klog.Fatalf("%s filter: '%s' is required", filterType, fieldName)
+			panic(fmt.Sprintf("%s filter: '%s' is required", filterType, fieldName))
 		}
 	}
 }

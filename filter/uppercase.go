@@ -11,7 +11,7 @@ import (
 
 // UppercaseConfig defines the configuration structure for Uppercase filter
 type UppercaseConfig struct {
-	Fields []string `mapstructure:"fields"`
+	Fields []string `json:"fields"`
 }
 
 type UppercaseFilter struct {
@@ -24,7 +24,7 @@ func init() {
 }
 
 func newUppercaseFilter(config map[any]any) topology.Filter {
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig helper
 	var uppercaseConfig UppercaseConfig
 
 	SafeDecodeConfig("Uppercase", config, &uppercaseConfig)

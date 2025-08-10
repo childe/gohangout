@@ -3,13 +3,14 @@ package filter
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/childe/cast"
 	"github.com/childe/gohangout/field_setter"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
-	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
 
@@ -114,15 +115,15 @@ type ConveterAndRender struct {
 
 // FieldConvertConfig defines the configuration for a single field conversion
 type FieldConvertConfig struct {
-	To           string      `mapstructure:"to"`
-	RemoveIfFail bool        `mapstructure:"remove_if_fail"`
-	SettoIfFail  any `mapstructure:"setto_if_fail"`
-	SettoIfNil   any `mapstructure:"setto_if_nil"`
+	To           string      `json:"to"`
+	RemoveIfFail bool        `json:"remove_if_fail"`
+	SettoIfFail  any `json:"setto_if_fail"`
+	SettoIfNil   any `json:"setto_if_nil"`
 }
 
 // ConvertConfig defines the configuration structure for Convert filter
 type ConvertConfig struct {
-	Fields map[string]FieldConvertConfig `mapstructure:"fields"`
+	Fields map[string]FieldConvertConfig `json:"fields"`
 }
 
 type ConvertFilter struct {
@@ -140,32 +141,21 @@ func newConvertFilter(config map[any]any) topology.Filter {
 		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
 	}
 
-	// Parse configuration using mapstructure
+	// Parse configuration using SafeDecodeConfig
 	var convertConfig ConvertConfig
 	
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &convertConfig,
-		ErrorUnused:      false,
-	})
-	if err != nil {
-		klog.Fatalf("Convert filter: failed to create config decoder: %v", err)
-	}
-
-	if err := decoder.Decode(config); err != nil {
-		klog.Fatalf("Convert filter configuration error: %v", err)
-	}
+	SafeDecodeConfig("Convert", config, &convertConfig)
 
 	// Validate required fields
 	if convertConfig.Fields == nil || len(convertConfig.Fields) == 0 {
-		klog.Fatal("Convert filter: 'fields' is required and cannot be empty")
+		panic("Convert filter: 'fields' is required and cannot be empty")
 	}
 
 	// Process each field conversion
 	for fieldName, fieldConfig := range convertConfig.Fields {
 		fieldSetter := field_setter.NewFieldSetter(fieldName)
 		if fieldSetter == nil {
-			klog.Fatalf("Convert filter: could not build field setter from '%s'", fieldName)
+			panic(fmt.Sprintf("Convert filter: could not build field setter from '%s'", fieldName))
 		}
 
 		// Validate and get converter
@@ -186,19 +176,40 @@ func newConvertFilter(config map[any]any) topology.Filter {
 		case "array(float)":
 			converter = &ArrayFloatConverter{}
 		default:
-			klog.Fatalf("Convert filter: field '%s' has invalid 'to' value '%s'. Must be one of: int/uint/float/bool/string/array(int)/array(float)", fieldName, fieldConfig.To)
+			panic(fmt.Sprintf("Convert filter: field '%s' has invalid 'to' value '%s'. Must be one of: int/uint/float/bool/string/array(int)/array(float)", fieldName, fieldConfig.To))
 		}
 
 		plugin.fields[fieldSetter] = ConveterAndRender{
 			converter:    converter,
 			valueRender:  value_render.GetValueRender2(fieldName),
 			removeIfFail: fieldConfig.RemoveIfFail,
-			settoIfFail:  fieldConfig.SettoIfFail,
-			settoIfNil:   fieldConfig.SettoIfNil,
+			settoIfFail:  convertJSONNumber(fieldConfig.SettoIfFail),
+			settoIfNil:   convertJSONNumber(fieldConfig.SettoIfNil),
 		}
 	}
 
 	return plugin
+}
+
+// convertJSONNumber converts json.Number to appropriate Go types for backward compatibility
+func convertJSONNumber(value any) any {
+	if jsonNum, ok := value.(json.Number); ok {
+		numStr := jsonNum.String()
+		// If it contains a decimal point, treat as float
+		if strings.Contains(numStr, ".") {
+			if floatVal, err := jsonNum.Float64(); err == nil {
+				return floatVal
+			}
+		} else {
+			// Otherwise, try to convert to int
+			if intVal, err := jsonNum.Int64(); err == nil {
+				return int(intVal)
+			}
+		}
+		// If conversion fails, return as string
+		return numStr
+	}
+	return value
 }
 
 func (plugin *ConvertFilter) Filter(event map[string]any) (map[string]any, bool) {
