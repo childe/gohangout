@@ -105,7 +105,7 @@ func (c *ArrayFloatConverter) convert(v any) (any, error) {
 	return nil, ErrConvertUnknownFormat
 }
 
-type ConveterAndRender struct {
+type ConverterAndRender struct {
 	converter    Converter
 	valueRender  value_render.ValueRender
 	removeIfFail bool
@@ -128,7 +128,7 @@ type ConvertConfig struct {
 
 type ConvertFilter struct {
 	config map[any]any
-	fields map[field_setter.FieldSetter]ConveterAndRender
+	fields map[field_setter.FieldSetter]ConverterAndRender
 }
 
 func init() {
@@ -138,7 +138,7 @@ func init() {
 func newConvertFilter(config map[any]any) topology.Filter {
 	plugin := &ConvertFilter{
 		config: config,
-		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
+		fields: make(map[field_setter.FieldSetter]ConverterAndRender),
 	}
 
 	// Parse configuration using SafeDecodeConfig
@@ -179,7 +179,7 @@ func newConvertFilter(config map[any]any) topology.Filter {
 			panic(fmt.Sprintf("Convert filter: field '%s' has invalid 'to' value '%s'. Must be one of: int/uint/float/bool/string/array(int)/array(float)", fieldName, fieldConfig.To))
 		}
 
-		plugin.fields[fieldSetter] = ConveterAndRender{
+		plugin.fields[fieldSetter] = ConverterAndRender{
 			converter:    converter,
 			valueRender:  value_render.GetValueRender2(fieldName),
 			removeIfFail: fieldConfig.RemoveIfFail,
@@ -213,23 +213,23 @@ func convertJSONNumber(value any) any {
 }
 
 func (plugin *ConvertFilter) Filter(event map[string]any) (map[string]any, bool) {
-	for fs, conveterAndRender := range plugin.fields {
-		originanV, err := conveterAndRender.valueRender.Render(event)
+	for fs, converterAndRender := range plugin.fields {
+		originanV, err := converterAndRender.valueRender.Render(event)
 		if err != nil || originanV == nil {
-			if conveterAndRender.settoIfNil != nil {
-				event = fs.SetField(event, conveterAndRender.settoIfNil, "", true)
+			if converterAndRender.settoIfNil != nil {
+				event = fs.SetField(event, converterAndRender.settoIfNil, "", true)
 			}
 			continue
 		}
-		v, err := conveterAndRender.converter.convert(originanV)
+		v, err := converterAndRender.converter.convert(originanV)
 		if err == nil {
 			event = fs.SetField(event, v, "", true)
 		} else {
 			klog.V(10).Infof("convert error: %s", err)
-			if conveterAndRender.removeIfFail {
+			if converterAndRender.removeIfFail {
 				event = fs.SetField(event, nil, "", true)
-			} else if conveterAndRender.settoIfFail != nil {
-				event = fs.SetField(event, conveterAndRender.settoIfFail, "", true)
+			} else if converterAndRender.settoIfFail != nil {
+				event = fs.SetField(event, converterAndRender.settoIfFail, "", true)
 			}
 		}
 	}
