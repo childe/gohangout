@@ -176,23 +176,23 @@ func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
 }
 
 func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
-	for fs, conveterAndRender := range plugin.fields {
-		originanV, err := conveterAndRender.valueRender.Render(event)
+	for fs, converterAndRender := range plugin.fields {
+		originanV, err := converterAndRender.valueRender.Render(event)
 		if err != nil || originanV == nil {
-			if conveterAndRender.settoIfNil != nil {
-				event = fs.SetField(event, conveterAndRender.settoIfNil, "", true)
+			if converterAndRender.settoIfNil != nil {
+				event = fs.SetField(event, converterAndRender.settoIfNil, "", true)
 			}
 			continue
 		}
-		v, err := conveterAndRender.converter.convert(originanV)
+		v, err := converterAndRender.converter.convert(originanV)
 		if err == nil {
 			event = fs.SetField(event, v, "", true)
 		} else {
 			klog.V(10).Infof("convert error: %s", err)
-			if conveterAndRender.removeIfFail {
+			if converterAndRender.removeIfFail {
 				event = fs.SetField(event, nil, "", true)
-			} else if conveterAndRender.settoIfFail != nil {
-				event = fs.SetField(event, conveterAndRender.settoIfFail, "", true)
+			} else if converterAndRender.settoIfFail != nil {
+				event = fs.SetField(event, converterAndRender.settoIfFail, "", true)
 			}
 		}
 	}

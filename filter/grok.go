@@ -37,7 +37,7 @@ func (grok *Grok) loadPattern(filename string) {
 			break
 		}
 		if err != nil {
-			klog.Fatalf("read pattenrs error:%s", err)
+			klog.Fatalf("read patterns error:%s", err)
 		}
 		if isPrefix {
 			klog.Fatal("readline prefix")
