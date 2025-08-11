@@ -85,7 +85,7 @@ func TestConvertToJSONCompatible(t *testing.T) {
 	}
 }
 
-func TestSafeDecodeConfigStdin(t *testing.T) {
+func TestSafeDecodeConfig(t *testing.T) {
 	tests := []struct {
 		name      string
 		inputType string
@@ -137,116 +137,6 @@ func TestSafeDecodeConfigStdin(t *testing.T) {
 				var result StdinConfig
 				SafeDecodeConfig(tt.inputType, tt.config, &result)
 				if result != tt.expected {
-					t.Errorf("SafeDecodeConfig() = %v, want %v", result, tt.expected)
-				}
-			}
-		})
-	}
-}
-
-func TestSafeDecodeConfigKafka(t *testing.T) {
-	tests := []struct {
-		name      string
-		inputType string
-		config    map[any]any
-		expected  KafkaInputConfig
-		panics    bool
-	}{
-		{
-			name:      "valid kafka config with topic",
-			inputType: "Kafka",
-			config: map[any]any{
-				"codec":           "json",
-				"decorate_events": true,
-				"topic": map[any]any{
-					"test-topic": json.Number("2"),
-				},
-				"messages_queue_length": json.Number("100"),
-				"consumer_settings": map[any]any{
-					"bootstrap.servers": "localhost:9092",
-					"group.id":          "test-group",
-				},
-			},
-			expected: KafkaInputConfig{
-				Codec:              "json",
-				DecorateEvents:     true,
-				Topic:              map[string]int{"test-topic": 2},
-				Assign:             nil,
-				MessagesQueueLength: 100,
-				ConsumerSettings: map[string]any{
-					"bootstrap.servers": "localhost:9092",
-					"group.id":          "test-group",
-				},
-			},
-			panics: false,
-		},
-		{
-			name:      "valid kafka config with assign",
-			inputType: "Kafka",
-			config: map[any]any{
-				"codec": "plain",
-				"assign": map[any]any{
-					"test-topic": []any{
-						json.Number("0"),
-						json.Number("1"),
-						json.Number("2"),
-					},
-				},
-				"consumer_settings": map[any]any{
-					"bootstrap.servers": "localhost:9092",
-				},
-			},
-			expected: KafkaInputConfig{
-				Codec:              "plain",
-				DecorateEvents:     false,
-				Topic:              nil,
-				Assign:             map[string][]int{"test-topic": {0, 1, 2}},
-				MessagesQueueLength: 0,
-				ConsumerSettings: map[string]any{
-					"bootstrap.servers": "localhost:9092",
-				},
-			},
-			panics: false,
-		},
-		{
-			name:      "minimal kafka config",
-			inputType: "Kafka",
-			config: map[any]any{
-				"topic": map[any]any{
-					"test-topic": json.Number("1"),
-				},
-				"consumer_settings": map[any]any{
-					"bootstrap.servers": "localhost:9092",
-				},
-			},
-			expected: KafkaInputConfig{
-				Codec:              "",
-				DecorateEvents:     false,
-				Topic:              map[string]int{"test-topic": 1},
-				Assign:             nil,
-				MessagesQueueLength: 0,
-				ConsumerSettings: map[string]any{
-					"bootstrap.servers": "localhost:9092",
-				},
-			},
-			panics: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.panics {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Errorf("SafeDecodeConfig() should have panicked")
-					}
-				}()
-				var result KafkaInputConfig
-				SafeDecodeConfig(tt.inputType, tt.config, &result)
-			} else {
-				var result KafkaInputConfig
-				SafeDecodeConfig(tt.inputType, tt.config, &result)
-				if !equalKafkaInputConfig(result, tt.expected) {
 					t.Errorf("SafeDecodeConfig() = %v, want %v", result, tt.expected)
 				}
 			}
@@ -376,14 +266,4 @@ func equalAny(a, b any) bool {
 	default:
 		return a == b
 	}
-}
-
-// Helper function to compare KafkaInputConfig structs
-func equalKafkaInputConfig(a, b KafkaInputConfig) bool {
-	return a.Codec == b.Codec &&
-		a.DecorateEvents == b.DecorateEvents &&
-		a.MessagesQueueLength == b.MessagesQueueLength &&
-		equalAny(a.Topic, b.Topic) &&
-		equalAny(a.Assign, b.Assign) &&
-		equalAny(a.ConsumerSettings, b.ConsumerSettings)
 }

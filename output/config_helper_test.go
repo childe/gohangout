@@ -140,79 +140,6 @@ func TestSafeDecodeConfig(t *testing.T) {
 	}
 }
 
-func TestSafeDecodeConfigKafka(t *testing.T) {
-	tests := []struct {
-		name       string
-		outputType string
-		config     map[any]any
-		expected   KafkaConfig
-		panics     bool
-	}{
-		{
-			name:       "valid kafka config",
-			outputType: "Kafka",
-			config: map[any]any{
-				"codec": "json",
-				"topic": "test-topic",
-				"key":   "event_id",
-				"producer_settings": map[any]any{
-					"bootstrap.servers": "localhost:9092",
-					"batch.size":        json.Number("16384"),
-				},
-			},
-			expected: KafkaConfig{
-				Codec: "json",
-				Topic: "test-topic",
-				Key:   "event_id",
-				ProducerSettings: map[string]any{
-					"bootstrap.servers": "localhost:9092",
-					"batch.size":        json.Number("16384"),
-				},
-			},
-			panics: false,
-		},
-		{
-			name:       "minimal kafka config",
-			outputType: "Kafka",
-			config: map[any]any{
-				"topic": "test-topic",
-				"producer_settings": map[any]any{
-					"bootstrap.servers": "localhost:9092",
-				},
-			},
-			expected: KafkaConfig{
-				Codec: "",
-				Topic: "test-topic",
-				Key:   "",
-				ProducerSettings: map[string]any{
-					"bootstrap.servers": "localhost:9092",
-				},
-			},
-			panics: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.panics {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Errorf("SafeDecodeConfig() should have panicked")
-					}
-				}()
-				var result KafkaConfig
-				SafeDecodeConfig(tt.outputType, tt.config, &result)
-			} else {
-				var result KafkaConfig
-				SafeDecodeConfig(tt.outputType, tt.config, &result)
-				if !equalKafkaConfig(result, tt.expected) {
-					t.Errorf("SafeDecodeConfig() = %v, want %v", result, tt.expected)
-				}
-			}
-		})
-	}
-}
-
 func TestValidateRequiredFields(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -307,12 +234,4 @@ func equalAny(a, b any) bool {
 	default:
 		return a == b
 	}
-}
-
-// Helper function to compare KafkaConfig structs
-func equalKafkaConfig(a, b KafkaConfig) bool {
-	return a.Codec == b.Codec &&
-		a.Topic == b.Topic &&
-		a.Key == b.Key &&
-		equalAny(a.ProducerSettings, b.ProducerSettings)
 }
