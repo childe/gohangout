@@ -2,6 +2,7 @@ package output
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -117,8 +118,20 @@ func TestKafkaConfigParsing(t *testing.T) {
 
 // Helper function to compare KafkaConfig structs
 func equalKafkaConfig(a, b KafkaConfig) bool {
-	return a.Codec == b.Codec &&
-		a.Topic == b.Topic &&
-		a.Key == b.Key &&
-		equalAny(a.ProducerSettings, b.ProducerSettings)
+	if a.Codec != b.Codec || a.Topic != b.Topic || a.Key != b.Key {
+		return false
+	}
+	
+	// Simple comparison for producer settings
+	if len(a.ProducerSettings) != len(b.ProducerSettings) {
+		return false
+	}
+	
+	for k, v := range a.ProducerSettings {
+		if bv, exists := b.ProducerSettings[k]; !exists || fmt.Sprintf("%v", v) != fmt.Sprintf("%v", bv) {
+			return false
+		}
+	}
+	
+	return true
 }

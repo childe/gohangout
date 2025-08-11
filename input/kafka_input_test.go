@@ -2,6 +2,7 @@ package input
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -163,10 +164,63 @@ func TestKafkaInputConfigParsing(t *testing.T) {
 
 // Helper function to compare KafkaInputConfig structs
 func equalKafkaInputConfig(a, b KafkaInputConfig) bool {
-	return a.Codec == b.Codec &&
-		a.DecorateEvents == b.DecorateEvents &&
-		a.MessagesQueueLength == b.MessagesQueueLength &&
-		equalAny(a.Topic, b.Topic) &&
-		equalAny(a.Assign, b.Assign) &&
-		equalAny(a.ConsumerSettings, b.ConsumerSettings)
+	if a.Codec != b.Codec || a.DecorateEvents != b.DecorateEvents || a.MessagesQueueLength != b.MessagesQueueLength {
+		return false
+	}
+	
+	// Compare Topic maps
+	if !equalStringIntMap(a.Topic, b.Topic) {
+		return false
+	}
+	
+	// Compare Assign maps
+	if !equalStringIntSliceMap(a.Assign, b.Assign) {
+		return false
+	}
+	
+	// Compare ConsumerSettings maps
+	return equalStringAnyMap(a.ConsumerSettings, b.ConsumerSettings)
+}
+
+// Helper functions for map comparisons
+func equalStringIntMap(a, b map[string]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if bv, exists := b[k]; !exists || v != bv {
+			return false
+		}
+	}
+	return true
+}
+
+func equalStringIntSliceMap(a, b map[string][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		bv, exists := b[k]
+		if !exists || len(v) != len(bv) {
+			return false
+		}
+		for i, val := range v {
+			if val != bv[i] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func equalStringAnyMap(a, b map[string]any) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if bv, exists := b[k]; !exists || fmt.Sprintf("%v", v) != fmt.Sprintf("%v", bv) {
+			return false
+		}
+	}
+	return true
 }
