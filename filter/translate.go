@@ -14,8 +14,16 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// TranslateConfig defines the configuration structure for Translate filter
+type TranslateConfig struct {
+	Source          string `json:"source"`
+	Target          string `json:"target"`
+	DictionaryPath  string `json:"dictionary_path"`
+	RefreshInterval int    `json:"refresh_interval"`
+}
+
 type TranslateFilter struct {
-	config          map[interface{}]interface{}
+	config          map[any]any
 	refreshInterval int
 	source          string
 	target          string
@@ -23,7 +31,7 @@ type TranslateFilter struct {
 	dictionaryPath  string
 
 	// TODO put code to utils
-	dict map[interface{}]interface{}
+	dict map[any]any
 }
 
 func (plugin *TranslateFilter) parseDict() error {
@@ -55,7 +63,7 @@ func (plugin *TranslateFilter) parseDict() error {
 		}
 	}
 
-	dict := make(map[interface{}]interface{})
+	dict := make(map[any]any)
 	err = yaml.Unmarshal(buffer, &dict)
 	if err != nil {
 		return err
@@ -68,35 +76,29 @@ func init() {
 	Register("Translate", newTranslateFilter)
 }
 
-func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
+func newTranslateFilter(config map[any]any) topology.Filter {
+	// Parse configuration using SafeDecodeConfig helper
+	var translateConfig TranslateConfig
+	
+	SafeDecodeConfig("Translate", config, &translateConfig)
+	
+	// Validate required fields
+	ValidateRequiredFields("Translate", map[string]any{
+		"source":           translateConfig.Source,
+		"target":           translateConfig.Target,
+		"dictionary_path":  translateConfig.DictionaryPath,
+		"refresh_interval": translateConfig.RefreshInterval,
+	})
+
 	plugin := &TranslateFilter{
-		config: config,
+		config:          config,
+		source:          translateConfig.Source,
+		target:          translateConfig.Target,
+		dictionaryPath:  translateConfig.DictionaryPath,
+		refreshInterval: translateConfig.RefreshInterval,
 	}
 
-	if source, ok := config["source"]; ok {
-		plugin.source = source.(string)
-	} else {
-		klog.Fatal("source must be set in translate filter plugin")
-	}
 	plugin.sourceVR = value_render.GetValueRender2(plugin.source)
-
-	if target, ok := config["target"]; ok {
-		plugin.target = target.(string)
-	} else {
-		klog.Fatal("target must be set in translate filter plugin")
-	}
-
-	if dictionaryPath, ok := config["dictionary_path"]; ok {
-		plugin.dictionaryPath = dictionaryPath.(string)
-	} else {
-		klog.Fatal("dictionary_path must be set in translate filter plugin")
-	}
-
-	if refreshInterval, ok := config["refresh_interval"]; ok {
-		plugin.refreshInterval = refreshInterval.(int)
-	} else {
-		klog.Fatal("refresh_interval must be set in translate filter plugin")
-	}
 
 	err := plugin.parseDict()
 	if err != nil {
@@ -116,7 +118,7 @@ func newTranslateFilter(config map[interface{}]interface{}) topology.Filter {
 	return plugin
 }
 
-func (plugin *TranslateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *TranslateFilter) Filter(event map[string]any) (map[string]any, bool) {
 	o, err := plugin.sourceVR.Render(event)
 	if err != nil || o == nil {
 		return event, false

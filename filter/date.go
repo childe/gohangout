@@ -13,11 +13,10 @@ import (
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/gohangout/value_render"
 	"github.com/relvacode/iso8601" // https://pkg.go.dev/github.com/relvacode/iso8601#section-readme
-	"k8s.io/klog/v2"
 )
 
 type DateParser interface {
-	Parse(interface{}) (time.Time, error)
+	Parse(any) (time.Time, error)
 }
 
 type FormatParser struct {
@@ -28,7 +27,7 @@ type FormatParser struct {
 
 var MustStringTypeError = errors.New("timestamp field must be string")
 
-func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
+func (dp *FormatParser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 		err error
@@ -54,7 +53,7 @@ func (dp *FormatParser) Parse(t interface{}) (time.Time, error) {
 
 type UnixParser struct{}
 
-func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
+func (p *UnixParser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 	)
@@ -90,7 +89,7 @@ func (p *UnixParser) Parse(t interface{}) (time.Time, error) {
 
 type UnixMSParser struct{}
 
-func (p *UnixMSParser) Parse(t interface{}) (time.Time, error) {
+func (p *UnixMSParser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 	)
@@ -123,7 +122,7 @@ type ISO8601Parser struct {
 	location *time.Location // If the input does not have timezone information, it will use the given location.
 }
 
-func (p *ISO8601Parser) Parse(t interface{}) (time.Time, error) {
+func (p *ISO8601Parser) Parse(t any) (time.Time, error) {
 	var (
 		rst time.Time
 	)
@@ -153,8 +152,18 @@ func getDateParser(format string, l *time.Location, addYear bool) DateParser {
 	return &FormatParser{format, l, addYear}
 }
 
+// DateConfig defines the configuration structure for Date filter
+type DateConfig struct {
+	Src       string   `json:"src"`
+	Target    string   `json:"target"`
+	Location  string   `json:"location"`
+	AddYear   bool     `json:"add_year"`
+	Overwrite bool     `json:"overwrite"`
+	Formats   []string `json:"formats"`
+}
+
 type DateFilter struct {
-	config      map[interface{}]interface{}
+	config      map[any]any
 	dateParsers []DateParser
 	overwrite   bool
 	src         string
@@ -167,59 +176,54 @@ func init() {
 	Register("Date", newDateFilter)
 }
 
-func newDateFilter(config map[interface{}]interface{}) topology.Filter {
+func newDateFilter(config map[any]any) topology.Filter {
 	plugin := &DateFilter{
 		config:      config,
-		overwrite:   true,
 		dateParsers: make([]DateParser, 0),
 	}
 
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
+	// Parse configuration using SafeDecodeConfig
+	var dateConfig DateConfig
+	// Set default values
+	dateConfig.Target = "@timestamp"
+	dateConfig.Overwrite = true
+	dateConfig.AddYear = false
+
+	SafeDecodeConfig("Date", config, &dateConfig)
+
+	// Validate required fields
+	if dateConfig.Src == "" {
+		panic("Date filter: 'src' is required")
+	}
+	if dateConfig.Formats == nil || len(dateConfig.Formats) == 0 {
+		panic("Date filter: 'formats' is required and cannot be empty")
 	}
 
-	if srcValue, ok := config["src"]; ok {
-		plugin.src = srcValue.(string)
-	} else {
-		klog.Fatal("src must be set in date filter plugin")
-	}
+	plugin.overwrite = dateConfig.Overwrite
+	plugin.src = dateConfig.Src
 	plugin.srcVR = value_render.GetValueRender2(plugin.src)
-
-	if targetI, ok := config["target"]; ok {
-		plugin.target = targetI.(string)
-	} else {
-		plugin.target = "@timestamp"
-	}
+	plugin.target = dateConfig.Target
 	plugin.targetFS = field_setter.NewFieldSetter(plugin.target)
 
-	var (
-		location *time.Location
-		addYear  bool = false
-		err      error
-	)
-	if locationI, ok := config["location"]; ok {
-		location, err = time.LoadLocation(locationI.(string))
+	// Parse location
+	var location *time.Location
+	if dateConfig.Location != "" {
+		var err error
+		location, err = time.LoadLocation(dateConfig.Location)
 		if err != nil {
-			klog.Fatalf("load location error:%s", err)
+			panic(fmt.Sprintf("Date filter: load location error: %s", err))
 		}
-	} else {
-		location = nil
 	}
-	if addYearI, ok := config["add_year"]; ok {
-		addYear = addYearI.(bool)
-	}
-	if formats, ok := config["formats"]; ok {
-		for _, formatI := range formats.([]interface{}) {
-			plugin.dateParsers = append(plugin.dateParsers, getDateParser(formatI.(string), location, addYear))
-		}
-	} else {
-		klog.Fatal("formats must be set in date filter plugin")
+
+	// Create date parsers
+	for _, format := range dateConfig.Formats {
+		plugin.dateParsers = append(plugin.dateParsers, getDateParser(format, location, dateConfig.AddYear))
 	}
 
 	return plugin
 }
 
-func (plugin *DateFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *DateFilter) Filter(event map[string]any) (map[string]any, bool) {
 	inputI, err := plugin.srcVR.Render(event)
 	if err != nil || inputI == nil {
 		return event, false

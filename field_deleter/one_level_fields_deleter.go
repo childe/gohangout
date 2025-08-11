@@ -10,6 +10,6 @@ func NewOneLevelFieldDeleter(field string) *OneLevelFieldDeleter {
 	}
 }
 
-func (d *OneLevelFieldDeleter) Delete(event map[string]interface{}) {
+func (d *OneLevelFieldDeleter) Delete(event map[string]any) {
 	delete(event, d.field)
 }

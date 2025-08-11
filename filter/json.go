@@ -10,6 +10,15 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// JsonConfig defines the configuration structure for Json filter
+type JsonConfig struct {
+	Field     string   `json:"field"`
+	Target    string   `json:"target"`
+	Overwrite bool     `json:"overwrite"`
+	Include   []string `json:"include"`
+	Exclude   []string `json:"exclude"`
+}
+
 // JSONFilter will parse json string in `field` and put the result into `target` field
 type JSONFilter struct {
 	field     string
@@ -24,43 +33,33 @@ func init() {
 	Register("Json", newJSONFilter)
 }
 
-func newJSONFilter(config map[interface{}]interface{}) topology.Filter {
+func newJSONFilter(config map[any]any) topology.Filter {
+	// Parse configuration using SafeDecodeConfig
+	var jsonConfig JsonConfig
+	// Set default values
+	jsonConfig.Overwrite = true
+
+	SafeDecodeConfig("Json", config, &jsonConfig)
+
+	// Validate required fields
+	if jsonConfig.Field == "" {
+		panic("Json filter: 'field' is required")
+	}
+
 	plugin := &JSONFilter{
-		overwrite: true,
-		target:    "",
+		field:     jsonConfig.Field,
+		target:    jsonConfig.Target,
+		overwrite: jsonConfig.Overwrite,
+		include:   jsonConfig.Include,
+		exclude:   jsonConfig.Exclude,
 	}
-
-	if field, ok := config["field"]; ok {
-		plugin.field = field.(string)
-		plugin.vr = value_render.GetValueRender2(plugin.field)
-	} else {
-		klog.Fatal("field must be set in Json filter")
-	}
-
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
-	}
-
-	if target, ok := config["target"]; ok {
-		plugin.target = target.(string)
-	}
-
-	if include, ok := config["include"]; ok {
-		for _, i := range include.([]interface{}) {
-			plugin.include = append(plugin.include, i.(string))
-		}
-	}
-	if exclude, ok := config["exclude"]; ok {
-		for _, i := range exclude.([]interface{}) {
-			plugin.exclude = append(plugin.exclude, i.(string))
-		}
-	}
+	plugin.vr = value_render.GetValueRender2(plugin.field)
 
 	return plugin
 }
 
 // Filter will parse json string in `field` and put the result into `target` field
-func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *JSONFilter) Filter(event map[string]any) (map[string]any, bool) {
 	f, err := plugin.vr.Render(event)
 	if err != nil || f == nil {
 		return event, false
@@ -71,7 +70,7 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 		return event, false
 	}
 
-	var o interface{} = nil
+	var o any = nil
 	d := json.NewDecoder(strings.NewReader(ss))
 	d.UseNumber()
 	err = d.Decode(&o)
@@ -80,8 +79,8 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 	}
 
 	if len(plugin.include) > 0 {
-		oo := map[string]interface{}{}
-		if o, ok := o.(map[string]interface{}); ok {
+		oo := map[string]any{}
+		if o, ok := o.(map[string]any); ok {
 			for _, k := range plugin.include {
 				oo[k] = o[k]
 			}
@@ -91,7 +90,7 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 		}
 		o = oo
 	} else if len(plugin.exclude) > 0 {
-		if o, ok := o.(map[string]interface{}); ok {
+		if o, ok := o.(map[string]any); ok {
 			for _, k := range plugin.exclude {
 				delete(o, k)
 			}
@@ -107,11 +106,11 @@ func (plugin *JSONFilter) Filter(event map[string]interface{}) (map[string]inter
 			return event, false
 		}
 		if plugin.overwrite {
-			for k, v := range o.(map[string]interface{}) {
+			for k, v := range o.(map[string]any) {
 				event[k] = v
 			}
 		} else {
-			for k, v := range o.(map[string]interface{}) {
+			for k, v := range o.(map[string]any) {
 				if _, ok := event[k]; !ok {
 					event[k] = v
 				}

@@ -8,7 +8,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type BuildInputFunc func(map[interface{}]interface{}) topology.Input
+type BuildInputFunc func(map[any]any) topology.Input
 
 var registeredInput map[string]BuildInputFunc = make(map[string]BuildInputFunc)
 
@@ -22,7 +22,7 @@ func Register(inputType string, bf BuildInputFunc) {
 }
 
 // GetInput return topoloty.Input from builtin plugins or from a 3rd party plugin
-func GetInput(inputType string, config map[interface{}]interface{}) topology.Input {
+func GetInput(inputType string, config map[any]any) topology.Input {
 	if v, ok := registeredInput[inputType]; ok {
 		return v(config)
 	}
@@ -37,7 +37,7 @@ func GetInput(inputType string, config map[interface{}]interface{}) topology.Inp
 	return output
 }
 
-func getInputFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Input, error) {
+func getInputFromPlugin(pluginPath string, config map[any]any) (topology.Input, error) {
 	p, err := plugin.Open(pluginPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not open %s: %v", pluginPath, err)
@@ -46,7 +46,7 @@ func getInputFromPlugin(pluginPath string, config map[interface{}]interface{}) (
 	if err != nil {
 		return nil, fmt.Errorf("could not find `New` function in %s: %s", pluginPath, err)
 	}
-	f, ok := newFunc.(func(map[interface{}]interface{}) interface{})
+	f, ok := newFunc.(func(map[any]any) any)
 	if !ok {
 		return nil, fmt.Errorf("`New` func in %s format error", pluginPath)
 	}

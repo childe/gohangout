@@ -179,8 +179,18 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 	return grok
 }
 
+// GrokConfig defines the configuration structure for Grok filter
+type GrokConfig struct {
+	Src          string   `json:"src"`
+	Target       string   `json:"target"`
+	Match        []string `json:"match"`
+	PatternPaths []string `json:"pattern_paths"`
+	IgnoreBlank  bool     `json:"ignore_blank"`
+	Overwrite    bool     `json:"overwrite"`
+}
+
 type GrokFilter struct {
-	config    map[interface{}]interface{}
+	config    map[any]any
 	overwrite bool
 	groks     []*Grok
 	target    string
@@ -192,53 +202,40 @@ func init() {
 	Register("Grok", newGrokFilter)
 }
 
-func newGrokFilter(config map[interface{}]interface{}) topology.Filter {
-	var patternPaths []string = make([]string, 0)
-	if i, ok := config["pattern_paths"]; ok {
-		for _, p := range i.([]interface{}) {
-			patternPaths = append(patternPaths, p.(string))
-		}
+func newGrokFilter(config map[any]any) topology.Filter {
+	// Parse configuration using SafeDecodeConfig
+	var grokConfig GrokConfig
+	// Set default values
+	grokConfig.Src = "message"
+	grokConfig.IgnoreBlank = true
+	grokConfig.Overwrite = true
+
+	SafeDecodeConfig("Grok", config, &grokConfig)
+
+	// Validate required fields
+	if grokConfig.Match == nil || len(grokConfig.Match) == 0 {
+		panic("Grok filter: 'match' is required and cannot be empty")
 	}
-	ignoreBlank := true
-	if i, ok := config["ignore_blank"]; ok {
-		ignoreBlank = i.(bool)
-	}
+
+	// Create Grok instances
 	groks := make([]*Grok, 0)
-	if matchValue, ok := config["match"]; ok {
-		match := matchValue.([]interface{})
-		for _, mValue := range match {
-			groks = append(groks, NewGrok(mValue.(string), patternPaths, ignoreBlank))
-		}
-	} else {
-		klog.Fatal("match must be set in grok filter")
+	for _, pattern := range grokConfig.Match {
+		groks = append(groks, NewGrok(pattern, grokConfig.PatternPaths, grokConfig.IgnoreBlank))
 	}
 
 	gf := &GrokFilter{
 		config:    config,
 		groks:     groks,
-		overwrite: true,
-		target:    "",
-	}
-
-	if overwrite, ok := config["overwrite"]; ok {
-		gf.overwrite = overwrite.(bool)
-	}
-
-	if srcValue, ok := config["src"]; ok {
-		gf.src = srcValue.(string)
-	} else {
-		gf.src = "message"
+		overwrite: grokConfig.Overwrite,
+		target:    grokConfig.Target,
+		src:       grokConfig.Src,
 	}
 	gf.vr = value_render.GetValueRender2(gf.src)
-
-	if target, ok := config["target"]; ok {
-		gf.target = target.(string)
-	}
 
 	return gf
 }
 
-func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (gf *GrokFilter) Filter(event map[string]any) (map[string]any, bool) {
 	var input string
 	inputI, err := gf.vr.Render(event)
 	if err != nil || inputI == nil {
@@ -266,7 +263,7 @@ func (gf *GrokFilter) Filter(event map[string]interface{}) (map[string]interface
 				}
 			}
 		} else {
-			target := make(map[string]interface{})
+			target := make(map[string]any)
 			for field, value := range rst {
 				target[field] = value
 			}

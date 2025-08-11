@@ -8,23 +8,23 @@ import (
 func TestOneLevelDelete(t *testing.T) {
 	for _, c := range []struct {
 		field string
-		event map[string]interface{}
-		want  map[string]interface{}
+		event map[string]any
+		want  map[string]any
 	}{
 		{
-			event: map[string]interface{}{"hostname": "xxx"},
+			event: map[string]any{"hostname": "xxx"},
 			field: "hostname",
-			want:  map[string]interface{}{},
+			want:  map[string]any{},
 		},
 		{
-			event: map[string]interface{}{"hostname": "xxx"},
+			event: map[string]any{"hostname": "xxx"},
 			field: "metadata",
-			want:  map[string]interface{}{"hostname": "xxx"},
+			want:  map[string]any{"hostname": "xxx"},
 		},
 		{
-			event: map[string]interface{}{"metadata": map[string]interface{}{"hostname": "xxx"}},
+			event: map[string]any{"metadata": map[string]any{"hostname": "xxx"}},
 			field: "metadata",
-			want:  map[string]interface{}{},
+			want:  map[string]any{},
 		},
 	} {
 		deleter := NewOneLevelFieldDeleter(c.field)

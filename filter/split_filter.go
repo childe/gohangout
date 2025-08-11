@@ -9,8 +9,20 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// SplitConfig defines the configuration structure for Split filter
+type SplitConfig struct {
+	Src         string   `json:"src"`
+	Sep         string   `json:"sep"`
+	MaxSplit    int      `json:"maxSplit"`
+	Fields      []string `json:"fields"`
+	IgnoreBlank bool     `json:"ignore_blank"`
+	Overwrite   bool     `json:"overwrite"`
+	Trim        string   `json:"trim"`
+	DynamicSep  bool     `json:"dynamicSep"`
+}
+
 type SplitFilter struct {
-	config       map[interface{}]interface{}
+	config       map[any]any
 	fields       []field_setter.FieldSetter
 	fieldsLength int
 	sep          string
@@ -27,67 +39,53 @@ func init() {
 	Register("Split", newSplitFilter)
 }
 
-func newSplitFilter(config map[interface{}]interface{}) topology.Filter {
+func newSplitFilter(config map[any]any) topology.Filter {
+	// Parse configuration using SafeDecodeConfig helper
+	var splitConfig SplitConfig
+	// Set default values
+	splitConfig.Src = "message"
+	splitConfig.MaxSplit = -1
+	splitConfig.IgnoreBlank = true
+	splitConfig.Overwrite = true
+
+	SafeDecodeConfig("Split", config, &splitConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Split", map[string]any{
+		"sep":    splitConfig.Sep,
+		"fields": splitConfig.Fields,
+	})
+	if len(splitConfig.Fields) == 0 {
+		klog.Fatal("Split filter: 'fields' cannot be empty")
+	}
+
 	plugin := &SplitFilter{
 		config:      config,
 		fields:      make([]field_setter.FieldSetter, 0),
-		overwrite:   true,
-		sep:         "",
-		trim:        "",
-		ignoreBlank: true,
-		dynamicSep:  false,
-		maxSplit:    -1,
+		overwrite:   splitConfig.Overwrite,
+		sep:         splitConfig.Sep,
+		trim:        splitConfig.Trim,
+		ignoreBlank: splitConfig.IgnoreBlank,
+		dynamicSep:  splitConfig.DynamicSep,
+		maxSplit:    splitConfig.MaxSplit,
 	}
 
-	if ignoreBlank, ok := config["ignore_blank"]; ok {
-		plugin.ignoreBlank = ignoreBlank.(bool)
-	}
+	plugin.src = value_render.GetValueRender2(splitConfig.Src)
 
-	if overwrite, ok := config["overwrite"]; ok {
-		plugin.overwrite = overwrite.(bool)
-	}
-
-	if maxSplit, ok := config["maxSplit"]; ok {
-		plugin.maxSplit = maxSplit.(int)
-	}
-
-	if src, ok := config["src"]; ok {
-		plugin.src = value_render.GetValueRender2(src.(string))
-	} else {
-		plugin.src = value_render.GetValueRender2("message")
-	}
-
-	if sep, ok := config["sep"]; ok {
-		plugin.sep = sep.(string)
-	}
-	if plugin.sep == "" {
-		klog.Fatal("sep must be set in split filter plugin")
-	}
-
-	if dynamicSep, ok := config["dynamicSep"]; ok {
-		plugin.dynamicSep = dynamicSep.(bool)
-	}
 	if plugin.dynamicSep {
 		plugin.sepRender = value_render.GetValueRender(plugin.sep)
 	}
 
-	if fieldsI, ok := config["fields"]; ok {
-		for _, f := range fieldsI.([]interface{}) {
-			plugin.fields = append(plugin.fields, field_setter.NewFieldSetter(f.(string)))
-		}
-	} else {
-		klog.Fatal("fields must be set in split filter plugin")
+	// Convert field names to field setters
+	for _, fieldName := range splitConfig.Fields {
+		plugin.fields = append(plugin.fields, field_setter.NewFieldSetter(fieldName))
 	}
 	plugin.fieldsLength = len(plugin.fields)
-
-	if trim, ok := config["trim"]; ok {
-		plugin.trim = trim.(string)
-	}
 
 	return plugin
 }
 
-func (plugin *SplitFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *SplitFilter) Filter(event map[string]any) (map[string]any, bool) {
 	src, err := plugin.src.Render(event)
 	if err != nil || src == nil {
 		return event, false

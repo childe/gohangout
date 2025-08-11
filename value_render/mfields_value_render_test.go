@@ -6,19 +6,19 @@ import (
 )
 
 type mfieldsTestCase struct {
-	event  map[string]interface{}
+	event  map[string]any
 	fields []string
 
 	hasError bool
-	want     interface{}
+	want     any
 }
 
 func TestMultiLevelValueRender(t *testing.T) {
 	for _, c := range []mfieldsTestCase{
 		{
-			event: map[string]interface{}{
-				"a": map[string]interface{}{
-					"b": map[string]interface{}{
+			event: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{
 						"c": "c",
 					},
 				},
@@ -28,9 +28,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 			want:     "c",
 		},
 		{
-			event: map[string]interface{}{
-				"a": map[string]interface{}{
-					"b": map[string]interface{}{
+			event: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{
 						"c": "c",
 					},
 				},
@@ -40,9 +40,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 			want:     nil,
 		},
 		{
-			event: map[string]interface{}{
-				"a": map[string]interface{}{
-					"b": map[string]interface{}{
+			event: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{
 						"c": "c",
 					},
 				},
@@ -52,9 +52,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 			want:     nil,
 		},
 		{
-			event: map[string]interface{}{
-				"a": map[string]interface{}{
-					"b": map[string]interface{}{
+			event: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{
 						"c": "c",
 					},
 				},
@@ -64,9 +64,9 @@ func TestMultiLevelValueRender(t *testing.T) {
 			want:     nil,
 		},
 		{
-			event: map[string]interface{}{
-				"a": map[string]interface{}{
-					"b": map[string]interface{}{
+			event: map[string]any{
+				"a": map[string]any{
+					"b": map[string]any{
 						"c": 10,
 					},
 				},
@@ -76,8 +76,8 @@ func TestMultiLevelValueRender(t *testing.T) {
 			want:     10,
 		},
 		{
-			event: map[string]interface{}{
-				"a": map[string]interface{}{
+			event: map[string]any{
+				"a": map[string]any{
 					"b": 10,
 				},
 			},

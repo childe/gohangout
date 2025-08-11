@@ -3,7 +3,9 @@ package filter
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/childe/cast"
 	"github.com/childe/gohangout/field_setter"
@@ -13,32 +15,32 @@ import (
 )
 
 type Converter interface {
-	convert(v interface{}) (interface{}, error)
+	convert(v any) (any, error)
 }
 
 var ErrConvertUnknownFormat error = errors.New("unknown format")
 
 type IntConverter struct{}
 
-func (c *IntConverter) convert(v interface{}) (interface{}, error) {
+func (c *IntConverter) convert(v any) (any, error) {
 	return cast.ToInt64E(v)
 }
 
 type UIntConverter struct{}
 
-func (c *UIntConverter) convert(v interface{}) (interface{}, error) {
+func (c *UIntConverter) convert(v any) (any, error) {
 	return cast.ToUint64E(v)
 }
 
 type FloatConverter struct{}
 
-func (c *FloatConverter) convert(v interface{}) (interface{}, error) {
+func (c *FloatConverter) convert(v any) (any, error) {
 	return cast.ToFloat64E(v)
 }
 
 type BoolConverter struct{}
 
-func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
+func (c *BoolConverter) convert(v any) (any, error) {
 	if v, ok := v.(string); ok {
 		rst, err := strconv.ParseBool(v)
 		if err != nil {
@@ -52,7 +54,7 @@ func (c *BoolConverter) convert(v interface{}) (interface{}, error) {
 
 type StringConverter struct{}
 
-func (c *StringConverter) convert(v interface{}) (interface{}, error) {
+func (c *StringConverter) convert(v any) (any, error) {
 	if r, ok := v.(json.Number); ok {
 		return r.String(), nil
 	}
@@ -70,8 +72,8 @@ func (c *StringConverter) convert(v interface{}) (interface{}, error) {
 
 type ArrayIntConverter struct{}
 
-func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
-	if v1, ok1 := v.([]interface{}); ok1 {
+func (c *ArrayIntConverter) convert(v any) (any, error) {
+	if v1, ok1 := v.([]any); ok1 {
 		var t2 = []int{}
 		for _, i := range v1 {
 			j, err := i.(json.Number).Int64()
@@ -88,8 +90,8 @@ func (c *ArrayIntConverter) convert(v interface{}) (interface{}, error) {
 
 type ArrayFloatConverter struct{}
 
-func (c *ArrayFloatConverter) convert(v interface{}) (interface{}, error) {
-	if v1, ok1 := v.([]interface{}); ok1 {
+func (c *ArrayFloatConverter) convert(v any) (any, error) {
+	if v1, ok1 := v.([]any); ok1 {
 		var t2 = []float64{}
 		for _, i := range v1 {
 			j, err := i.(json.Number).Float64()
@@ -103,79 +105,114 @@ func (c *ArrayFloatConverter) convert(v interface{}) (interface{}, error) {
 	return nil, ErrConvertUnknownFormat
 }
 
-type ConveterAndRender struct {
+type ConverterAndRender struct {
 	converter    Converter
 	valueRender  value_render.ValueRender
 	removeIfFail bool
-	settoIfFail  interface{}
-	settoIfNil   interface{}
+	settoIfFail  any
+	settoIfNil   any
+}
+
+// FieldConvertConfig defines the configuration for a single field conversion
+type FieldConvertConfig struct {
+	To           string      `json:"to"`
+	RemoveIfFail bool        `json:"remove_if_fail"`
+	SettoIfFail  any `json:"setto_if_fail"`
+	SettoIfNil   any `json:"setto_if_nil"`
+}
+
+// ConvertConfig defines the configuration structure for Convert filter
+type ConvertConfig struct {
+	Fields map[string]FieldConvertConfig `json:"fields"`
 }
 
 type ConvertFilter struct {
-	config map[interface{}]interface{}
-	fields map[field_setter.FieldSetter]ConveterAndRender
+	config map[any]any
+	fields map[field_setter.FieldSetter]ConverterAndRender
 }
 
 func init() {
 	Register("Convert", newConvertFilter)
 }
 
-func newConvertFilter(config map[interface{}]interface{}) topology.Filter {
+func newConvertFilter(config map[any]any) topology.Filter {
 	plugin := &ConvertFilter{
 		config: config,
-		fields: make(map[field_setter.FieldSetter]ConveterAndRender),
+		fields: make(map[field_setter.FieldSetter]ConverterAndRender),
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for f, vI := range fieldsValue.(map[interface{}]interface{}) {
-			v := vI.(map[interface{}]interface{})
-			fieldSetter := field_setter.NewFieldSetter(f.(string))
-			if fieldSetter == nil {
-				klog.Fatalf("could build field setter from %s", f.(string))
-			}
+	// Parse configuration using SafeDecodeConfig
+	var convertConfig ConvertConfig
+	
+	SafeDecodeConfig("Convert", config, &convertConfig)
 
-			to := v["to"].(string)
-			remove_if_fail := false
-			if I, ok := v["remove_if_fail"]; ok {
-				remove_if_fail = I.(bool)
-			}
-			setto_if_fail := v["setto_if_fail"]
-			setto_if_nil := v["setto_if_nil"]
+	// Validate required fields
+	if convertConfig.Fields == nil || len(convertConfig.Fields) == 0 {
+		panic("Convert filter: 'fields' is required and cannot be empty")
+	}
 
-			var converter Converter
-			if to == "float" {
-				converter = &FloatConverter{}
-			} else if to == "int" {
-				converter = &IntConverter{}
-			} else if to == "uint" {
-				converter = &UIntConverter{}
-			} else if to == "bool" {
-				converter = &BoolConverter{}
-			} else if to == "string" {
-				converter = &StringConverter{}
-			} else if to == "array(int)" {
-				converter = &ArrayIntConverter{}
-			} else if to == "array(float)" {
-				converter = &ArrayFloatConverter{}
-			} else {
-				klog.Fatal("can only convert to int/float/bool/array(int)/array(float)")
-			}
-
-			plugin.fields[fieldSetter] = ConveterAndRender{
-				converter:    converter,
-				valueRender:  value_render.GetValueRender2(f.(string)),
-				removeIfFail: remove_if_fail,
-				settoIfFail:  setto_if_fail,
-				settoIfNil:   setto_if_nil,
-			}
+	// Process each field conversion
+	for fieldName, fieldConfig := range convertConfig.Fields {
+		fieldSetter := field_setter.NewFieldSetter(fieldName)
+		if fieldSetter == nil {
+			panic(fmt.Sprintf("Convert filter: could not build field setter from '%s'", fieldName))
 		}
-	} else {
-		klog.Fatal("fields must be set in convert filter plugin")
+
+		// Validate and get converter
+		var converter Converter
+		switch fieldConfig.To {
+		case "float":
+			converter = &FloatConverter{}
+		case "int":
+			converter = &IntConverter{}
+		case "uint":
+			converter = &UIntConverter{}
+		case "bool":
+			converter = &BoolConverter{}
+		case "string":
+			converter = &StringConverter{}
+		case "array(int)":
+			converter = &ArrayIntConverter{}
+		case "array(float)":
+			converter = &ArrayFloatConverter{}
+		default:
+			panic(fmt.Sprintf("Convert filter: field '%s' has invalid 'to' value '%s'. Must be one of: int/uint/float/bool/string/array(int)/array(float)", fieldName, fieldConfig.To))
+		}
+
+		plugin.fields[fieldSetter] = ConverterAndRender{
+			converter:    converter,
+			valueRender:  value_render.GetValueRender2(fieldName),
+			removeIfFail: fieldConfig.RemoveIfFail,
+			settoIfFail:  convertJSONNumber(fieldConfig.SettoIfFail),
+			settoIfNil:   convertJSONNumber(fieldConfig.SettoIfNil),
+		}
 	}
+
 	return plugin
 }
 
-func (plugin *ConvertFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+// convertJSONNumber converts json.Number to appropriate Go types for backward compatibility
+func convertJSONNumber(value any) any {
+	if jsonNum, ok := value.(json.Number); ok {
+		numStr := jsonNum.String()
+		// If it contains a decimal point, treat as float
+		if strings.Contains(numStr, ".") {
+			if floatVal, err := jsonNum.Float64(); err == nil {
+				return floatVal
+			}
+		} else {
+			// Otherwise, try to convert to int
+			if intVal, err := jsonNum.Int64(); err == nil {
+				return int(intVal)
+			}
+		}
+		// If conversion fails, return as string
+		return numStr
+	}
+	return value
+}
+
+func (plugin *ConvertFilter) Filter(event map[string]any) (map[string]any, bool) {
 	for fs, converterAndRender := range plugin.fields {
 		originanV, err := converterAndRender.valueRender.Render(event)
 		if err != nil || originanV == nil {

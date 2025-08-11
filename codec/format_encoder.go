@@ -18,8 +18,8 @@ func NewFormatEncoder(format string) *FormatEncoder {
 	}
 }
 
-func (e *FormatEncoder) Encode(v interface{}) ([]byte, error) {
-	rst, err := e.render.Render(v.(map[string]interface{}))
+func (e *FormatEncoder) Encode(v any) ([]byte, error) {
+	rst, err := e.render.Render(v.(map[string]any))
 	if err != nil {
 		return nil, err
 	}

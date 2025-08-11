@@ -8,13 +8,13 @@ import (
 	"github.com/childe/gohangout/topology"
 )
 
-func createLinkStatsMetricEvents(now int64) []map[string]interface{} {
+func createLinkStatsMetricEvents(now int64) []map[string]any {
 	return createLinkMetricEvents(now)
 }
 
 func TestLinkStatsMetricFilter(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		f                   *LinkStatsMetricFilter
 		ok                  bool
 		batchWindow         int = 5
@@ -24,7 +24,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 		drop_original_event = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode->responseTime"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow
@@ -75,7 +75,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 
 	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
+	_10_metric := f.metricToEmit[ts].(map[any]any)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -86,7 +86,7 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -97,20 +97,20 @@ func TestLinkStatsMetricFilter(t *testing.T) {
 		t.Errorf("301 should be in localhost_metric")
 	}
 
-	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
+	if len(localhost_metric["200"].(map[any]any)) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).count != 2 {
+	if localhost_metric["200"].(map[any]any)["responseTime"].(*stats).count != 2 {
 		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).sum != 20.4 {
+	if localhost_metric["200"].(map[any]any)["responseTime"].(*stats).sum != 20.4 {
 		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
 
 func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		f                   *LinkStatsMetricFilter
 		ok                  bool
 		batchWindow         int = 5
@@ -120,7 +120,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 		drop_original_event = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode->responseTime"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow
@@ -171,7 +171,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 
 	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
+	_10_metric := f.metricToEmit[ts].(map[any]any)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -182,7 +182,7 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -193,13 +193,13 @@ func TestLinkStatsMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("301 should be in localhost_metric")
 	}
 
-	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
+	if len(localhost_metric["200"].(map[any]any)) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).count != 2 {
+	if localhost_metric["200"].(map[any]any)["responseTime"].(*stats).count != 2 {
 		t.Errorf("_10->localhost->200->responseTime-count should be 2")
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).sum != 20.4 {
+	if localhost_metric["200"].(map[any]any)["responseTime"].(*stats).sum != 20.4 {
 		t.Errorf("_10->localhost->200->responseTime-sum should be 20.4")
 	}
 }
@@ -228,7 +228,7 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 
 	_10 := now - 10
 	ts = _10 - _10%f.batchWindow
-	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
+	_10_metric := f.metricToEmit[ts].(map[any]any)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -239,7 +239,7 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -250,29 +250,29 @@ func _testLinkStatsMetricFilterAccumulateMode(t *testing.T, f *LinkStatsMetricFi
 		t.Errorf("301 should be in localhost_metric")
 	}
 
-	if len(localhost_metric["200"].(map[interface{}]interface{})) != 1 {
+	if len(localhost_metric["200"].(map[any]any)) != 1 {
 		t.Errorf("%v", f.metricToEmit[ts])
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).count != count {
+	if localhost_metric["200"].(map[any]any)["responseTime"].(*stats).count != count {
 		t.Errorf("_10->localhost->200->responseTime-count should be %d", count)
 	}
-	if localhost_metric["200"].(map[interface{}]interface{})["responseTime"].(*stats).sum != sum {
+	if localhost_metric["200"].(map[any]any)["responseTime"].(*stats).sum != sum {
 		t.Errorf("_10->localhost->200->responseTime-sum should be %f", sum)
 	}
 }
 
 func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		f                   *LinkStatsMetricFilter
 		batchWindow         int         = 5
 		reserveWindow       int         = 20
 		windowOffset        int         = 0
-		accumulateMode      interface{} = "cumulative"
+		accumulateMode      any = "cumulative"
 		drop_original_event             = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode->responseTime"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow
@@ -300,16 +300,16 @@ func TestLinkStatsMetricFilterCumulativeMode(t *testing.T) {
 
 func TestLinkStatsMetricFilterSeparateMode(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		f                   *LinkStatsMetricFilter
 		batchWindow         int         = 5
 		reserveWindow       int         = 20
 		windowOffset        int         = 0
-		accumulateMode      interface{} = "separate"
+		accumulateMode      any = "separate"
 		drop_original_event             = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode->responseTime"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow

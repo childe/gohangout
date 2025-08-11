@@ -1,19 +1,20 @@
 package filter
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestAddFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
-	fields := make(map[interface{}]interface{})
+	config := make(map[any]any)
+	fields := make(map[any]any)
 	fields["name"] = `{{.first}} {{.last}}`
 	fields["firstname"] = `$.first`
 	config["fields"] = fields
 	f := BuildFilter("Add", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["@timestamp"] = time.Now().Unix()
 	event["first"] = "dehua"
 	event["last"] = "liu"
@@ -40,5 +41,87 @@ func TestAddFilter(t *testing.T) {
 	}
 	if firstname != "dehua" {
 		t.Error("firstname field should be `dehua`")
+	}
+}
+
+func TestAddConfigParsing(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[any]any
+		expectError bool
+		errorSubstr string
+	}{
+		{
+			name: "valid config",
+			config: map[any]any{
+				"fields": map[any]any{
+					"name": "test",
+					"type": "web",
+				},
+				"overwrite": true,
+			},
+			expectError: false,
+		},
+		{
+			name: "missing fields",
+			config: map[any]any{
+				"overwrite": true,
+			},
+			expectError: true,
+			errorSubstr: "fields' is required",
+		},
+		{
+			name: "wrong type for fields - string instead of map",
+			config: map[any]any{
+				"fields": "this should be a map",
+			},
+			expectError: true,
+			errorSubstr: "cannot unmarshal string into Go struct field AddConfig.fields",
+		},
+		{
+			name: "wrong type for overwrite - string instead of bool",
+			config: map[any]any{
+				"fields": map[any]any{
+					"name": "test",
+				},
+				"overwrite": "not a boolean",
+			},
+			expectError: true,
+			errorSubstr: "cannot unmarshal string into Go struct field AddConfig.overwrite",
+		},
+		{
+			name: "wrong type for field value - number instead of string",
+			config: map[any]any{
+				"fields": map[any]any{
+					"name": "test",
+					"age":  123, // this should be string
+				},
+			},
+			expectError: true,
+			errorSubstr: "cannot unmarshal number into Go struct field AddConfig.fields of type string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.expectError {
+						t.Errorf("Expected no panic but got: %v", r)
+					} else {
+						errorStr := r.(string)
+						if !strings.Contains(errorStr, tt.errorSubstr) {
+							t.Errorf("Expected error to contain '%s', but got: %s", tt.errorSubstr, errorStr)
+						}
+					}
+				} else {
+					if tt.expectError {
+						t.Errorf("Expected error but got none")
+					}
+				}
+			}()
+
+			newAddFilter(tt.config)
+		})
 	}
 }

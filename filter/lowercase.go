@@ -10,8 +10,13 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// LowercaseConfig defines the configuration structure for Lowercase filter
+type LowercaseConfig struct {
+	Fields []string `json:"fields"`
+}
+
 type LowercaseFilter struct {
-	config map[interface{}]interface{}
+	config map[any]any
 	fields map[field_setter.FieldSetter]value_render.ValueRender
 }
 
@@ -19,28 +24,39 @@ func init() {
 	Register("Lowercase", newLowercaseFilter)
 }
 
-func newLowercaseFilter(config map[interface{}]interface{}) topology.Filter {
+func newLowercaseFilter(config map[any]any) topology.Filter {
+	// Parse configuration using SafeDecodeConfig helper
+	var lowercaseConfig LowercaseConfig
+
+	SafeDecodeConfig("Lowercase", config, &lowercaseConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Lowercase", map[string]any{
+		"fields": lowercaseConfig.Fields,
+	})
+	if len(lowercaseConfig.Fields) == 0 {
+		klog.Fatal("Lowercase filter: 'fields' cannot be empty")
+	}
+
 	plugin := &LowercaseFilter{
 		config: config,
 		fields: make(map[field_setter.FieldSetter]value_render.ValueRender),
 	}
 
-	if fieldsValue, ok := config["fields"]; ok {
-		for _, field := range fieldsValue.([]interface{}) {
-			fieldSetter := field_setter.NewFieldSetter(field.(string))
-			if fieldSetter == nil {
-				klog.Fatalf("could build field setter from %s", field.(string))
-			}
-			plugin.fields[fieldSetter] = value_render.GetValueRender2(field.(string))
+	// Create field setters and value renders
+	for _, field := range lowercaseConfig.Fields {
+		fieldSetter := field_setter.NewFieldSetter(field)
+		if fieldSetter == nil {
+			klog.Fatalf("Lowercase filter: could not build field setter from '%s'", field)
 		}
-	} else {
-		klog.Fatal("fields must be set in remove filter plugin")
+		plugin.fields[fieldSetter] = value_render.GetValueRender2(field)
 	}
+
 	return plugin
 }
 
 // 如果字段不是字符串, 返回false, 其它返回true
-func (plugin *LowercaseFilter) Filter(event map[string]interface{}) (map[string]interface{}, bool) {
+func (plugin *LowercaseFilter) Filter(event map[string]any) (map[string]any, bool) {
 	success := true
 	for s, v := range plugin.fields {
 		value, err := v.Render(event)

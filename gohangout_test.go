@@ -15,7 +15,7 @@ import (
 
 type MockInput struct{}
 
-func (m *MockInput) ReadOneEvent() map[string]interface{} {
+func (m *MockInput) ReadOneEvent() map[string]any {
 	return nil
 }
 func (m *MockInput) Shutdown() {}
@@ -48,7 +48,7 @@ filters:
 outputs:
   - Stdout: {}`
 
-		config := make(map[string]interface{})
+		config := make(map[string]any)
 		yaml.Unmarshal([]byte(c), &config)
 
 		mockey.Mock(input.GetInput).Return(&MockInput{}).Build()
@@ -75,7 +75,7 @@ filters:
 outputs:
   - Stdout: {}`
 
-		c := make(map[string]interface{})
+		c := make(map[string]any)
 		yaml.Unmarshal([]byte(_c), &c) //
 
 		mockey.Mock(config.ParseConfig).Return(c, nil).Build()
@@ -83,10 +83,10 @@ outputs:
 		emit := mockey.Mock((*output.StdoutOutput).Emit).Return().Build()
 
 		msgCount := 10
-		mockey.Mock((*input.StdinInput).ReadOneEvent).To(func(*input.StdinInput) map[string]interface{} {
+		mockey.Mock((*input.StdinInput).ReadOneEvent).To(func(*input.StdinInput) map[string]any {
 			if msgCount > 0 {
 				msgCount--
-				return map[string]interface{}{"msg": fmt.Sprintf("msg-%d", msgCount)}
+				return map[string]any{"msg": fmt.Sprintf("msg-%d", msgCount)}
 			} else {
 				return nil
 			}
@@ -115,7 +115,7 @@ filters:
 outputs:
   - Stdout: {}`
 
-		c := make(map[string]interface{})
+		c := make(map[string]any)
 		yaml.Unmarshal([]byte(_c), &c) //
 
 		mockey.Mock(config.ParseConfig).Return(c, nil).Build()
@@ -123,12 +123,12 @@ outputs:
 		emit := mockey.Mock((*output.StdoutOutput).Emit).Return().Build()
 
 		dateFilterOrigin := (*filter.DateFilter).Filter
-		dateFilter := mockey.Mock((*filter.DateFilter).Filter).To(func(f *filter.DateFilter, event map[string]interface{}) (map[string]interface{}, bool) {
+		dateFilter := mockey.Mock((*filter.DateFilter).Filter).To(func(f *filter.DateFilter, event map[string]any) (map[string]any, bool) {
 			return dateFilterOrigin(f, event)
 		}).Origin(&dateFilterOrigin).Build()
 
-		readOneEvent := mockey.Mock((*input.StdinInput).ReadOneEvent).To(func(*input.StdinInput) map[string]interface{} {
-			return map[string]interface{}{"msg": "mock message"}
+		readOneEvent := mockey.Mock((*input.StdinInput).ReadOneEvent).To(func(*input.StdinInput) map[string]any {
+			return map[string]any{"msg": "mock message"}
 		}).Build()
 
 		ch := make(chan struct{})
@@ -189,25 +189,25 @@ outputs:
   - Stdout: {}
 `
 
-		c := make(map[string]interface{})
+		c := make(map[string]any)
 		yaml.Unmarshal([]byte(_c), &c) //
 
 		mockey.Mock(config.ParseConfig).Return(c, nil).Build()
 
-		rst := make([]map[string]interface{}, 0)
-		emit := mockey.Mock((*output.StdoutOutput).Emit).To(func(o *output.StdoutOutput, e map[string]interface{}) {
+		rst := make([]map[string]any, 0)
+		emit := mockey.Mock((*output.StdoutOutput).Emit).To(func(o *output.StdoutOutput, e map[string]any) {
 			rst = append(rst, e)
 		}).Build()
 
 		eventCount := 0
-		readOneEvent := mockey.Mock((*input.StdinInput).ReadOneEvent).To(func(*input.StdinInput) map[string]interface{} {
+		readOneEvent := mockey.Mock((*input.StdinInput).ReadOneEvent).To(func(*input.StdinInput) map[string]any {
 			switch eventCount {
 			case 0:
 				eventCount++
-				return map[string]interface{}{"message": `10.0.0.100 - [09/Sep/2024:18:40:55 +0800] "GET /assets/loading.gif HTTP/1.1" 200 838555 "http://kafka-admin.corp.com/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0" "10.10.10.100" "-"`}
+				return map[string]any{"message": `10.0.0.100 - [09/Sep/2024:18:40:55 +0800] "GET /assets/loading.gif HTTP/1.1" 200 838555 "http://kafka-admin.corp.com/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0" "10.10.10.100" "-"`}
 			case 1:
 				eventCount++
-				return map[string]interface{}{"message": "mock message"}
+				return map[string]any{"message": "mock message"}
 			default:
 				return nil
 			}

@@ -9,8 +9,8 @@ type JsonDecoder struct {
 	useNumber bool
 }
 
-func (jd *JsonDecoder) Decode(value []byte) map[string]interface{} {
-	rst := make(map[string]interface{})
+func (jd *JsonDecoder) Decode(value []byte) map[string]any {
+	rst := make(map[string]any)
 	rst["@timestamp"] = time.Now()
 	d := json.NewDecoder(bytes.NewReader(value))
 
@@ -19,7 +19,7 @@ func (jd *JsonDecoder) Decode(value []byte) map[string]interface{} {
 	}
 	err := d.Decode(&rst)
 	if err != nil || d.More() {
-		return map[string]interface{}{
+		return map[string]any{
 			"@timestamp": time.Now(),
 			"message":    string(value),
 		}

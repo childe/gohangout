@@ -18,11 +18,11 @@ func NewMultiLevelFieldDeleter(fields []string) *MultiLevelFieldDeleter {
 	}
 }
 
-func (d *MultiLevelFieldDeleter) Delete(event map[string]interface{}) {
+func (d *MultiLevelFieldDeleter) Delete(event map[string]any) {
 	current := event
 	for _, field := range d.preFields {
 		if v, ok := current[field]; ok {
-			if current, ok = v.(map[string]interface{}); !ok {
+			if current, ok = v.(map[string]any); !ok {
 				return
 			}
 		} else {

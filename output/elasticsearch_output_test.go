@@ -85,7 +85,7 @@ func TestFilterNodesIPList(t *testing.T) {
     }
   }
 }`
-	var v map[string]interface{}
+	var v map[string]any
 	json.Unmarshal([]byte(resp), &v)
 
 	for _, c := range []struct {

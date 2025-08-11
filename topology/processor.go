@@ -2,12 +2,12 @@ package topology
 
 // FilterBox and OutputBox is Processor
 type Processor interface {
-	Process(map[string]interface{}) map[string]interface{}
+	Process(map[string]any) map[string]any
 }
 
 type NilProcessorInLink struct{}
 
-func (n *NilProcessorInLink) Process(event map[string]interface{}) map[string]interface{} {
+func (n *NilProcessorInLink) Process(event map[string]any) map[string]any {
 	return event
 }
 
@@ -18,7 +18,7 @@ type ProcessorNode struct {
 }
 
 // Processor will process event , and pass it to next, and then next , until last one(generally output)
-func (node *ProcessorNode) Process(event map[string]interface{}) map[string]interface{} {
+func (node *ProcessorNode) Process(event map[string]any) map[string]any {
 	event = node.Processor.Process(event)
 	if event == nil || node.Next == nil {
 		return event

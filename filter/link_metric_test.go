@@ -7,59 +7,59 @@ import (
 	"github.com/childe/gohangout/topology"
 )
 
-func createLinkMetricEvents(now int64) []map[string]interface{} {
+func createLinkMetricEvents(now int64) []map[string]any {
 	var (
-		event  map[string]interface{}
-		events []map[string]interface{} = make([]map[string]interface{}, 0)
+		event  map[string]any
+		events []map[string]any = make([]map[string]any, 0)
 	)
 
 	_15 := now - 15
 	_10 := now - 10
 	_5 := now - 5
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(_15, 0)
 	event["host"] = "localhost"
 	event["request_statusCode"] = "200"
 	event["responseTime"] = 10.1
 	events = append(events, event)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(_10, 0)
 	event["host"] = "localhost"
 	event["request_statusCode"] = "301"
 	event["responseTime"] = 0.1
 	events = append(events, event)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(_10, 0)
 	event["host"] = "localhost"
 	event["request_statusCode"] = "200"
 	event["responseTime"] = 10.1
 	events = append(events, event)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(_10, 0)
 	event["host"] = "localhost"
 	event["request_statusCode"] = "200"
 	event["responseTime"] = 10.3
 	events = append(events, event)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(_10, 0)
 	event["host"] = "remote"
 	event["request_statusCode"] = "200"
 	event["responseTime"] = 10.1
 	events = append(events, event)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(_5, 0)
 	event["host"] = "localhost"
 	event["request_statusCode"] = "200"
 	event["responseTime"] = 10.1
 	events = append(events, event)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["@timestamp"] = time.Unix(now, 0)
 	event["host"] = "localhost"
 	event["request_statusCode"] = "200"
@@ -70,7 +70,7 @@ func createLinkMetricEvents(now int64) []map[string]interface{} {
 
 func TestLinkMetricFilter(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		ok                  bool
 		batchWindow         int = 5
 		reserveWindow       int = 20
@@ -79,7 +79,7 @@ func TestLinkMetricFilter(t *testing.T) {
 		drop_original_event = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow
@@ -123,7 +123,7 @@ func TestLinkMetricFilter(t *testing.T) {
 
 	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric := f.metric[ts].(map[interface{}]interface{})
+	_10_metric := f.metric[ts].(map[any]any)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -134,7 +134,7 @@ func TestLinkMetricFilter(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metric[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric := f.metric[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -176,7 +176,7 @@ func TestLinkMetricFilter(t *testing.T) {
 
 	_10 = now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric = f.metricToEmit[ts].(map[interface{}]interface{})
+	_10_metric = f.metricToEmit[ts].(map[any]any)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -187,7 +187,7 @@ func TestLinkMetricFilter(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric = f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric = f.metricToEmit[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -205,7 +205,7 @@ func TestLinkMetricFilter(t *testing.T) {
 
 func TestLinkMetricFilterWindowOffset(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		ok                  bool
 		batchWindow         int = 5
 		reserveWindow       int = 20
@@ -214,7 +214,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 		drop_original_event = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow
@@ -258,7 +258,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 
 	_10 := now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric := f.metric[ts].(map[interface{}]interface{})
+	_10_metric := f.metric[ts].(map[any]any)
 	t.Logf("_10_metric: %v", _10_metric)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
@@ -270,7 +270,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metric[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric := f.metric[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("localhost metric length should be 2")
 	}
@@ -308,7 +308,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 
 	_10 = now - 10
 	ts = _10 - _10%(int64)(batchWindow)
-	_10_metric = f.metricToEmit[ts].(map[interface{}]interface{})
+	_10_metric = f.metricToEmit[ts].(map[any]any)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
 	}
@@ -319,7 +319,7 @@ func TestLinkMetricFilterWindowOffset(t *testing.T) {
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric = f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric = f.metricToEmit[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("_10->localhost metric length should be 2")
 	}
@@ -355,7 +355,7 @@ func _testLinkMetricFilterAccumulateMode(t *testing.T, f *LinkMetricFilter, now 
 
 	_10 := now - 10
 	ts = _10 - _10%f.batchWindow
-	_10_metric := f.metricToEmit[ts].(map[interface{}]interface{})
+	_10_metric := f.metricToEmit[ts].(map[any]any)
 	t.Logf("_10_metric: %v", _10_metric)
 	if len(_10_metric) != 2 {
 		t.Errorf("_10 metric length should be 2")
@@ -367,7 +367,7 @@ func _testLinkMetricFilterAccumulateMode(t *testing.T, f *LinkMetricFilter, now 
 		t.Errorf("remote should be in _10 metric")
 	}
 
-	localhost_metric := f.metricToEmit[ts].(map[interface{}]interface{})["localhost"].(map[interface{}]interface{})
+	localhost_metric := f.metricToEmit[ts].(map[any]any)["localhost"].(map[any]any)
 	if len(localhost_metric) != 2 {
 		t.Errorf("_10->localhost metric length should be 2")
 	}
@@ -381,16 +381,16 @@ func _testLinkMetricFilterAccumulateMode(t *testing.T, f *LinkMetricFilter, now 
 
 func TestLinkMetricFilterCumulativeMode(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		f                   *LinkMetricFilter
 		batchWindow         int         = 5
 		reserveWindow       int         = 20
 		windowOffset        int         = 0
-		accumulateMode      interface{} = "cumulative"
+		accumulateMode      any = "cumulative"
 		drop_original_event             = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow
@@ -418,16 +418,16 @@ func TestLinkMetricFilterCumulativeMode(t *testing.T) {
 
 func TestLinkMetricFilterSeparateMode(t *testing.T) {
 	var (
-		config              map[interface{}]interface{}
+		config              map[any]any
 		f                   *LinkMetricFilter
 		batchWindow         int         = 5
 		reserveWindow       int         = 20
 		windowOffset        int         = 0
-		accumulateMode      interface{} = "separate"
+		accumulateMode      any = "separate"
 		drop_original_event             = true
 	)
 
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["fieldsLink"] = "host->request_statusCode"
 	config["reserveWindow"] = reserveWindow
 	config["batchWindow"] = batchWindow

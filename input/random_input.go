@@ -10,7 +10,7 @@ import (
 )
 
 type RandomInput struct {
-	config  map[interface{}]interface{}
+	config  map[any]any
 	decoder codec.Decoder
 
 	from int
@@ -24,7 +24,7 @@ func init() {
 	Register("Random", newRandomInput)
 }
 
-func newRandomInput(config map[interface{}]interface{}) topology.Input {
+func newRandomInput(config map[any]any) topology.Input {
 	var codertype string = "plain"
 
 	p := &RandomInput{
@@ -53,7 +53,7 @@ func newRandomInput(config map[interface{}]interface{}) topology.Input {
 	return p
 }
 
-func (p *RandomInput) ReadOneEvent() map[string]interface{} {
+func (p *RandomInput) ReadOneEvent() map[string]any {
 	if p.maxMessages != -1 && p.count >= p.maxMessages {
 		return nil
 	}

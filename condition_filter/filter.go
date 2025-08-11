@@ -17,7 +17,7 @@ import (
 )
 
 type Condition interface {
-	Pass(event map[string]interface{}) bool
+	Pass(event map[string]any) bool
 }
 
 type TemplateCondition struct {
@@ -25,7 +25,7 @@ type TemplateCondition struct {
 	ifResult    string
 }
 
-func (s *TemplateCondition) Pass(event map[string]interface{}) bool {
+func (s *TemplateCondition) Pass(event map[string]any) bool {
 	r, err := s.ifCondition.Render(event)
 	if err != nil || r == nil || r.(string) != s.ifResult {
 		return false
@@ -43,7 +43,7 @@ func NewTemplateConditionFilter(condition string) *TemplateCondition {
 type INCondition struct {
 	pat   *jsonpath.Compiled
 	paths []string
-	value interface{}
+	value any
 	fn    int
 }
 
@@ -93,13 +93,13 @@ func NewINCondition(c string) (*INCondition, error) {
 	return nil, err
 }
 
-func (c *INCondition) Pass(event map[string]interface{}) bool {
+func (c *INCondition) Pass(event map[string]any) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
 		if err != nil {
 			return false
 		}
-		if l, ok := v.([]interface{}); !ok {
+		if l, ok := v.([]any); !ok {
 			return false
 		} else {
 			for _, e := range l {
@@ -112,12 +112,12 @@ func (c *INCondition) Pass(event map[string]interface{}) bool {
 	}
 
 	var (
-		o map[string]interface{} = event
+		o map[string]any = event
 	)
 
 	for _, path := range c.paths[:c.fn-1] {
 		if v, ok := o[path]; ok && v != nil {
-			if o, ok = v.(map[string]interface{}); !ok {
+			if o, ok = v.(map[string]any); !ok {
 				return false
 			}
 		} else {
@@ -126,7 +126,7 @@ func (c *INCondition) Pass(event map[string]interface{}) bool {
 	}
 
 	if v, ok := o[c.paths[c.fn-1]]; ok {
-		if l, ok := v.([]interface{}); !ok {
+		if l, ok := v.([]any); !ok {
 			return false
 		} else {
 			for _, e := range l {
@@ -148,15 +148,15 @@ func NewExistCondition(paths []string) *ExistCondition {
 	return &ExistCondition{paths}
 }
 
-func (c *ExistCondition) Pass(event map[string]interface{}) bool {
+func (c *ExistCondition) Pass(event map[string]any) bool {
 	var (
-		o      map[string]interface{} = event
+		o      map[string]any = event
 		length int                    = len(c.paths)
 	)
 	for _, path := range c.paths[:length-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
+				o = v.(map[string]any)
 			} else {
 				return false
 			}
@@ -174,7 +174,7 @@ func (c *ExistCondition) Pass(event map[string]interface{}) bool {
 type EQCondition struct {
 	pat   *jsonpath.Compiled
 	paths []string
-	value interface{}
+	value any
 	fn    int
 }
 
@@ -230,19 +230,19 @@ func NewEQCondition(c string) (*EQCondition, error) {
 	}
 }
 
-func (c *EQCondition) Pass(event map[string]interface{}) bool {
+func (c *EQCondition) Pass(event map[string]any) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
 		return err == nil && equal(v, c.value)
 	}
 
 	var (
-		o map[string]interface{} = event
+		o map[string]any = event
 	)
 
 	for _, path := range c.paths[:c.fn-1] {
 		if v, ok := o[path]; ok && v != nil {
-			if o, ok = v.(map[string]interface{}); !ok {
+			if o, ok = v.(map[string]any); !ok {
 				return false
 			}
 		} else {
@@ -256,7 +256,7 @@ func (c *EQCondition) Pass(event map[string]interface{}) bool {
 	return false
 }
 
-func equal(src, target interface{}) bool {
+func equal(src, target any) bool {
 	if n, ok := src.(json.Number); ok {
 		if tValue, ok := target.(int64); ok {
 			if intV, err := n.Int64(); err == nil {
@@ -307,21 +307,21 @@ func NewHasPrefixCondition(c string) (*HasPrefixCondition, error) {
 	return &HasPrefixCondition{nil, paths, value}, nil
 }
 
-func (c *HasPrefixCondition) Pass(event map[string]interface{}) bool {
+func (c *HasPrefixCondition) Pass(event map[string]any) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
 		return err == nil && strings.HasPrefix(v.(string), c.prefix)
 	}
 
 	var (
-		o      map[string]interface{} = event
+		o      map[string]any = event
 		length int                    = len(c.paths)
 	)
 
 	for _, path := range c.paths[:length-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
+				o = v.(map[string]any)
 			} else {
 				return false
 			}
@@ -371,21 +371,21 @@ func NewHasSuffixCondition(c string) (*HasSuffixCondition, error) {
 	return &HasSuffixCondition{nil, paths, value}, nil
 }
 
-func (c *HasSuffixCondition) Pass(event map[string]interface{}) bool {
+func (c *HasSuffixCondition) Pass(event map[string]any) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
 		return err == nil && strings.HasSuffix(v.(string), c.suffix)
 	}
 
 	var (
-		o      map[string]interface{} = event
+		o      map[string]any = event
 		length int                    = len(c.paths)
 	)
 
 	for _, path := range c.paths[:length-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
+				o = v.(map[string]any)
 			} else {
 				return false
 			}
@@ -434,21 +434,21 @@ func NewContainsCondition(c string) (*ContainsCondition, error) {
 	return &ContainsCondition{nil, paths, value}, nil
 }
 
-func (c *ContainsCondition) Pass(event map[string]interface{}) bool {
+func (c *ContainsCondition) Pass(event map[string]any) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
 		return err == nil && strings.Contains(v.(string), c.substring)
 	}
 
 	var (
-		o      map[string]interface{} = event
+		o      map[string]any = event
 		length int                    = len(c.paths)
 	)
 
 	for _, path := range c.paths[:length-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
+				o = v.(map[string]any)
 			} else {
 				return false
 			}
@@ -474,16 +474,16 @@ func NewContainsAnyCondition(paths []string, substring string) *ContainsAnyCondi
 	return &ContainsAnyCondition{paths, substring}
 }
 
-func (c *ContainsAnyCondition) Pass(event map[string]interface{}) bool {
+func (c *ContainsAnyCondition) Pass(event map[string]any) bool {
 	var (
-		o      map[string]interface{} = event
+		o      map[string]any = event
 		length int                    = len(c.paths)
 	)
 
 	for _, path := range c.paths[:length-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
+				o = v.(map[string]any)
 			} else {
 				return false
 			}
@@ -542,20 +542,20 @@ func NewMatchCondition(c string) (*MatchCondition, error) {
 	return &MatchCondition{nil, paths, regexp}, nil
 }
 
-func (c *MatchCondition) Pass(event map[string]interface{}) bool {
+func (c *MatchCondition) Pass(event map[string]any) bool {
 	if c.pat != nil {
 		v, err := c.pat.Lookup(event)
 		return err == nil && c.regexp.MatchString(v.(string))
 	}
 	var (
-		o      map[string]interface{} = event
+		o      map[string]any = event
 		length int                    = len(c.paths)
 	)
 
 	for _, path := range c.paths[:length-1] {
 		if v, ok := o[path]; ok && v != nil {
 			if reflect.TypeOf(v).Kind() == reflect.Map {
-				o = v.(map[string]interface{})
+				o = v.(map[string]any)
 			} else {
 				return false
 			}
@@ -581,7 +581,7 @@ func NewRandomCondition(value int) *RandomCondition {
 	return &RandomCondition{value}
 }
 
-func (c *RandomCondition) Pass(event map[string]interface{}) bool {
+func (c *RandomCondition) Pass(event map[string]any) bool {
 	return rand.Intn(c.value) == 0
 }
 
@@ -597,7 +597,7 @@ func NewBeforeCondition(value string) *BeforeCondition {
 	return &BeforeCondition{d}
 }
 
-func (c *BeforeCondition) Pass(event map[string]interface{}) bool {
+func (c *BeforeCondition) Pass(event map[string]any) bool {
 	timestamp := event["@timestamp"]
 	if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
 		return false
@@ -617,7 +617,7 @@ func NewAfterCondition(value string) *AfterCondition {
 	return &AfterCondition{d}
 }
 
-func (c *AfterCondition) Pass(event map[string]interface{}) bool {
+func (c *AfterCondition) Pass(event map[string]any) bool {
 	timestamp := event["@timestamp"]
 	if timestamp == nil || reflect.TypeOf(timestamp).String() != "time.Time" {
 		return false
@@ -726,12 +726,12 @@ type ConditionFilter struct {
 	conditions []Condition
 }
 
-func NewConditionFilter(config map[interface{}]interface{}) *ConditionFilter {
+func NewConditionFilter(config map[any]any) *ConditionFilter {
 	f := &ConditionFilter{}
 
 	if v, ok := config["if"]; ok {
-		f.conditions = make([]Condition, len(v.([]interface{})))
-		for i, c := range v.([]interface{}) {
+		f.conditions = make([]Condition, len(v.([]any)))
+		for i, c := range v.([]any) {
 			f.conditions[i] = NewCondition(c.(string))
 		}
 	} else {
@@ -740,7 +740,7 @@ func NewConditionFilter(config map[interface{}]interface{}) *ConditionFilter {
 	return f
 }
 
-func (f *ConditionFilter) Pass(event map[string]interface{}) bool {
+func (f *ConditionFilter) Pass(event map[string]any) bool {
 	if f.conditions == nil {
 		return true
 	}
@@ -761,7 +761,7 @@ type OPNode struct {
 	pos       int
 }
 
-func (root *OPNode) Pass(event map[string]interface{}) bool {
+func (root *OPNode) Pass(event map[string]any) bool {
 	if root.condition != nil {
 		return root.condition.Pass(event)
 	}

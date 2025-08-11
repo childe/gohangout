@@ -12,7 +12,7 @@ import (
 
 type YamlParser struct{}
 
-func (yp *YamlParser) parse(filepath string) (map[string]interface{}, error) {
+func (yp *YamlParser) parse(filepath string) (map[string]any, error) {
 	var (
 		buffer []byte
 		err    error
@@ -47,7 +47,7 @@ func (yp *YamlParser) parse(filepath string) (map[string]interface{}, error) {
 
 	buffer = []byte(os.ExpandEnv(string(buffer)))
 
-	config := make(map[string]interface{})
+	config := make(map[string]any)
 	err = yaml.Unmarshal(buffer, &config)
 	if err != nil {
 		return nil, err

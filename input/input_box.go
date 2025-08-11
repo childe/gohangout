@@ -14,7 +14,7 @@ import (
 )
 
 type InputBox struct {
-	config             map[string]interface{} // whole config
+	config             map[string]any // whole config
 	input              topology.Input
 	outputsInAllWorker [][]*topology.OutputBox
 	stop               bool
@@ -35,7 +35,7 @@ func (box *InputBox) SetShutdownWhenNil(shutdownWhenNil bool) {
 	box.shutdownWhenNil = shutdownWhenNil
 }
 
-func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, config map[string]interface{}, exit func()) *InputBox {
+func NewInputBox(input topology.Input, inputConfig map[any]any, config map[string]any, exit func()) *InputBox {
 	b := &InputBox{
 		input:        input,
 		config:       config,
@@ -48,7 +48,7 @@ func NewInputBox(input topology.Input, inputConfig map[interface{}]interface{}, 
 	}
 	if add_fields, ok := inputConfig["add_fields"]; ok {
 		b.addFields = make(map[field_setter.FieldSetter]value_render.ValueRender)
-		for k, v := range add_fields.(map[interface{}]interface{}) {
+		for k, v := range add_fields.(map[any]any) {
 			fieldSetter := field_setter.NewFieldSetter(k.(string))
 			if fieldSetter == nil {
 				klog.Errorf("could build field setter from %s", k.(string))
@@ -66,7 +66,7 @@ func (box *InputBox) beat(workerIdx int) {
 	var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
 
 	var (
-		event map[string]interface{}
+		event map[string]any
 	)
 
 	for !box.stop {

@@ -7,7 +7,7 @@ import (
 )
 
 type Decoder interface {
-	Decode([]byte) map[string]interface{}
+	Decode([]byte) map[string]any
 }
 
 func NewDecoder(t string) Decoder {
@@ -27,6 +27,6 @@ func NewDecoder(t string) Decoder {
 		if err != nil {
 			klog.Fatalf("could not find New function in %s: %s", t, err)
 		}
-		return newFunc.(func() interface{})().(Decoder)
+		return newFunc.(func() any)().(Decoder)
 	}
 }

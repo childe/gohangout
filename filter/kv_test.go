@@ -3,15 +3,15 @@ package filter
 import "testing"
 
 func TestIncludeKeys(t *testing.T) {
-	config := make(map[interface{}]interface{})
+	config := make(map[any]any)
 	config["field_split"] = " "
 	config["value_split"] = "="
 	config["src"] = "message"
-	config["include_keys"] = []interface{}{"a", "b", "c", "xyz"}
-	config["exclude_keys"] = []interface{}{"c"}
+	config["include_keys"] = []any{"a", "b", "c", "xyz"}
+	config["exclude_keys"] = []any{"c"}
 	f := BuildFilter("KV", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "a=aaa b=bbb c=ccc xyz=\txyzxyz\t d=ddd"
 	t.Log(event)
 
@@ -39,13 +39,13 @@ func TestIncludeKeys(t *testing.T) {
 }
 
 func TestKVFilter(t *testing.T) {
-	config := make(map[interface{}]interface{})
+	config := make(map[any]any)
 	config["field_split"] = " "
 	config["value_split"] = "="
 	config["src"] = "message"
 	f := BuildFilter("KV", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "a=aaa b=bbb c=ccc xyz=\txyzxyz\t d=ddd"
 	t.Log(event)
 
@@ -72,7 +72,7 @@ func TestKVFilter(t *testing.T) {
 	}
 
 	// trim
-	config = make(map[interface{}]interface{})
+	config = make(map[any]any)
 	config["field_split"] = " "
 	config["value_split"] = "="
 	config["trim"] = "\t \""
@@ -80,7 +80,7 @@ func TestKVFilter(t *testing.T) {
 	config["src"] = "message"
 	f = BuildFilter("KV", config)
 
-	event = make(map[string]interface{})
+	event = make(map[string]any)
 	event["message"] = "a=aaa b=bbb xyz=\"\txyzxyz\t\" d=ddd"
 	t.Log(event)
 
@@ -104,13 +104,13 @@ func TestKVFilter(t *testing.T) {
 	}
 }
 func TestKVFilterOneField(t *testing.T) {
-	config := make(map[interface{}]interface{})
+	config := make(map[any]any)
 	config["field_split"] = " "
 	config["value_split"] = "="
 	config["src"] = "message"
 	f := BuildFilter("KV", config)
 
-	event := make(map[string]interface{})
+	event := make(map[string]any)
 	event["message"] = "a=aaa"
 	t.Log(event)
 

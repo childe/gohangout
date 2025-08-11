@@ -13,11 +13,11 @@ func init() {
 }
 
 type StdoutOutput struct {
-	config  map[interface{}]interface{}
+	config  map[any]any
 	encoder codec.Encoder
 }
 
-func newStdoutOutput(config map[interface{}]interface{}) topology.Output {
+func newStdoutOutput(config map[any]any) topology.Output {
 	p := &StdoutOutput{
 		config: config,
 	}
@@ -32,7 +32,7 @@ func newStdoutOutput(config map[interface{}]interface{}) topology.Output {
 
 }
 
-func (p *StdoutOutput) Emit(event map[string]interface{}) {
+func (p *StdoutOutput) Emit(event map[string]any) {
 	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		klog.Errorf("marshal %v error:%s", event, err)

@@ -8,7 +8,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type BuildFilterFunc func(map[interface{}]interface{}) topology.Filter
+type BuildFilterFunc func(map[any]any) topology.Filter
 
 var registeredFilter map[string]BuildFilterFunc = make(map[string]BuildFilterFunc)
 
@@ -22,7 +22,7 @@ func Register(filterType string, bf BuildFilterFunc) {
 }
 
 // BuildFilter builds Filter from filter type and config. it firstly tries built-in filter, and then try 3rd party plugin
-func BuildFilter(filterType string, config map[interface{}]interface{}) topology.Filter {
+func BuildFilter(filterType string, config map[any]any) topology.Filter {
 	if v, ok := registeredFilter[filterType]; ok {
 		return v(config)
 	}
@@ -37,7 +37,7 @@ func BuildFilter(filterType string, config map[interface{}]interface{}) topology
 	return filter
 }
 
-func getFilterFromPlugin(pluginPath string, config map[interface{}]interface{}) (topology.Filter, error) {
+func getFilterFromPlugin(pluginPath string, config map[any]any) (topology.Filter, error) {
 	p, err := plugin.Open(pluginPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not open %s: %s", pluginPath, err)
@@ -47,7 +47,7 @@ func getFilterFromPlugin(pluginPath string, config map[interface{}]interface{}) 
 		return nil, fmt.Errorf("could not find `New` function in %s: %s", pluginPath, err)
 	}
 
-	f, ok := newFunc.(func(map[interface{}]interface{}) interface{})
+	f, ok := newFunc.(func(map[any]any) any)
 	if !ok {
 		return nil, fmt.Errorf("`New` func in %s format error", pluginPath)
 	}

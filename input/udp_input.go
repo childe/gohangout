@@ -13,7 +13,7 @@ type msg struct {
 	addr    *net.UDPAddr
 }
 type UDPInput struct {
-	config        map[interface{}]interface{}
+	config        map[any]any
 	network       string
 	address       string
 	addRemoteAddr string
@@ -29,7 +29,7 @@ func init() {
 	Register("UDP", newUDPInput)
 }
 
-func newUDPInput(config map[interface{}]interface{}) topology.Input {
+func newUDPInput(config map[any]any) topology.Input {
 	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
@@ -101,7 +101,7 @@ func newUDPInput(config map[interface{}]interface{}) topology.Input {
 	return p
 }
 
-func (p *UDPInput) ReadOneEvent() map[string]interface{} {
+func (p *UDPInput) ReadOneEvent() map[string]any {
 	msg, more := <-p.messages
 	if !more {
 		return nil

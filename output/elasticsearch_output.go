@@ -41,7 +41,7 @@ type Action struct {
 	index_type string
 	id         string
 	routing    string
-	event      map[string]interface{}
+	event      map[string]any
 	rawSource  []byte
 	es_version int
 }
@@ -112,7 +112,7 @@ func (br *ESBulkRequest) readBuf() []byte {
 }
 
 type ElasticsearchOutput struct {
-	config map[interface{}]interface{}
+	config map[any]any
 
 	action             string
 	index              value_render.ValueRender
@@ -137,14 +137,14 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	if bytes.Contains(respBody, defaultNormalResp) {
 		return retry, noRetry, nil
 	}
-	var responseI interface{}
+	var responseI any
 	err := json.Unmarshal(respBody, &responseI)
 	if err != nil {
 		klog.Errorf(`could not unmarshal bulk response:"%s". will NOT retry. %s`, err, string(respBody[:100]))
 		return retry, noRetry, nil
 	}
 
-	bulkResponse := responseI.(map[string]interface{})
+	bulkResponse := responseI.(map[string]any)
 	klog.V(20).Infof("%v", bulkResponse)
 
 	if bulkResponse["errors"] == nil {
@@ -157,11 +157,11 @@ func esGetRetryEvents(resp *http.Response, respBody []byte, bulkRequest *BulkReq
 	}
 
 	hasLog := false
-	for i, item := range bulkResponse["items"].([]interface{}) {
-		index := item.(map[string]interface{})[action].(map[string]interface{})
+	for i, item := range bulkResponse["items"].([]any) {
+		index := item.(map[string]any)[action].(map[string]any)
 
 		if errorValue, ok := index["error"]; ok {
-			//errorType := errorValue.(map[string]interface{})["type"].(string)
+			//errorType := errorValue.(map[string]any)["type"].(string)
 			if !hasLog {
 				klog.Infof("error :%v", errorValue)
 				hasLog = true
@@ -206,7 +206,7 @@ func init() {
 	Register("Elasticsearch", newElasticsearchOutput)
 }
 
-func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output {
+func newElasticsearchOutput(config map[any]any) topology.Output {
 	rst := &ElasticsearchOutput{
 		config: config,
 	}
@@ -310,7 +310,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 
 	var headers = map[string]string{"Content-Type": "application/x-ndjson"}
 	if v, ok := config["headers"]; ok {
-		for keyI, valueI := range v.(map[interface{}]interface{}) {
+		for keyI, valueI := range v.(map[any]any) {
 			headers[keyI.(string)] = valueI.(string)
 		}
 	}
@@ -318,7 +318,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 
 	var retryResponseCode map[int]bool = make(map[int]bool)
 	if v, ok := config["retry_response_code"]; ok {
-		for _, cI := range v.([]interface{}) {
+		for _, cI := range v.([]any) {
 			retryResponseCode[cI.(int)] = true
 		}
 	} else {
@@ -338,7 +338,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 
 	var hosts []string = make([]string, 0)
 	if v, ok := config["hosts"]; ok {
-		for _, h := range v.([]interface{}) {
+		for _, h := range v.([]any) {
 			scheme, user, password, host := getUserPasswordAndHost(h.(string))
 			if host == "" {
 				klog.Fatalf("invalid host: %q", host)
@@ -356,7 +356,7 @@ func newElasticsearchOutput(config map[interface{}]interface{}) topology.Output 
 	var err error
 	if sniff, ok := config["sniff"]; ok {
 		klog.Infof("sniff hosts in es cluster")
-		sniff := sniff.(map[interface{}]interface{})
+		sniff := sniff.(map[any]any)
 		hosts, err = sniffNodes(config)
 		klog.Infof("new hosts after sniff: %v", hosts)
 		if err != nil {
@@ -407,8 +407,8 @@ func getUserPasswordAndHost(url string) (scheme, user, password, host string) {
 	}
 }
 
-func sniffNodes(config map[interface{}]interface{}) ([]string, error) {
-	sniff := config["sniff"].(map[interface{}]interface{})
+func sniffNodes(config map[any]any) ([]string, error) {
+	sniff := config["sniff"].(map[any]any)
 	var (
 		match string
 		ok    bool
@@ -420,7 +420,7 @@ func sniffNodes(config map[interface{}]interface{}) ([]string, error) {
 			klog.Fatal("match in sniff settings must be string")
 		}
 	}
-	for _, host := range config["hosts"].([]interface{}) {
+	for _, host := range config["hosts"].([]any) {
 		host := host.(string)
 		if nodes, err := sniffNodesFromOneHost(host, match); err == nil {
 			return nodes, err
@@ -452,7 +452,7 @@ func sniffNodesFromOneHost(host string, match string) ([]string, error) {
 		return nil, err
 	}
 
-	v := make(map[string]interface{})
+	v := make(map[string]any)
 	err = json.Unmarshal(respBody, &v)
 	if err != nil {
 		return nil, err
@@ -464,10 +464,10 @@ func sniffNodesFromOneHost(host string, match string) ([]string, error) {
 
 // filterNodesIPList gets ip lists from what is returned from _nodes/_all/info
 // it uses `match` config to filter the nodes you what
-func filterNodesIPList(v map[string]interface{}, match string) ([]string, error) {
-	var nodes map[string]interface{}
+func filterNodesIPList(v map[string]any, match string) ([]string, error) {
+	var nodes map[string]any
 	if nodesV, ok := v["nodes"]; ok {
-		if nodesV, ok := nodesV.(map[string]interface{}); ok {
+		if nodesV, ok := nodesV.(map[string]any); ok {
 			nodes = nodesV
 		} else {
 			return nil, errors.New("es sniff error: `nodes` is not map")
@@ -482,7 +482,7 @@ func filterNodesIPList(v map[string]interface{}, match string) ([]string, error)
 	}
 	IPList := make([]string, 0)
 	for _, node := range nodes {
-		if node, ok := node.(map[string]interface{}); ok {
+		if node, ok := node.(map[string]any); ok {
 			if f == nil || f.Pass(node) {
 				if ip, err := jsonpath.Read(node, "$.http.publish_address"); err == nil {
 					if ip, ok := ip.(string); ok {
@@ -511,7 +511,7 @@ func (p *ElasticsearchOutput) assebleHosts() (hosts []string) {
 }
 
 // Emit adds the event to bulkProcessor
-func (p *ElasticsearchOutput) Emit(event map[string]interface{}) {
+func (p *ElasticsearchOutput) Emit(event map[string]any) {
 
 	var (
 		index      string

@@ -7,10 +7,10 @@ import (
 )
 
 type DotOutput struct {
-	config map[interface{}]interface{}
+	config map[any]any
 }
 
-func newDotOutput(config map[interface{}]interface{}) topology.Output {
+func newDotOutput(config map[any]any) topology.Output {
 	return &DotOutput{
 		config: config,
 	}
@@ -20,7 +20,7 @@ func init() {
 	Register("Dot", newDotOutput)
 }
 
-func (outputPlugin *DotOutput) Emit(event map[string]interface{}) {
+func (outputPlugin *DotOutput) Emit(event map[string]any) {
 	fmt.Print(".")
 }
 
