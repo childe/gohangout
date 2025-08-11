@@ -8,6 +8,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// StdoutConfig defines the configuration structure for Stdout output
+type StdoutConfig struct {
+	Codec string `json:"codec"`
+}
+
 func init() {
 	Register("Stdout", newStdoutOutput)
 }
@@ -18,18 +23,18 @@ type StdoutOutput struct {
 }
 
 func newStdoutOutput(config map[any]any) topology.Output {
-	p := &StdoutOutput{
-		config: config,
-	}
+	// Parse configuration using SafeDecodeConfig helper
+	var stdoutConfig StdoutConfig
+	stdoutConfig.Codec = "json" // set default value
 
-	if v, ok := config["codec"]; ok {
-		p.encoder = codec.NewEncoder(v.(string))
-	} else {
-		p.encoder = codec.NewEncoder("json")
+	SafeDecodeConfig("Stdout", config, &stdoutConfig)
+
+	p := &StdoutOutput{
+		config:  config,
+		encoder: codec.NewEncoder(stdoutConfig.Codec),
 	}
 
 	return p
-
 }
 
 func (p *StdoutOutput) Emit(event map[string]any) {

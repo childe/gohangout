@@ -11,6 +11,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// StdinConfig defines the configuration structure for Stdin input
+type StdinConfig struct {
+	Codec string `json:"codec"`
+}
+
 type StdinInput struct {
 	config  map[any]any
 	decoder codec.Decoder
@@ -26,13 +31,15 @@ func init() {
 }
 
 func newStdinInput(config map[any]any) topology.Input {
-	var codertype string = "plain"
-	if v, ok := config["codec"]; ok {
-		codertype = v.(string)
-	}
+	// Parse configuration using SafeDecodeConfig helper
+	var stdinConfig StdinConfig
+	stdinConfig.Codec = "plain" // set default value
+
+	SafeDecodeConfig("Stdin", config, &stdinConfig)
+
 	p := &StdinInput{
 		config:  config,
-		decoder: codec.NewDecoder(codertype),
+		decoder: codec.NewDecoder(stdinConfig.Codec),
 		scanner: bufio.NewScanner(os.Stdin),
 	}
 
