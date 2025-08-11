@@ -1,7 +1,7 @@
 package output
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
@@ -9,6 +9,14 @@ import (
 	"github.com/childe/healer"
 	"k8s.io/klog/v2"
 )
+
+// KafkaConfig defines the configuration structure for Kafka output
+type KafkaConfig struct {
+	Codec            string         `json:"codec"`
+	Topic            string         `json:"topic"`
+	Key              string         `json:"key"`
+	ProducerSettings map[string]any `json:"producer_settings"`
+}
 
 func init() {
 	Register("Kafka", newKafkaOutput)
@@ -24,48 +32,33 @@ type KafkaOutput struct {
 }
 
 func newKafkaOutput(config map[any]any) topology.Output {
+	// Parse configuration using SafeDecodeConfig helper
+	var kafkaConfig KafkaConfig
+	kafkaConfig.Codec = "json" // set default value
+
+	SafeDecodeConfig("Kafka", config, &kafkaConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Kafka", map[string]any{
+		"topic":             kafkaConfig.Topic,
+		"producer_settings": kafkaConfig.ProducerSettings,
+	})
+
 	p := &KafkaOutput{
-		config: config,
+		config:  config,
+		encoder: codec.NewEncoder(kafkaConfig.Codec),
 	}
 
-	if v, ok := config["codec"]; ok {
-		p.encoder = codec.NewEncoder(v.(string))
-	} else {
-		p.encoder = codec.NewEncoder("json")
-	}
+	klog.Info(kafkaConfig.ProducerSettings)
 
-	pc, ok := config["producer_settings"]
-	if !ok {
-		klog.Fatal("kafka output must have producer_settings")
-	}
-	newPc := make(map[string]any)
-	for k, v := range pc.(map[any]any) {
-		newPc[k.(string)] = v
-	}
-	producer_settings := make(map[string]any)
-	if b, err := json.Marshal(newPc); err != nil {
-		klog.Fatalf("could not init kafka producer config: %v", err)
-	} else {
-		json.Unmarshal(b, &producer_settings)
-	}
-
-	klog.Info(producer_settings)
-
-	var topic string
-	if v, ok := config["topic"]; !ok {
-		klog.Fatal("kafka output must have topic setting")
-	} else {
-		topic = v.(string)
-	}
-
-	producer, err := healer.NewProducer(topic, producer_settings)
+	producer, err := healer.NewProducer(kafkaConfig.Topic, kafkaConfig.ProducerSettings)
 	if err != nil {
-		klog.Fatalf("could not create kafka producer: %v", err)
+		panic(fmt.Sprintf("could not create kafka producer: %v", err))
 	}
 	p.producer = producer
 
-	if v, ok := config["key"]; ok {
-		p.key = value_render.GetValueRender(v.(string))
+	if kafkaConfig.Key != "" {
+		p.key = value_render.GetValueRender(kafkaConfig.Key)
 	} else {
 		p.key = nil
 	}

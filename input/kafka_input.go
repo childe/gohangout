@@ -1,14 +1,26 @@
 package input
 
 import (
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/childe/gohangout/codec"
 	"github.com/childe/gohangout/topology"
 	"github.com/childe/healer"
-	jsoniter "github.com/json-iterator/go"
 	"k8s.io/klog/v2"
 )
+
+// KafkaInputConfig defines the configuration structure for Kafka input
+type KafkaInputConfig struct {
+	Codec              string            `json:"codec"`
+	DecorateEvents     bool              `json:"decorate_events"`
+	Topic              map[string]int    `json:"topic"`
+	Assign             map[string][]int  `json:"assign"`
+	MessagesQueueLength int              `json:"messages_queue_length"`
+	ConsumerSettings   map[string]any    `json:"consumer_settings"`
+}
 
 type KafkaInput struct {
 	config         map[any]any
@@ -26,102 +38,83 @@ func init() {
 	Register("Kafka", newKafkaInput)
 }
 
+// convertJSONNumber converts json.Number to appropriate types
+func convertJSONNumber(val any) any {
+	if num, ok := val.(json.Number); ok {
+		if intVal, err := strconv.Atoi(string(num)); err == nil {
+			return intVal
+		}
+		if floatVal, err := strconv.ParseFloat(string(num), 64); err == nil {
+			return floatVal
+		}
+	}
+	return val
+}
+
 func newKafkaInput(config map[any]any) topology.Input {
-	var (
-		codertype      string = "plain"
-		decorateEvents        = false
-		topics         map[any]any
-		assign         map[string][]int
-	)
+	// Parse configuration using SafeDecodeConfig helper
+	var kafkaConfig KafkaInputConfig
+	kafkaConfig.Codec = "plain" // set default value
+	kafkaConfig.MessagesQueueLength = 10 // set default value
 
-	consumer_settings := make(map[string]any)
-	if v, ok := config["consumer_settings"]; !ok {
-		klog.Fatal("kafka input must have consumer_settings")
-	} else {
-		// official json marshal: unsupported type: map[interface {}]interface {}
-		json := jsoniter.ConfigCompatibleWithStandardLibrary
-		if b, err := json.Marshal(v); err != nil {
-			klog.Fatalf("marshal consumer settings error: %v", err)
-		} else {
-			json.Unmarshal(b, &consumer_settings)
-		}
+	SafeDecodeConfig("Kafka", config, &kafkaConfig)
+
+	// Validate required fields
+	ValidateRequiredFields("Kafka", map[string]any{
+		"consumer_settings": kafkaConfig.ConsumerSettings,
+	})
+
+	if kafkaConfig.Topic == nil && kafkaConfig.Assign == nil {
+		panic("kafka input: either topic or assign should be set")
 	}
-	if v, ok := config["topic"]; ok {
-		topics = v.(map[any]any)
-	} else {
-		topics = nil
-	}
-	if v, ok := config["assign"]; ok {
-		assign = make(map[string][]int)
-		for topicName, partitions := range v.(map[any]any) {
-			assign[topicName.(string)] = make([]int, len(partitions.([]any)))
-			for i, p := range partitions.([]any) {
-				assign[topicName.(string)][i] = p.(int)
-			}
-		}
-	} else {
-		assign = nil
+	if kafkaConfig.Topic != nil && kafkaConfig.Assign != nil {
+		panic("kafka input: topic and assign can not be both set")
 	}
 
-	if topics == nil && assign == nil {
-		klog.Fatal("either topic or assign should be set")
-	}
-	if topics != nil && assign != nil {
-		klog.Fatal("topic and assign can not be both set")
-	}
-
-	if codecV, ok := config["codec"]; ok {
-		codertype = codecV.(string)
-	}
-
-	if decorateEventsV, ok := config["decorate_events"]; ok {
-		decorateEvents = decorateEventsV.(bool)
-	}
-
-	messagesLength := 10
-	if v, ok := config["messages_queue_length"]; ok {
-		messagesLength = v.(int)
+	// Convert json.Number values in consumer_settings
+	for k, v := range kafkaConfig.ConsumerSettings {
+		kafkaConfig.ConsumerSettings[k] = convertJSONNumber(v)
 	}
 
 	kafkaInput := &KafkaInput{
 		config:         config,
-		decorateEvents: decorateEvents,
-		messages:       make(chan *healer.FullMessage, messagesLength),
+		decorateEvents: kafkaConfig.DecorateEvents,
+		messages:       make(chan *healer.FullMessage, kafkaConfig.MessagesQueueLength),
 
-		decoder: codec.NewDecoder(codertype),
+		decoder: codec.NewDecoder(kafkaConfig.Codec),
 	}
 
 	// GroupConsumer
-	if topics != nil {
-		for topic, threadCount := range topics {
-			for i := 0; i < threadCount.(int); i++ {
-				c, err := healer.NewGroupConsumer(topic.(string), consumer_settings)
+	if kafkaConfig.Topic != nil {
+		for topic, threadCount := range kafkaConfig.Topic {
+			for i := 0; i < threadCount; i++ {
+				c, err := healer.NewGroupConsumer(topic, kafkaConfig.ConsumerSettings)
 				if err != nil {
-					klog.Fatalf("could not create kafka GroupConsumer: %s", err)
+					panic(fmt.Sprintf("could not create kafka GroupConsumer: %s", err))
 				}
 				kafkaInput.groupConsumers = append(kafkaInput.groupConsumers, c)
 
 				go func() {
 					_, err = c.Consume(kafkaInput.messages)
 					if err != nil {
-						klog.Fatalf("try to consumer error: %s", err)
+						panic(fmt.Sprintf("try to consumer error: %s", err))
 					}
 				}()
 			}
 		}
 	} else {
-		c, err := healer.NewConsumer(consumer_settings)
+		c, err := healer.NewConsumer(kafkaConfig.ConsumerSettings)
 		if err != nil {
-			klog.Fatalf("could not create kafka Consumer: %s", err)
+			panic(fmt.Sprintf("could not create kafka Consumer: %s", err))
 		}
 		kafkaInput.consumers = append(kafkaInput.consumers, c)
 
-		c.Assign(assign)
+		c.Assign(kafkaConfig.Assign)
 
 		go func() {
 			_, err = c.Consume(kafkaInput.messages)
 			if err != nil {
-				klog.Fatalf("try to consume error: %s", err)
+				panic(fmt.Sprintf("try to consume error: %s", err))
 			}
 		}()
 	}
