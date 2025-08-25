@@ -108,7 +108,7 @@ func NewIndexRender(t string) *IndexRender {
 func (r *IndexRender) SetTimeLocation(loc string) {
 	location, err := time.LoadLocation(loc)
 	if err != nil {
-		klog.Fatalf("invalid localtion: %s", loc)
+		klog.Fatalf("invalid location: %s", loc)
 	}
 	r.location = location
 }

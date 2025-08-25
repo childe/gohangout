@@ -205,6 +205,7 @@ func main() {
 		if err != nil {
 			klog.Fatalf("could not create CPU profile: %s", err)
 		}
+		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
 			klog.Fatalf("could not start CPU profile: %s", err)
 		}
