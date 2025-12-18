@@ -1,13 +1,13 @@
-FROM golang:1.22.5-alpine3.20 as build
+FROM golang:1.25.5-alpine3.23 as build
 
-RUN apk update && apk add make
+RUN apk update && apk add make git
 
 WORKDIR /gohangout
 COPY . .
 
 RUN make
 
-FROM alpine:3.20
+FROM alpine:3.23
 
 ARG TZ="Asia/Shanghai"
 ENV TZ ${TZ}
