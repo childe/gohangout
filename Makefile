@@ -25,4 +25,4 @@ clean:
 	rm -rf gohangout
 
 test:
-	for _ in {1..5} ; do go test -v -failfast -count=1 -gcflags="all=-N -l" ./... && break ; done
+	go test -v -failfast -count=1 -gcflags="all=-N -l" ./...
