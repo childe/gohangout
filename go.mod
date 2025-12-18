@@ -1,8 +1,6 @@
 module github.com/childe/gohangout
 
-go 1.23.0
-
-toolchain go1.23.2
+go 1.24.0
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
@@ -56,7 +54,7 @@ require (
 	github.com/smarty/assertions v1.15.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	golang.org/x/arch v0.16.0 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
