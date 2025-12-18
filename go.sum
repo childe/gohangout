@@ -62,8 +62,8 @@ github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cb
 github.com/cespare/xxhash/v2 v2.1.2/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/childe/cast v1.5.4 h1:VZryLdPuReKO05qYtVPwnmXHis4+pKydP9xsKqHxaq8=
 github.com/childe/cast v1.5.4/go.mod h1:0xZbq67nMuz992S0uB9T1PRDGiHIj7DNyPlYXuF1MKw=
-github.com/childe/healer v0.7.2 h1:vUUGvTuVhjBvLNDqoIzrVJgL3eKPmwJhqdrpFJd5zG8=
-github.com/childe/healer v0.7.2/go.mod h1:3h8UmVeLzpFKkOHFahs1FW2tynqmNs+yU0v+thjhpgg=
+github.com/childe/healer v0.7.3 h1:FfjPy86fEKRbM0JBQYTBmTbzF0AhSJ5EoAPQZPR9wl0=
+github.com/childe/healer v0.7.3/go.mod h1:3h8UmVeLzpFKkOHFahs1FW2tynqmNs+yU0v+thjhpgg=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
