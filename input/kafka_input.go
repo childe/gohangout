@@ -14,12 +14,12 @@ import (
 
 // KafkaInputConfig defines the configuration structure for Kafka input
 type KafkaInputConfig struct {
-	Codec              string            `json:"codec"`
-	DecorateEvents     bool              `json:"decorate_events"`
-	Topic              map[string]int    `json:"topic"`
-	Assign             map[string][]int  `json:"assign"`
-	MessagesQueueLength int              `json:"messages_queue_length"`
-	ConsumerSettings   map[string]any    `json:"consumer_settings"`
+	Codec               string            `json:"codec"`
+	DecorateEvents      bool              `json:"decorate_events"`
+	Topic               map[string]int    `json:"topic"`
+	Assign              map[string][]int  `json:"assign"`
+	MessagesQueueLength int               `json:"messages_queue_length"`
+	ConsumerSettings    map[string]any    `json:"consumer_settings"`
 }
 
 type KafkaInput struct {
@@ -52,23 +52,32 @@ func convertJSONNumber(val any) any {
 }
 
 func newKafkaInput(config map[any]any) topology.Input {
-	// Parse configuration using SafeDecodeConfig helper
+	// Parse configuration using DecodeConfig helper
 	var kafkaConfig KafkaInputConfig
 	kafkaConfig.Codec = "plain" // set default value
 	kafkaConfig.MessagesQueueLength = 10 // set default value
 
-	SafeDecodeConfig("Kafka", config, &kafkaConfig)
+	if err := DecodeConfig("Kafka", config, &kafkaConfig); err != nil {
+		klog.Errorf("Failed to decode Kafka input configuration: %v", err)
+		return nil
+	}
 
 	// Validate required fields
-	ValidateRequiredFields("Kafka", map[string]any{
+	if err := ValidateRequiredFields("Kafka", map[string]any{
 		"consumer_settings": kafkaConfig.ConsumerSettings,
-	})
+	}); err != nil {
+		klog.Errorf("Kafka input validation failed: %v", err)
+		return nil
+	}
 
+	// Validate mutual exclusivity of topic and assign
 	if kafkaConfig.Topic == nil && kafkaConfig.Assign == nil {
-		panic("kafka input: either topic or assign should be set")
+		klog.Errorf("[Kafka input] configuration error: either 'topic' or 'assign' should be set")
+		return nil
 	}
 	if kafkaConfig.Topic != nil && kafkaConfig.Assign != nil {
-		panic("kafka input: topic and assign can not be both set")
+		klog.Errorf("[Kafka input] configuration error: 'topic' and 'assign' cannot be both set")
+		return nil
 	}
 
 	// Convert json.Number values in consumer_settings
@@ -90,14 +99,15 @@ func newKafkaInput(config map[any]any) topology.Input {
 			for i := 0; i < threadCount; i++ {
 				c, err := healer.NewGroupConsumer(topic, kafkaConfig.ConsumerSettings)
 				if err != nil {
-					panic(fmt.Sprintf("could not create kafka GroupConsumer: %s", err))
+					klog.Errorf("[Kafka input] could not create kafka GroupConsumer: %v", err)
+					return nil
 				}
 				kafkaInput.groupConsumers = append(kafkaInput.groupConsumers, c)
 
 				go func() {
 					_, err = c.Consume(kafkaInput.messages)
 					if err != nil {
-						panic(fmt.Sprintf("try to consumer error: %s", err))
+						klog.Errorf("[Kafka input] consumer error: %v", err)
 					}
 				}()
 			}
@@ -105,7 +115,8 @@ func newKafkaInput(config map[any]any) topology.Input {
 	} else {
 		c, err := healer.NewConsumer(kafkaConfig.ConsumerSettings)
 		if err != nil {
-			panic(fmt.Sprintf("could not create kafka Consumer: %s", err))
+			klog.Errorf("[Kafka input] could not create kafka Consumer: %v", err)
+			return nil
 		}
 		kafkaInput.consumers = append(kafkaInput.consumers, c)
 
@@ -114,7 +125,7 @@ func newKafkaInput(config map[any]any) topology.Input {
 		go func() {
 			_, err = c.Consume(kafkaInput.messages)
 			if err != nil {
-				panic(fmt.Sprintf("try to consume error: %s", err))
+				klog.Errorf("[Kafka input] consume error: %v", err)
 			}
 		}()
 	}
